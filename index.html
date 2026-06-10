@@ -357,6 +357,58 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   .stage{align-self:center;max-width:100%}
   #cv{max-width:100%;height:auto}
 }
+
+/* 手机端触屏预览浮条 */
+#mobInfo{
+  position:fixed;left:50%;bottom:72px;transform:translateX(-50%) translateY(10px);
+  z-index:65;opacity:0;pointer-events:none;
+  background:rgba(15,12,8,.95);border:1px solid rgba(201,162,39,.55);border-radius:5px;
+  padding:8px 16px;font-size:13px;line-height:1.7;color:var(--paper);text-align:center;
+  transition:opacity .15s, transform .15s;max-width:92vw;
+}
+#mobInfo.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== 手机端适配 ===== */
+@media (max-width:760px){
+  .frame{padding:10px 8px 90px}
+  header{flex-direction:column;align-items:flex-start;gap:6px;padding-bottom:8px}
+  h1{font-size:24px;letter-spacing:3px}
+  .hud{gap:12px;font-size:12px;flex-wrap:wrap}
+  .hud b{font-size:17px}
+  .objective{font-size:11px}
+  .stage{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  #cv{width:740px;min-width:740px;max-width:none} /* 每格约40px，保证可点按；横向滑动看全图 */
+  aside{min-width:0}
+  .hint{font-size:10.5px}
+  #endTurn{ /* 拇指可达的悬浮按钮 */
+    position:fixed;right:10px;bottom:10px;z-index:50;width:auto;
+    padding:10px 18px;font-size:17px;letter-spacing:4px;border-radius:24px;
+    box-shadow:0 6px 18px rgba(0,0,0,.55);
+  }
+  #menu{min-width:150px}
+  #menu button{font-size:19px;padding:11px 16px}
+  #talk{min-width:0;width:92vw;padding:10px 14px;bottom:88px}
+  #talk p{font-size:13px}
+  #banner .txt{font-size:30px;letter-spacing:10px}
+  #overlay .big{font-size:54px;letter-spacing:12px}
+  #overlay .sub{font-size:12px;letter-spacing:1px;padding:0 12px}
+  #overlay::after{font-size:30vh}
+  #overlay .frameline{inset:10px}
+  .heroRow{flex-wrap:wrap;gap:3px}
+  .heroRow canvas{width:44px;height:56px}
+  .diffRow{gap:8px}
+  .diffBtn{padding:8px 12px;font-size:14px;letter-spacing:2px}
+  .diffBtn i{font-size:9.5px}
+  #overlay button{font-size:18px;letter-spacing:6px;padding:11px 30px 11px 36px}
+  #prep .pinner{padding:14px 12px}
+  .prow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .prow canvas{width:48px;height:60px}
+  .prow .pname{width:84px}
+  .prow .pstat{flex:1 1 100%;order:3}
+  .prow select{flex:1 1 30%;order:4;font-size:11.5px}
+  .shopgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  #prepBag .chip{font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -397,7 +449,8 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
       <div class="hint">
         <span class="b">蓝＝移动范围</span>　<span class="r">红＝移动后可攻范围</span>　<span style="color:#e8c655">黄框＝当前位置攻击距离</span><br>
         虎卫九宫格 · 投石车十字直射 2~3 · 弓手隔格射 · 骑克步、枪克骑<br>
-        左键选择/移动　右键或 Esc 取消　点击敌将看威胁范围　<span style="color:#e8c655">金光处藏宝</span>
+        左键选择/移动　右键或 Esc 取消　点击敌将看威胁范围　<span style="color:#e8c655">金光处藏宝</span><br>
+        手机：长按画面＝取消　攻击需点两次确认　战场可左右滑动
       </div>
     </aside>
   </div>
@@ -405,6 +458,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 
 <div id="banner"><div class="strip"><span class="txt"></span></div></div>
 <div id="talk"></div>
+<div id="mobInfo"></div>
 
 <div id="prep" class="hidden">
   <div class="pinner">
@@ -1661,7 +1715,45 @@ cv.addEventListener('mousemove',e=>{
 cv.addEventListener('mouseleave',()=>{mouse.x=mouse.y=-1;});
 cv.addEventListener('contextmenu',e=>{e.preventDefault();cancelStep();});
 window.addEventListener('keydown',e=>{if(e.key==='Escape')cancelStep();});
+/* ---- 触屏支持：长按=取消，攻击需两次点击确认 ---- */
+const IS_TOUCH=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+let touchConfirm=null;
+const mobEl=document.getElementById('mobInfo');
+function mobHint(html){
+  if(!html){mobEl.classList.remove('show');return;}
+  mobEl.innerHTML=html;
+  mobEl.classList.add('show');
+}
+function mobPreview(target){
+  if(targeting.kind==='attack'){
+    const [lo,hi]=dmgRange(selected,target);
+    return `${selected.name} → ${target.name}　伤害 ${lo}~${hi}　敌剩 ${Math.max(0,target.hp-hi)}~${Math.max(0,target.hp-lo)}<br><b style="color:#e8c655">再点一次确认攻击 · 长按取消</b>`;
+  }
+  const s=STRAT[targeting.strat];
+  if(s.kind==='dmg')return `【${s.name}】→ ${target.name}　伤害 ${stratDmg(selected,target)}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
+  return `【${s.name}】→ ${target.name}　恢复 +${Math.round(S(selected,'int')*1.1)}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
+}
+let lpTimer=null,lpFired=false,lpX=0,lpY=0;
+cv.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1)return;
+  lpX=e.touches[0].clientX;lpY=e.touches[0].clientY;
+  lpFired=false;
+  lpTimer=setTimeout(()=>{
+    lpFired=true;
+    cancelStep();
+    sfx.select();
+  },550);
+},{passive:true});
+cv.addEventListener('touchmove',e=>{
+  if(lpTimer&&(Math.abs(e.touches[0].clientX-lpX)>12||Math.abs(e.touches[0].clientY-lpY)>12)){
+    clearTimeout(lpTimer);lpTimer=null;
+  }
+},{passive:true});
+cv.addEventListener('touchend',()=>{
+  if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+},{passive:true});
 function cancelStep(){
+  touchConfirm=null;mobHint('');
   if(state==='targeting'){targeting=null;showMenu(selected);showForecast('');return;}
   if(state==='menu'){revertMove();return;}
   if(state==='idle'&&selected){clearSel();threat=null;return;}
@@ -1669,6 +1761,7 @@ function cancelStep(){
 }
 cv.addEventListener('click',async e=>{
   if(!AC)initAudio();
+  if(lpFired){lpFired=false;return;} // 长按已处理，吞掉随后的 click
   const t=tileFromEvent(e);
   if(!t)return;
   const [x,y]=t;
@@ -1677,6 +1770,16 @@ cv.addEventListener('click',async e=>{
     if(targeting.tiles.has(key(x,y))){
       const target=unitAt(x,y);
       if(!target)return;
+      // 触屏两段确认：首次点按只显示伤害预览
+      if(IS_TOUCH&&touchConfirm!==key(x,y)){
+        touchConfirm=key(x,y);
+        hoverTarget=target;
+        if(targeting.kind==='attack')forecastAttack(selected,target);
+        mobHint(mobPreview(target));
+        sfx.select();
+        return;
+      }
+      touchConfirm=null;mobHint('');
       const u=selected;
       state='busy';
       const tg=targeting;targeting=null;showForecast('');
@@ -1684,6 +1787,8 @@ cv.addEventListener('click',async e=>{
       else await doStrategy(u,tg.strat,target);
       selected=u;
       await finishAction();
+    }else{
+      touchConfirm=null;mobHint('');
     }
     return;
   }
