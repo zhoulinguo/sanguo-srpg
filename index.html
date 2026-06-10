@@ -70,6 +70,7 @@ canvas{display:block}
 
 #menu{
   position:absolute;display:none;flex-direction:column;min-width:104px;max-width:240px;z-index:30;
+  max-height:calc(100% - 12px);overflow-y:auto;
   background:linear-gradient(160deg,#2a2218,#1d1812);
   border:1px solid var(--gold-dim);border-radius:4px;
   box-shadow:0 8px 24px rgba(0,0,0,.7);
@@ -1580,11 +1581,19 @@ function showMenu(u){
   html+=`<button data-act="wait">待 机</button><button data-act="cancel">取 消</button>`;
   menuEl.innerHTML=html;
   menuEl.style.display='flex';
+  placeMenu(u);
+}
+function placeMenu(u){
+  // 按菜单实际尺寸定位：靠下自动上移、靠右翻到左侧，保证完整可点
   const rect=cv.getBoundingClientRect();
   const scale=rect.width/W;
+  const mw=menuEl.offsetWidth, mh=menuEl.offsetHeight;
   let mx=(u.px+TILE*.7)*scale, my=(u.py-TILE*.8)*scale;
-  mx=Math.min(mx,rect.width-118);my=Math.max(6,Math.min(my,rect.height-150));
-  menuEl.style.left=mx+'px';menuEl.style.top=my+'px';
+  if(mx+mw>rect.width-6)mx=(u.px-TILE*.7)*scale-mw;
+  mx=Math.max(6,Math.min(mx,rect.width-mw-6));
+  my=Math.max(6,Math.min(my,rect.height-mh-6));
+  menuEl.style.left=mx+'px';
+  menuEl.style.top=my+'px';
 }
 function stratTargets(u,sk){
   const s=STRAT[sk];
@@ -1632,6 +1641,7 @@ menuEl.addEventListener('click',async e=>{
     }
     html+=`<button data-act="back">返 回</button>`;
     menuEl.innerHTML=html;
+    placeMenu(selected);
     return;
   }
   if(act==='back'){showMenu(selected);return;}
