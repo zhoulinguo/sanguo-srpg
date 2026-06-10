@@ -549,7 +549,7 @@ const CHAPTERS=[
   nextBtn:'进 军 汜 水 关',
   reward:{qinggang:1,tiejia:1,shangyao:2,hudan:1},
   goldReward:500,
-  shop:['tiejian','changmao','sangmu','tieji','pijia','shangyao','danyao','xue'],
+  shop:['tiejian','changmao','sangmu','yushan','tieji','pijia','shangyao','danyao','xue'],
   treasures:[
     {x:1,y:2,item:'lingzhi'},{x:2,y:6,gold:200},
     {x:12,y:6,item:'danyao'},{x:4,y:11,gold:300},
@@ -584,7 +584,7 @@ const CHAPTERS=[
   nextBtn:'进 军 虎 牢 关',
   reward:{shangyao:2,lingzhi:1},
   goldReward:600,
-  shop:['qinggang','hongying','tietai','tiejia','shangyao','lingzhi','danyao','hudan'],
+  shop:['qinggang','hongying','tietai','yudi','tiejia','shangyao','lingzhi','danyao','hudan'],
   treasures:[
     {x:2,y:3,item:'shangyao'},{x:5,y:1,gold:250},
     {x:7,y:10,item:'qinggang'},{x:16,y:8,gold:400},
@@ -631,7 +631,7 @@ const CHAPTERS=[
   nextBtn:'回 师 青 州',
   reward:{shangyao:2,danyao:1},
   goldReward:800,
-  shop:['qinggang','hongying','tietai','tieji','bintie','shangyao','lingzhi','danyao'],
+  shop:['qinggang','hongying','tietai','yudi','tieji','bintie','shangyao','lingzhi','danyao'],
   treasures:[
     {x:2,y:4,item:'lingzhi'},{x:12,y:1,gold:400},
     {x:9,y:2,item:'danyao'},{x:12,y:9,gold:500},
@@ -678,7 +678,7 @@ const CHAPTERS=[
   nextBtn:'南 征 宛 城',
   reward:{lingzhi:1,shangyao:2},
   goldReward:800,
-  shop:['bawang','tieji','tietai','bintie','shangyao','lingzhi','danyao','hudan'],
+  shop:['bawang','tieji','tietai','baiyu','bintie','shangyao','lingzhi','danyao','hudan'],
   treasures:[
     {x:1,y:1,item:'shangyao'},{x:16,y:4,gold:350},
     {x:5,y:5,item:'tiejia'},{x:6,y:9,item:'lingzhi'},{x:13,y:11,gold:300},
@@ -725,7 +725,7 @@ const CHAPTERS=[
   winPre:'宛城克定 · 霸业初成',
   winSub:t=>`第 ${t} 回合降张绣、收贾诩，南阳遂平。<br>「设使国家无有孤，不知当几人称帝，几人称王。」<br>——五章战记完结，感谢游玩！`,
   nextBtn:'从 头 再 战',
-  shop:['bawang','bintie','bingshu','shangyao','lingzhi','danyao'],
+  shop:['bawang','baiyu','bintie','bingshu','shangyao','lingzhi','danyao'],
   treasures:[
     {x:1,y:1,item:'danyao'},{x:2,y:5,item:'lingzhi'},
     {x:13,y:3,gold:400},{x:11,y:7,item:'shangyao'},{x:15,y:8,gold:500},
@@ -757,6 +757,10 @@ const ITEMS={
   // 弓系
   sangmu:   {n:'桑木弓',slot:'wp',wtype:'bow',atk:4,price:350},
   tietai:   {n:'铁胎弓',slot:'wp',wtype:'bow',atk:7,price:800},
+  // 扇笛系（谋士文器：加智力增强策略）
+  yushan:   {n:'羽扇',  slot:'wp',wtype:'fan',int:4,price:350},
+  yudi:     {n:'玉笛',  slot:'wp',wtype:'fan',int:7,srng:1,price:900,lore:'笛声清越，传策千里'},
+  baiyu:    {n:'白羽扇',slot:'wp',wtype:'fan',int:10,atk:3,srng:1,price:1800,lore:'名士风流，运筹决胜'},
   // 戟系
   tieji:    {n:'铁戟',  slot:'wp',wtype:'halberd',atk:5,price:450},
   fangtian: {n:'方天画戟',slot:'wp',wtype:'halberd',atk:12,crit:.08,price:2600,lore:'吕布的画戟，天下无双'},
@@ -775,7 +779,7 @@ const ITEMS={
   lingzhi:  {n:'灵芝',use:'hpfull',price:350},
   danyao:   {n:'丹药',use:'mp30',price:150},
 };
-const WTYPE_LABEL={sword:'剑',spear:'枪',bow:'弓',halberd:'戟'};
+const WTYPE_LABEL={sword:'剑',spear:'枪',bow:'弓',halberd:'戟',fan:'扇笛'};
 const ATYPE_LABEL={light:'轻甲',heavy:'重甲'};
 /* 职业可用装备：武器按系别、防具按轻重，宝物不限 */
 const CLASS_EQUIP={
@@ -784,7 +788,7 @@ const CLASS_EQUIP={
   '弓骑':{wp:['bow'],             ar:['light']},
   '枪兵':{wp:['spear'],           ar:['light','heavy']},
   '先锋':{wp:['sword'],           ar:['light','heavy']},
-  '军师':{wp:['sword'],           ar:['light']},
+  '军师':{wp:['fan'],             ar:['light']},
   '虎卫':{wp:['halberd','spear'], ar:['light','heavy']},
 };
 function canEquip(u,k){
@@ -814,10 +818,11 @@ function itemDesc(k){
   if(it.int)p.push('智力+'+it.int);
   if(it.mov)p.push('移动+'+it.mov);
   if(it.crit)p.push('暴击+'+Math.round(it.crit*100)+'%');
+  if(it.srng)p.push('策略范围+'+it.srng);
   return p.join('　');
 }
 let bag={}, gold=500;
-function initBag(){bag={tiejian:1,changmao:1,sangmu:1,pijia:2,xue:1,shangyao:3,danyao:1};gold=500;}
+function initBag(){bag={tiejian:1,changmao:1,sangmu:1,yushan:1,pijia:2,xue:1,shangyao:3,danyao:1};gold=500;}
 initBag();
 function S(u,stat){ // 含装备加成的属性
   let v=u[stat]||0;
@@ -932,10 +937,18 @@ function U(o){
   return u;
 }
 const STRAT={
-  fire:{name:'火计',mp:12,rng:2,kind:'dmg',desc:'范围2 · 火攻伤害，无视地形加成'},
-  heal:{name:'治愈',mp:10,rng:2,kind:'heal',desc:'范围2 · 恢复友军兵力（智力×1.1）'},
-  bolt:{name:'妖术',mp:10,rng:2,kind:'dmg',desc:'范围2 · 妖法伤害，无视地形加成'},
+  fire:{name:'火计',mp:12,rng:3,kind:'dmg',desc:'范围3 · 火攻伤害，无视地形（扇笛可增程）'},
+  heal:{name:'治愈',mp:10,rng:3,kind:'heal',desc:'范围3 · 恢复友军兵力（智力×1.1）'},
+  bolt:{name:'妖术',mp:10,rng:3,kind:'dmg',desc:'范围3 · 妖法伤害，无视地形加成'},
 };
+function stratRng(u,s){ // 法术范围 = 基础 + 扇笛等装备增程
+  let r=s.rng;
+  if(u.equip)for(const sl of ['wp','ar','ac']){
+    const it=u.equip[sl]&&ITEMS[u.equip[sl]];
+    if(it&&it.srng)r+=it.srng;
+  }
+  return r;
+}
 const CLS_SHORT={'主公':'主','骑兵':'骑','弓骑':'弓','枪兵':'枪','先锋':'先','军师':'谋','贼兵':'贼','弓手':'弓','贼骑':'骑','贼将':'将','贼首':'首','虎卫':'卫','妖术':'妖','投石':'石','猛将':'猛','铁骑':'骑','飞将':'飞','陷阵':'陷'};
 function clsTrait(u){
   switch(u.cls){
@@ -1575,16 +1588,17 @@ function showMenu(u){
 }
 function stratTargets(u,sk){
   const s=STRAT[sk];
+  const rng=stratRng(u,s);
   const set=new Set();
   if(s.kind==='dmg'){
     for(const e of alive(u.side==='P'?'E':'P')){
       const d=manh(u,e);
-      if(d>=1&&d<=s.rng)set.add(key(e.x,e.y));
+      if(d>=1&&d<=rng)set.add(key(e.x,e.y));
     }
   }else{
     for(const a of alive(u.side)){
       const d=manh(u,a);
-      if(d<=s.rng&&a.hp<a.maxhp)set.add(key(a.x,a.y));
+      if(d<=rng&&a.hp<a.maxhp)set.add(key(a.x,a.y));
     }
   }
   return set;
@@ -1880,7 +1894,7 @@ async function enemyPhase(){
           const s=STRAT[sk];
           if(s.kind!=='dmg'||e.mp<s.mp)continue;
           const md=Math.abs(tx-p.x)+Math.abs(ty-p.y);
-          if(md<1||md>s.rng)continue;
+          if(md<1||md>stratRng(e,s))continue;
           const est=stratDmg(e,p);
           const score=est+6
             +(est>=p.hp?120:0)
