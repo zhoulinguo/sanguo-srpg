@@ -1448,6 +1448,7 @@ function checkEnd(){
 function finish(win){
   ended=true;state='over';
   hideMenu();
+  clearBattle(); // 战斗结束清除战斗存档（章节存档另存）
   const ch=CHAPTERS[chap];
   const last=chap>=CHAPTERS.length-1;
   setTimeout(()=>{
@@ -1698,6 +1699,7 @@ function checkTreasure(u){
 async function finishAction(){
   if(selected&&selected.side==='P'&&selected.alive)checkTreasure(selected);
   if(selected){selected.acted=true;}
+  saveBattle();
   clearSel();
   if(ended)return;
   state='idle';
@@ -1949,6 +1951,7 @@ async function enemyPhase(){
   banner('曹 军 回 合');
   await sleep(1000);
   state='idle';
+  saveBattle();
 }
 
 /* ===================== 地形渲染（离屏预绘） ===================== */
@@ -3258,6 +3261,7 @@ function startChapter(i){
   for(const [t,c] of ch.intro)log(t,c);
   updateHud();
   banner('曹 军 回 合');
+  saveBattle();
 }
 /* ===================== 备战界面 ===================== */
 let prepChap=0;
@@ -3369,6 +3373,63 @@ function loadGame(){
     return (d&&d.chap!=null&&d.snap)?d:null;
   }catch(e){return null;}
 }
+/* 战斗中实时存档：每次行动/每回合自动保存，可中途关页恢复 */
+const BKEY='sanguo_battle';
+function saveBattle(){
+  if(ended)return;
+  try{
+    localStorage.setItem(BKEY,JSON.stringify({
+      chap,diffIdx,turn,gold,bag,
+      treasures,
+      duels:[...seenDuels],
+      snap:rosterSnap,
+      units:units.map(u=>({
+        name:u.name,g:u.g,cls:u.cls,kind:u.kind,side:u.side,fac:u.fac,
+        x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
+        int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
+        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,
+        awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,
+        equip:u.equip,drop:u.drop,
+      })),
+    }));
+  }catch(e){}
+}
+function loadBattle(){
+  try{
+    const d=JSON.parse(localStorage.getItem(BKEY));
+    return (d&&d.units&&d.chap!=null)?d:null;
+  }catch(e){return null;}
+}
+function clearBattle(){try{localStorage.removeItem(BKEY);}catch(e){}}
+function resumeBattle(d){
+  chap=d.chap;
+  setDiff(d.diffIdx??1);
+  MAP=CHAPTERS[chap].map;
+  renderBase();
+  gold=d.gold;bag={...d.bag};
+  treasures=(d.treasures||[]).map(t=>({...t}));
+  seenDuels=new Set(d.duels||[]);
+  rosterSnap=d.snap;
+  units=d.units.map(o=>{
+    const u=U({...o});
+    u.maxhp=o.maxhp;u.hp=o.hp;
+    u.maxmp=o.maxmp;u.mp=o.mp;
+    u.fade=o.alive?1:0;
+    return u;
+  });
+  units.forEach((u,i)=>u._i=i);
+  roster=units.filter(u=>u.side==='P');
+  ended=false;phase='P';state='idle';turn=d.turn;
+  floaters=[];particles=[];shakeT=0;flashT=0;threat=null;
+  clearSel();hideMenu();
+  const ch=CHAPTERS[chap];
+  document.getElementById('objTxt').innerHTML=
+    `${ch.title}〔${DIFFS[diffIdx].n}〕　胜利条件：击破 <em>${ch.boss}</em>　败北条件：<em>曹操</em> 阵亡`;
+  document.getElementById('log').innerHTML='';
+  log(`已读取战斗存档：${ch.title} 第 ${turn} 回合，继续指挥！`,'sys');
+  updateHud();
+  banner('曹 军 回 合');
+}
 
 MAP=CHAPTERS[0].map;
 renderBase();
@@ -3381,12 +3442,19 @@ document.getElementById('startBtn').onclick=()=>{
   openPrep(0);
 };
 const contBtn=document.getElementById('contBtn');
-if(loadGame())contBtn.style.display='';
+if(loadGame()||loadBattle())contBtn.style.display='';
 contBtn.onclick=()=>{
-  const sv=loadGame();
-  if(!sv)return;
   initAudio();
   sfx.select();
+  // 优先恢复战斗中存档（更精确），其次章节存档
+  const b=loadBattle();
+  if(b){
+    document.getElementById('overlay').classList.add('hidden');
+    resumeBattle(b);
+    return;
+  }
+  const sv=loadGame();
+  if(!sv)return;
   document.getElementById('overlay').classList.add('hidden');
   roster=[];initBag();ensureRoster();
   restoreRoster(sv.snap);
