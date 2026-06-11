@@ -478,9 +478,13 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 <div id="overlay">
   <div class="frameline"></div>
   <div class="inner">
-    <div class="pre">—— 常山赵子龙 · 一身是胆 ——</div>
-    <div class="big">赵云<span class="red">传</span></div>
-    <div class="sub">八章战记：磐河 → 博望坡 → 长坂坡 → 截江 → 汉水 → 箕谷 → 凤鸣山 → 定军山<br>率赵云与蜀汉七将纵横天下；等级、装备、金币全程继承，自动存档</div>
+    <div class="pre" id="campPre">—— 常山赵子龙 · 一身是胆 ——</div>
+    <div class="big" id="campBig">赵云<span class="red">传</span></div>
+    <div class="sub" id="campSub">八章战记：磐河 → 博望坡 → 长坂坡 → 截江 → 汉水 → 箕谷 → 凤鸣山 → 定军山<br>率赵云与蜀汉七将纵横天下；等级、装备、金币全程继承，自动存档</div>
+    <div class="diffRow" id="campRow">
+      <button class="diffBtn active" data-camp="zhaoyun">赵 云 传<i>八章 · 蜀汉线</i></button>
+      <button class="diffBtn" data-camp="caocao">曹 操 传<i>五章 · 曹魏线</i></button>
+    </div>
     <div class="heroRow" id="heroRow"></div>
     <div class="diffRow" id="diffRow">
       <button class="diffBtn" data-d="0">义 勇<i>敌方较弱 · 轻松行军</i></button>
@@ -533,7 +537,7 @@ const CH2_MAP=[
 "fffff.....r..fffff",
 "ffffff....r.ffffff",
 ];
-const CHAPTERS=[
+let CHAPTERS=[
  {
   title:'第一章 · 磐河之战',
   boss:'文丑',
@@ -1111,7 +1115,7 @@ function clsTrait(u){
 }
 /* 我方武将跨章节继承（等级/经验/成长），每章满血复活 */
 let roster=[], rosterSnap=null, chap=0;
-const PLAYER_BASE=[
+let PLAYER_BASE=[
   {name:'赵云',  g:'云',cls:'骑兵',kind:'cav',  side:'P',x:0,y:0,lv:3,hp:125,atk:32,def:16,mov:6,mounted:true,leader:true,crit:.16},
   {name:'刘备',  g:'备',cls:'主公',kind:'lord', side:'P',x:0,y:0,lv:2,hp:115,mp:40,int:28,atk:28,def:14,mov:5,mounted:true,strats:['heal']},
   {name:'关羽',  g:'羽',cls:'骑兵',kind:'cav',  side:'P',x:0,y:0,lv:2,hp:120,atk:33,def:16,mov:6,mounted:true,crit:.15},
@@ -1349,7 +1353,7 @@ function gainExp(u,amt){
 }
 
 /* ===================== 台词：宿敌对决 / 退场遗言 ===================== */
-const DUELS={
+let DUELS={
   '赵云|文丑':[['文丑','黄口小儿！也敢拦我河北上将？'],['赵云','吾乃常山赵子龙！枪下不斩无名之辈——来！']],
   '关羽|颜良':[['颜良','关东来的？送死！'],['关羽','河北名将不过如此——看刀！']],
   '赵云|夏侯惇':[['夏侯惇','赵云！今日取你首级！'],['赵云','夏侯将军，银枪在此恭候！']],
@@ -1363,7 +1367,7 @@ const DUELS={
   '赵云|韩德':[['韩德','赵云匹夫！杀我四子之仇，今日血偿！'],['赵云','来犯者，皆斩！吾乃常山赵子龙！']],
   '魏延|郭淮':[['郭淮','魏延！你这叛将！'],['魏延','哼！谁胜谁负，且看真章！']],
 };
-const LAST_WORDS={
+let LAST_WORDS={
   '颜良':'河北颜良……竟折于此……',
   '文丑':'上将文丑……败于无名小卒……不甘！',
   '李典':'撤！撤退……',
@@ -1391,7 +1395,7 @@ const LAST_WORDS={
   '黄忠':'老将黄忠……战死沙场……无憾！',
   '魏延':'子午谷……终是遗憾……',
 };
-const AMBUSH_LINES={
+let AMBUSH_LINES={
   '袁军伏兵':'哈哈！中伏了！袁军在此！',
   '林中伏弓':'林中有埋伏！放箭！',
   '林中伏骑':'杀！一个也别放跑！',
@@ -1409,15 +1413,16 @@ async function say(lines,dur=2100){
   await sleep(200);
 }
 
-/* ===================== 怒气必杀 ===================== */
-const ULTS={
-  '赵云':  {label:'龙胆枪',  desc:'九宫格内所有敌人受 160% 伤害',quote:'吾乃常山赵子龙！'},
-  '刘备':  {label:'仁德之心',desc:'全军恢复 40 兵力',quote:'有德者居之！全军——随朕进击！'},
-  '关羽':  {label:'青龙偃月',desc:'武器范围内单体 220% 伤害',quote:'关某温酒斩华雄——看刀！'},
-  '张飞':  {label:'当阳之喝',desc:'九宫格内所有敌人受 150% 伤害',quote:'燕人张翼德在此！谁敢来决一死战！'},
-  '诸葛亮':{label:'八阵图',  desc:'全军恢复（智力×1.2）兵力',quote:'鞠躬尽瘁，死而后已。'},
-  '黄忠':  {label:'百步穿杨',desc:'射程内至多三敌各受 130% 伤害',quote:'老将黄忠在此！箭来！'},
-  '魏延':  {label:'奇袭子午',desc:'单体 240% 伤害（必定暴击）',quote:'谁敢杀我——'},
+/* ===================== 怒气必杀（类型驱动） ===================== */
+/* type: heal_flat / heal_int / heal_self / single / triple / aoe */
+let ULTS={
+  '赵云':  {label:'龙胆枪',  desc:'九宫格内所有敌人受 160% 伤害',quote:'吾乃常山赵子龙！',type:'aoe',mult:1.6},
+  '刘备':  {label:'仁德之心',desc:'全军恢复 40 兵力',quote:'有德者居之！全军——随朕进击！',type:'heal_flat',amt:40},
+  '关羽':  {label:'青龙偃月',desc:'武器范围内单体 220% 伤害',quote:'关某温酒斩华雄——看刀！',type:'single',mult:2.2},
+  '张飞':  {label:'当阳之喝',desc:'九宫格内所有敌人受 150% 伤害',quote:'燕人张翼德在此！谁敢来决一死战！',type:'aoe',mult:1.5},
+  '诸葛亮':{label:'八阵图',  desc:'全军恢复（智力×1.2）兵力',quote:'鞠躬尽瘁，死而后已。',type:'heal_int',mult:1.2},
+  '黄忠':  {label:'百步穿杨',desc:'射程内至多三敌各受 130% 伤害',quote:'老将黄忠在此！箭来！',type:'triple',mult:1.3},
+  '魏延':  {label:'奇袭子午',desc:'单体 240% 伤害（必定暴击）',quote:'谁敢杀我——',type:'single',mult:2.4},
 };
 function addRage(u,amt){
   if(u.side!=='P'||!u.alive||!ULTS[u.name])return;
@@ -1429,9 +1434,11 @@ function addRage(u,amt){
   }
 }
 function ultTargets(u){
-  if(u.name==='赵云'||u.name==='张飞')return alive('E').filter(e=>Math.max(Math.abs(e.x-u.x),Math.abs(e.y-u.y))<=1);
-  if(['关羽','魏延','黄忠'].includes(u.name))return alive('E').filter(e=>shapeOk(u,e.x-u.x,e.y-u.y));
-  return [u]; // 治疗系恒可施放
+  const ult=ULTS[u.name];
+  if(!ult)return [];
+  if(ult.type==='aoe')return alive('E').filter(e=>Math.max(Math.abs(e.x-u.x),Math.abs(e.y-u.y))<=1);
+  if(ult.type==='single'||ult.type==='triple')return alive('E').filter(e=>shapeOk(u,e.x-u.x,e.y-u.y));
+  return [u];
 }
 async function castUlt(u){
   const ult=ULTS[u.name];
@@ -1441,55 +1448,54 @@ async function castUlt(u){
   addFloat(u.px,u.py-46,ult.label,'#ffd24a','huge');
   await say([[u.name,ult.quote]],1500);
   const ultDmg=(mult,d)=>Math.max(1,Math.round(S(u,'atk')*mult-S(d,'def')*.8));
-  if(u.name==='刘备'||u.name==='诸葛亮'){
-    const amt=u.name==='刘备'?40:Math.round(S(u,'int')*1.2);
+  if(ult.type==='heal_flat'||ult.type==='heal_int'){
+    const amt=ult.type==='heal_flat'?ult.amt:Math.round(S(u,'int')*ult.mult);
     sfx.heal();
     for(const p of alive('P')){
       const r=Math.min(amt,p.maxhp-p.hp);
       if(r>0){p.hp+=r;addHealFx(p.x,p.y);addFloat(p.px,p.py-26,'+'+r,'#b8e986');}
     }
     log(`${u.name} 发动【${ult.label}】，全军士气大振！`,'good');
-  }else if(u.name==='关羽'||u.name==='魏延'){
+  }else if(ult.type==='heal_self'){
+    sfx.heal();
+    const r=Math.min(ult.selfAmt,u.maxhp-u.hp);u.hp+=r;
+    addHealFx(u.x,u.y);addFloat(u.px,u.py-26,'+'+r,'#b8e986');
+    for(const p of alive('P')){
+      if(p!==u&&manh(p,u)===1){
+        const r2=Math.min(ult.allyAmt,p.maxhp-p.hp);
+        if(r2>0){p.hp+=r2;addHealFx(p.x,p.y);addFloat(p.px,p.py-26,'+'+r2,'#b8e986');}
+      }
+    }
+    log(`${u.name} 发动【${ult.label}】，固守如山！`,'good');
+  }else if(ult.type==='single'){
     const ts=ultTargets(u).sort((a,b)=>a.hp-b.hp);
     if(ts[0]){
       await animLunge(u,ts[0]);
       sfx.crit();addCritBurst(ts[0].px,ts[0].py);shakeT=.5;
-      const dd=ultDmg(u.name==='关羽'?2.2:2.4,ts[0]);
+      const dd=ultDmg(ult.mult,ts[0]);
       log(`${u.name}【${ult.label}】命中 ${ts[0].name}，<b>${dd}</b> 伤害！`,'good');
       const dead=await doDamage(ts[0],dd,'#ffd24a');
       gainExp(u,dd*.5+(dead?35:0));
       if(checkEnd())return;
     }
-  }else if(u.name==='黄忠'){
+  }else if(ult.type==='triple'){
     const ts=ultTargets(u).slice(0,3);
     for(const e2 of ts){
       sfx.hit();
-      const dd=ultDmg(1.3,e2);
-      log(`黄忠【百步穿杨】命中 ${e2.name}，<b>${dd}</b> 伤害！`,'good');
+      const dd=ultDmg(ult.mult,e2);
+      log(`${u.name}【${ult.label}】命中 ${e2.name}，<b>${dd}</b> 伤害！`,'good');
       const dead=await doDamage(e2,dd,'#ffd24a');
       gainExp(u,dd*.4+(dead?35:0));
       if(checkEnd())return;
       await sleep(200);
     }
-  }else if(u.name==='赵云'){
+  }else if(ult.type==='aoe'){
     const ts=ultTargets(u);
     shakeT=.55;
     for(const e2 of ts){
       sfx.hit();addCritBurst(e2.px,e2.py);
-      const dd=ultDmg(1.6,e2);
-      log(`赵云【龙胆枪】横扫 ${e2.name}，<b>${dd}</b> 伤害！`,'good');
-      const dead=await doDamage(e2,dd,'#ffd24a');
-      gainExp(u,dd*.4+(dead?35:0));
-      if(checkEnd())return;
-      await sleep(170);
-    }
-  }else if(u.name==='张飞'){
-    const ts=ultTargets(u);
-    shakeT=.55;
-    for(const e2 of ts){
-      sfx.hit();addCritBurst(e2.px,e2.py);
-      const dd=ultDmg(1.5,e2);
-      log(`张飞【当阳之喝】横扫 ${e2.name}，<b>${dd}</b> 伤害！`,'good');
+      const dd=ultDmg(ult.mult,e2);
+      log(`${u.name}【${ult.label}】横扫 ${e2.name}，<b>${dd}</b> 伤害！`,'good');
       const dead=await doDamage(e2,dd,'#ffd24a');
       gainExp(u,dd*.4+(dead?35:0));
       if(checkEnd())return;
@@ -1633,7 +1639,7 @@ function finish(win){
       ov.querySelector('.pre').textContent='兵败 · 群雄叹息';
       ov.querySelector('.big').innerHTML='败<span class="red">北</span>';
       ov.querySelector('.sub').innerHTML=
-        `赵云阵亡，蜀汉的故事就此改写。<br>重整旗鼓，再战${ch.title.replace(/^.*· /,'')}吧。`;
+        `${campLeader}阵亡，故事就此改写。<br>重整旗鼓，再战${ch.title.replace(/^.*· /,'')}吧。`;
       btn.textContent='重 整 旗 鼓';
       btn.onclick=()=>{
         sfx.select();
@@ -1664,10 +1670,11 @@ function banner(text){
 }
 function updateHud(){
   document.getElementById('turnNum').textContent=turn;
-  document.getElementById('phaseTxt').textContent=phase==='E'?'敌军回合':'蜀军回合';
+  document.getElementById('phaseTxt').textContent=phase==='E'?'敌军回合':campName+'回合';
   document.getElementById('goldTxt').textContent=gold;
 }
-function sideColor(u){return u.side==='P'?'#2e7d4e':(u.boss?'#8a2f23':'#a8842c');}
+let campColor='#2e7d4e', campName='蜀军', campLeader='赵云';
+function sideColor(u){return u.side==='P'?campColor:(u.boss?'#8a2f23':'#a8842c');}
 function showUnitCard(u){
   const el=document.getElementById('unitCard');
   if(!u){el.innerHTML='<div class="empty">移动鼠标查看武将与地形……</div>';return;}
@@ -2108,7 +2115,7 @@ async function enemyPhase(){
     if(p.maxmp>0)p.mp=Math.min(p.maxmp,p.mp+5);
   }
   phase='P';updateHud();
-  banner('蜀 军 回 合');
+  banner(campName.split('').join(' ')+' 回 合');
   await sleep(1000);
   state='idle';
   saveBattle();
@@ -3416,11 +3423,11 @@ function startChapter(i){
   floaters=[];particles=[];shakeT=0;flashT=0;threat=null;
   clearSel();hideMenu();
   document.getElementById('objTxt').innerHTML=
-    `${ch.title}〔${DIFFS[diffIdx].n}〕　胜利条件：击破 <em>${ch.boss}</em>　败北条件：<em>赵云</em> 阵亡`;
+    `${ch.title}〔${DIFFS[diffIdx].n}〕　胜利条件：击破 <em>${ch.boss}</em>　败北条件：<em>${campLeader}</em> 阵亡`;
   document.getElementById('log').innerHTML='';
   for(const [t,c] of ch.intro)log(t,c);
   updateHud();
-  banner('蜀 军 回 合');
+  banner(campName.split('').join(' ')+' 回 合');
   saveBattle();
 }
 /* ===================== 备战界面 ===================== */
@@ -3584,21 +3591,265 @@ function resumeBattle(d){
   clearSel();hideMenu();
   const ch=CHAPTERS[chap];
   document.getElementById('objTxt').innerHTML=
-    `${ch.title}〔${DIFFS[diffIdx].n}〕　胜利条件：击破 <em>${ch.boss}</em>　败北条件：<em>赵云</em> 阵亡`;
+    `${ch.title}〔${DIFFS[diffIdx].n}〕　胜利条件：击破 <em>${ch.boss}</em>　败北条件：<em>${campLeader}</em> 阵亡`;
   document.getElementById('log').innerHTML='';
   log(`已读取战斗存档：${ch.title} 第 ${turn} 回合，继续指挥！`,'sys');
   updateHud();
-  banner('蜀 军 回 合');
+  banner(campName.split('').join(' ')+' 回 合');
 }
 
-MAP=CHAPTERS[0].map;
-renderBase();
+/* ===================== 战役系统 ===================== */
+const CAMP_ZHAOYUN={
+  key:'zhaoyun',title:'常山赵子龙',seal:'赵云传',watermark:'蜀',
+  pre:'—— 常山赵子龙 · 一身是胆 ——',
+  big:'赵云<span class="red">传</span>',
+  sub:'八章战记：磐河 → 博望坡 → 长坂坡 → 截江 → 汉水 → 箕谷 → 凤鸣山<br>率赵云与蜀汉七将纵横天下；等级、装备、金币全程继承，自动存档',
+  color:'#2e7d4e',faction:'蜀军',leader:'赵云',
+  chapters:CHAPTERS, playerBase:PLAYER_BASE, duels:DUELS, lastWords:LAST_WORDS, ults:ULTS,
+  ambush:AMBUSH_LINES,
+  bag:{tiejian:1,changmao:2,sangmu:1,yushan:1,pijia:2,xue:1,shangyao:3,danyao:1},
+  diffs:[{n:'义勇',m:.85},{n:'虎将',m:1},{n:'修罗',m:1.2}],
+  clsTraitPatch:{'虎卫':'蛇矛横扫 · 九宫格八方攻击'},
+};
+const CC_CH1=[
+"..ff..ww..mmmm.mm.",
+".tt.f.ww...mmm....",
+".htt..ww....mm..f.",
+"..f...ww......ccc.",
+"rrrrrrbbrrrrrrccc.",
+"..f...ww......ccc.",
+"..ht..ww..zzf.....",
+".ff...ww..zff.....",
+"......ww..z..f....",
+"..f...ss....g...m.",
+"......ww....gg.mm.",
+"....f.ww......mmm.",
+];
+const CC_CH2=[
+"mmmmm..ff.ww.mmmmm",
+"mmm..t..f.ww..gmmm",
+"mm...tt...ww...gmm",
+"m.h...f...ww..cccm",
+"m..t......ww..cccm",
+"rrrrrrrrrrbbrrcccm",
+"m..f......ww..cccm",
+"m.ff..z...ww..cccm",
+"m......z..ww....gm",
+"mm.....zz.ss...gmm",
+"mmm....f..ww..mmmm",
+"mmmmm.....wwmmmmmm",
+];
+const CAMP_CAOCAO={
+  key:'caocao',title:'乱世奸雄',seal:'曹操传',watermark:'魏',
+  pre:'—— 中平元年 · 黄巾乱起 ——',
+  big:'乱世<span class="red">奸雄</span>',
+  sub:'五章战记：颍川 → 汜水关 → 虎牢关 → 青州 → 宛城<br>率曹操麾下七将扫荡群雄；等级、装备、金币全程继承，自动存档',
+  color:'#3a5f8a',faction:'曹军',leader:'曹操',
+  playerBase:[
+    {name:'曹操',  g:'曹',cls:'主公',kind:'lord', side:'P',x:0,y:0,lv:3,hp:120,mp:40,int:30,atk:30,def:16,mov:5,mounted:true,leader:true,strats:['fire']},
+    {name:'夏侯惇',g:'惇',cls:'骑兵',kind:'cav',  side:'P',x:0,y:0,lv:2,hp:115,atk:32,def:15,mov:6,mounted:true,crit:.15},
+    {name:'夏侯渊',g:'渊',cls:'弓骑',kind:'hcav', side:'P',x:0,y:0,lv:2,hp:100,atk:28,def:12,mov:6,rngMin:1,rngMax:2,mounted:true,crit:.15},
+    {name:'曹仁',  g:'仁',cls:'枪兵',kind:'spear',side:'P',x:0,y:0,lv:2,hp:130,atk:26,def:20,mov:4},
+    {name:'乐进',  g:'进',cls:'先锋',kind:'vanguard',side:'P',x:0,y:0,lv:1,hp:105,atk:28,def:13,mov:5,crit:.18},
+    {name:'荀彧',  g:'彧',cls:'军师',kind:'adv',  side:'P',x:0,y:0,lv:2,hp:85,mp:60,int:38,atk:16,def:10,mov:5,strats:['heal','fire'],crit:.05},
+    {name:'典韦',  g:'韦',cls:'虎卫',kind:'guard',side:'P',x:0,y:0,lv:2,hp:140,atk:34,def:17,mov:5,rngShape:'square',crit:.2},
+  ],
+  ults:{
+    '曹操':  {label:'奸雄令',  desc:'全军恢复 35 兵力',quote:'宁教我负天下人！全军——随孤进击！',type:'heal_flat',amt:35},
+    '夏侯惇':{label:'鬼神突',  desc:'武器范围内单体 220% 伤害',quote:'吃我一枪！！',type:'single',mult:2.2},
+    '夏侯渊':{label:'神速连射',desc:'射程内至多三敌各受 130% 伤害',quote:'三日五百，六日一千！',type:'triple',mult:1.3},
+    '曹仁':  {label:'八门铁壁',desc:'自身+60，相邻友军+30',quote:'此阵，固若金汤！',type:'heal_self',selfAmt:60,allyAmt:30},
+    '乐进':  {label:'先登死士',desc:'单体 240% 伤害（必定暴击）',quote:'先登者——进也！',type:'single',mult:2.4},
+    '荀彧':  {label:'王佐之才',desc:'全军恢复（智力×1.2）兵力',quote:'此乃王佐之道。',type:'heal_int',mult:1.2},
+    '典韦':  {label:'恶来逞威',desc:'九宫格内所有敌人受 150% 伤害',quote:'俺典韦在此！都过来送死！',type:'aoe',mult:1.5},
+  },
+  duels:{
+    '曹操|张梁':[['张梁','苍天已死，黄天当立！'],['曹操','妖言惑众！送你去见黄天！']],
+    '荀彧|黄巾妖师':[['黄巾妖师','太平要术在此！'],['荀彧','子不语怪力乱神。']],
+    '典韦|华雄':[['华雄','无名小卒！'],['典韦','古之恶来在此，双戟伺候！']],
+    '曹操|华雄':[['华雄','关东鼠辈！'],['曹操','竖子狂妄！']],
+    '夏侯惇|华雄':[['夏侯惇','华雄！元让来会你！'],['华雄','正愁刀锋未饱！']],
+    '曹操|吕布':[['吕布','曹阿瞒！识得飞将吕奉先？'],['曹操','三姓家奴，天下共讨之！']],
+    '典韦|吕布':[['吕布','持戟莽夫！'],['典韦','恶来在此！休想伤主公！']],
+    '夏侯惇|高顺':[['高顺','陷阵之志，有死无生！'],['夏侯惇','好胆色！']],
+    '典韦|胡车儿':[['胡车儿','你那双戟，俺惦记很久了！'],['典韦','先问问戟尖答不答应！']],
+    '曹操|贾诩':[['贾诩','宛城水深，请回吧。'],['曹操','毒士……今日领教你的算计。']],
+    '曹操|张绣':[['张绣','西凉张绣在此！'],['曹操','识时务者为俊杰。']],
+  },
+  lastWords:{
+    '波才':'黄巾百万，岂会败于此……','张梁':'黄天……终究没有立起来么……',
+    '黄巾妖师':'妖术……竟然破了……','胡轸':'大势已去……','赵岑':'华将军恕岑先行……',
+    '华雄':'我华雄纵横西凉，竟折于此……不甘！',
+    '夏侯惇':'可恨！此仇，元让记下了！','夏侯渊':'轻进误事……',
+    '曹仁':'且容我退后再战……','乐进':'未能先登……憾甚……',
+    '荀彧':'主公保重，彧先退了……','典韦':'主公快走！韦在此断后——',
+    '曹操':'孤的霸业……才刚刚开始啊……',
+    '吕布':'我乃飞将吕奉先……岂会败于此……',
+    '张辽':'今日暂退……他日再会！','高顺':'陷阵之志……有死无生……',
+    '管亥':'苍天既死……黄天亦亡么……','张绣':'悔不听文和之言……',
+    '贾诩':'胜负之数……竟差这一着……','胡车儿':'那对铁戟……终究拿不动啊……',
+  },
+  ambush:{},
+  chapters:[
+   {title:'第一章 · 颍川之战',boss:'张梁',map:CC_CH1,
+    spawns:[[3,4],[3,3],[3,5],[4,3],[4,5],[2,4],[1,4]],
+    intro:[['中平元年，黄巾贼张梁屯兵颍川。曹操奉旨讨贼，兵至河西。','sys'],['贼弓手扼守桥头，营中更有妖师施法、投石车十字直射——当心远程打击！','sys'],['典韦双戟可攻八方（九宫格），先选中武将查看红色攻击范围。','sys'],['金光闪动之处藏有宝物，派武将踏上便可寻获。','sys']],
+    winPre:'颍川平定 · 黄巾溃散',winSub:t=>`第 ${t} 回合击破张梁，曹军威名远扬。<br>报——董卓乱政，关东诸侯会盟讨董！`,
+    nextBtn:'进 军 汜 水 关',reward:{qinggang:1,tiejia:1,shangyao:2,hudan:1},goldReward:500,
+    shop:['tiejian','changmao','sangmu','yushan','tieji','pijia','shangyao','danyao','xue'],
+    treasures:[{x:1,y:2,item:'lingzhi'},{x:2,y:6,gold:200},{x:12,y:6,item:'danyao'},{x:4,y:11,gold:300}],
+    enemies(){return [
+      U({name:'黄巾力士',g:'贼',cls:'贼兵',kind:'brig',side:'E',x:9,y:2,hp:95,atk:25,def:10,mov:5}),
+      U({name:'黄巾力士',g:'贼',cls:'贼兵',kind:'brig',side:'E',x:9,y:6,hp:95,atk:25,def:10,mov:5}),
+      U({name:'黄巾力士',g:'贼',cls:'贼兵',kind:'brig',side:'E',x:11,y:9,hp:95,atk:25,def:10,mov:5,awakeR:7}),
+      U({name:'黄巾弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',x:10,y:4,hp:80,atk:23,def:8,mov:5,rngMin:2,rngMax:2}),
+      U({name:'黄巾弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',x:12,y:7,hp:80,atk:23,def:8,mov:5,rngMin:2,rngMax:2}),
+      U({name:'黄巾骑兵',g:'骑',cls:'贼骑',kind:'cav',side:'E',x:10,y:1,hp:95,atk:27,def:10,mov:6,mounted:true,awakeR:7,crit:.15}),
+      U({name:'黄巾骑兵',g:'骑',cls:'贼骑',kind:'cav',side:'E',x:11,y:5,hp:95,atk:27,def:10,mov:6,mounted:true,crit:.15}),
+      U({name:'黄巾妖师',g:'妖',cls:'妖术',kind:'sorcerer',side:'E',x:14,y:3,hp:70,mp:60,int:34,atk:14,def:8,mov:4,strats:['bolt'],awakeR:5,crit:.05,drop:'danyao'}),
+      U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',x:14,y:5,hp:70,atk:36,def:6,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
+      U({name:'波才',g:'波',cls:'贼将',kind:'chief',side:'E',x:13,y:4,hp:125,atk:29,def:14,mov:5,awakeR:5,crit:.15,drop:'shangyao'}),
+      U({name:'张梁',g:'梁',cls:'贼首',kind:'chief',side:'E',x:15,y:4,hp:155,atk:31,def:17,mov:5,boss:true,awakeR:4,crit:.15,drop:'bazhen'}),
+    ];}},
+   {title:'第二章 · 汜水关之战',boss:'华雄',map:CC_CH2,
+    spawns:[[2,5],[2,4],[2,6],[3,4],[3,6],[1,5],[3,5]],
+    intro:[['初平元年，关东联军讨董。董卓遣华雄镇守汜水关。','sys'],['汜水湍急，唯北桥与南面浅滩可渡。','sys'],['西凉铁骑神速（移动７），谨防突袭！','sys']],
+    winPre:'汜水关破 · 威震诸侯',winSub:t=>`第 ${t} 回合斩华雄，联军士气大振。<br>吕布亲率狼骑，屯兵虎牢关！`,
+    nextBtn:'进 军 虎 牢 关',reward:{shangyao:2,lingzhi:1},goldReward:600,
+    shop:['qinggang','hongying','tietai','yudi','tiejia','shangyao','lingzhi','danyao','hudan'],
+    treasures:[{x:2,y:3,item:'shangyao'},{x:5,y:1,gold:250},{x:7,y:10,item:'qinggang'},{x:16,y:8,gold:400}],
+    enemies(){return [
+      U({name:'董军枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:9,y:4,hp:110,atk:26,def:14,mov:5}),
+      U({name:'董军枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:9,y:6,hp:110,atk:26,def:14,mov:5}),
+      U({name:'西凉铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:8,y:2,hp:105,atk:29,def:11,mov:7,mounted:true,crit:.15,awakeR:7}),
+      U({name:'西凉铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:12,y:3,hp:105,atk:29,def:11,mov:7,mounted:true,crit:.15}),
+      U({name:'西凉铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:12,y:7,hp:105,atk:29,def:11,mov:7,mounted:true,crit:.15,awakeR:7}),
+      U({name:'董军弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',fac:'dong',x:12,y:5,hp:85,atk:24,def:9,mov:5,rngMin:2,rngMax:2}),
+      U({name:'董军弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',fac:'dong',x:12,y:9,hp:85,atk:24,def:9,mov:5,rngMin:2,rngMax:2,awakeR:6}),
+      U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'dong',x:14,y:5,hp:75,atk:38,def:7,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
+      U({name:'胡轸',g:'轸',cls:'猛将',kind:'chief',side:'E',fac:'dong',x:14,y:4,hp:135,atk:30,def:15,mov:5,awakeR:5,crit:.15,drop:'tiejia'}),
+      U({name:'赵岑',g:'岑',cls:'猛将',kind:'chief',side:'E',fac:'dong',x:14,y:6,hp:130,atk:29,def:14,mov:5,awakeR:5,crit:.15,drop:'lingzhi'}),
+      U({name:'华雄',g:'雄',cls:'猛将',kind:'chief',side:'E',fac:'dong',x:15,y:5,hp:175,atk:34,def:18,mov:5,boss:true,awakeR:4,crit:.18,drop:'qinghong'}),
+    ];}},
+   {title:'第三章 · 虎牢关之战',boss:'吕布',map:[
+      "mmmmmmm...mmmmmmmm","mmmm....f...g.mmmm","mm..t....f...g..mm","m..t.....f...ccccm",
+      "m.h..........ccccm","rrrrrrrrrrrrrrcccm","m...f........ccccm","m..ff....g...ccccm",
+      "mm......gg....cccm","mmm....f....g..mmm","mmmm.....f....mmmm","mmmmmmm....mmmmmmm"],
+    spawns:[[2,5],[3,4],[3,6],[4,5],[4,6],[1,5],[3,5]],
+    intro:[['吕布奉命镇守虎牢关，十八路诸侯莫敢撄锋。','sys'],['方天画戟（九宫格）+ 赤兔马（移动７）——切勿单挑！','sys'],['张辽骁勇、高顺陷阵营死战不退。集中兵力！','sys']],
+    winPre:'虎牢关破 · 飞将折戟',winSub:t=>`第 ${t} 回合击退吕布，威震天下。<br>青州黄巾复起——回师平乱！`,
+    nextBtn:'回 师 青 州',reward:{shangyao:2,danyao:1},goldReward:800,
+    shop:['qinggang','hongying','tietai','yudi','tieji','bintie','shangyao','lingzhi','danyao'],
+    treasures:[{x:2,y:4,item:'lingzhi'},{x:12,y:1,gold:400},{x:9,y:2,item:'danyao'},{x:12,y:9,gold:500}],
+    enemies(){return [
+      U({name:'并州铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:8,y:3,hp:110,atk:30,def:12,mov:7,mounted:true,crit:.15,awakeR:6}),
+      U({name:'并州铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:10,y:7,hp:110,atk:30,def:12,mov:7,mounted:true,crit:.15,awakeR:6}),
+      U({name:'并州铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:8,y:9,hp:110,atk:30,def:12,mov:7,mounted:true,crit:.15,awakeR:7}),
+      U({name:'吕军弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',fac:'dong',x:11,y:5,hp:90,atk:25,def:9,mov:5,rngMin:2,rngMax:2,awakeR:6}),
+      U({name:'吕军弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',fac:'dong',x:12,y:7,hp:90,atk:25,def:9,mov:5,rngMin:2,rngMax:2,awakeR:6}),
+      U({name:'吕军枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:10,y:4,hp:120,atk:27,def:15,mov:5,awakeR:6}),
+      U({name:'吕军枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:10,y:6,hp:120,atk:27,def:15,mov:5,awakeR:6}),
+      U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'dong',x:13,y:5,hp:80,atk:40,def:7,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
+      U({name:'张辽',g:'辽',cls:'猛将',kind:'cav',side:'E',fac:'dong',x:14,y:4,hp:140,atk:31,def:15,mov:7,mounted:true,awakeR:5,crit:.18,drop:'dilu'}),
+      U({name:'高顺',g:'顺',cls:'陷阵',kind:'spear',side:'E',fac:'dong',x:14,y:6,hp:150,atk:28,def:20,mov:4,awakeR:5,crit:.12,drop:'bintie'}),
+      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:15,y:5,hp:200,atk:36,def:19,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'longdan'}),
+    ];}},
+   {title:'第四章 · 青州平乱',boss:'管亥',map:[
+      "..f..tt......f....",".h...tt..g.....f..","......f.....t.....","rrrrrrrrrrrrrrrrrr",
+      "..t......f......h.",".tt..h........tt..","......zz......t...","..f...zz..f.......",
+      ".ff.......f.ccc.g.","......f.....ccc.g.","..t.......g.ccc..."].concat([".....f.......tt..."]),
+    spawns:[[1,3],[1,2],[1,4],[2,3],[2,4],[0,3],[2,2]],
+    intro:[['青州黄巾百万入兖州。曹操迎击于寿张之东。','sys'],['贼众虽多——各个击破，谨防人海围困！','sys'],['双妖师藏于贼阵深处，宜遣骑兵先除之。','sys']],
+    winPre:'青州平定 · 收编精锐',winSub:t=>`第 ${t} 回合击破管亥，收降卒三十万。<br>张绣割据宛城——南征！`,
+    nextBtn:'南 征 宛 城',reward:{lingzhi:1,shangyao:2},goldReward:800,
+    shop:['bawang','tieji','tietai','baiyu','bintie','shangyao','lingzhi','danyao','hudan'],
+    treasures:[{x:1,y:1,item:'shangyao'},{x:16,y:4,gold:350},{x:5,y:5,item:'tiejia'},{x:6,y:9,item:'lingzhi'},{x:13,y:11,gold:300}],
+    enemies(){return [
+      U({name:'黄巾力士',g:'贼',cls:'贼兵',kind:'brig',side:'E',x:7,y:2,hp:105,atk:27,def:11,mov:5,awakeR:6}),
+      U({name:'黄巾力士',g:'贼',cls:'贼兵',kind:'brig',side:'E',x:8,y:5,hp:105,atk:27,def:11,mov:5,awakeR:6}),
+      U({name:'黄巾力士',g:'贼',cls:'贼兵',kind:'brig',side:'E',x:6,y:8,hp:105,atk:27,def:11,mov:5,awakeR:7}),
+      U({name:'黄巾力士',g:'贼',cls:'贼兵',kind:'brig',side:'E',x:11,y:4,hp:105,atk:27,def:11,mov:5,awakeR:6}),
+      U({name:'黄巾骑兵',g:'骑',cls:'贼骑',kind:'cav',side:'E',x:9,y:1,hp:105,atk:29,def:11,mov:6,mounted:true,crit:.15,awakeR:7}),
+      U({name:'黄巾骑兵',g:'骑',cls:'贼骑',kind:'cav',side:'E',x:12,y:2,hp:105,atk:29,def:11,mov:6,mounted:true,crit:.15,awakeR:6}),
+      U({name:'黄巾骑兵',g:'骑',cls:'贼骑',kind:'cav',side:'E',x:10,y:6,hp:105,atk:29,def:11,mov:6,mounted:true,crit:.15,awakeR:6}),
+      U({name:'黄巾弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',x:8,y:3,hp:88,atk:25,def:9,mov:5,rngMin:2,rngMax:2,awakeR:6}),
+      U({name:'黄巾弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',x:12,y:5,hp:88,atk:25,def:9,mov:5,rngMin:2,rngMax:2,awakeR:6}),
+      U({name:'黄巾妖师',g:'妖',cls:'妖术',kind:'sorcerer',side:'E',x:12,y:8,hp:80,mp:60,int:36,atk:15,def:9,mov:4,strats:['bolt'],awakeR:6,crit:.05,drop:'danyao'}),
+      U({name:'黄巾妖师',g:'妖',cls:'妖术',kind:'sorcerer',side:'E',x:14,y:10,hp:80,mp:60,int:36,atk:15,def:9,mov:4,strats:['bolt'],awakeR:7,crit:.05}),
+      U({name:'管亥',g:'亥',cls:'贼首',kind:'chief',side:'E',x:13,y:9,hp:185,atk:34,def:17,mov:5,boss:true,awakeR:4,crit:.16,drop:'lingzhi'}),
+    ];}},
+   {title:'第五章 · 宛城之战',boss:'张绣',map:[
+      "..t.....r...cccc..",".h......r...cccc..","........r...cccc..","..f..t..r....h....",
+      ".....tt.r.........","..h.....r.....t...","rrrrrrrrrrrrrrrrrr","....f...r..h......",
+      ".ff.....r......h..","f.......r...t.....",".f......r......tt.","........r.....t..."],
+    spawns:[[2,6],[1,6],[2,7],[3,6],[3,7],[1,5],[3,5]],
+    intro:[['建安二年，曹操南征宛城。张绣据城，贾诩为其画策。','sys'],['贾诩善用火计，切勿聚于一处！','sys'],['胡车儿觊觎典韦双戟——提防暗算。','sys']],
+    winPre:'宛城克定 · 霸业初成',
+    winSub:t=>`第 ${t} 回合降张绣、收贾诩。<br>「设使国家无有孤，不知几人称帝几人称王。」<br>——五章战记完结，感谢游玩！`,
+    nextBtn:'从 头 再 战',
+    shop:['bawang','baiyu','bintie','bingshu','shangyao','lingzhi','danyao'],
+    treasures:[{x:1,y:1,item:'danyao'},{x:2,y:5,item:'lingzhi'},{x:13,y:3,gold:400},{x:11,y:7,item:'shangyao'},{x:15,y:8,gold:500}],
+    enemies(){return [
+      U({name:'宛城枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:10,y:3,hp:125,atk:28,def:16,mov:5,awakeR:6}),
+      U({name:'宛城枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:10,y:7,hp:125,atk:28,def:16,mov:5,awakeR:6}),
+      U({name:'宛城弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',fac:'dong',x:12,y:6,hp:95,atk:26,def:10,mov:5,rngMin:2,rngMax:2,awakeR:6}),
+      U({name:'宛城弓手',g:'弓',cls:'弓手',kind:'archer',side:'E',fac:'dong',x:8,y:9,hp:95,atk:26,def:10,mov:5,rngMin:2,rngMax:2,awakeR:6}),
+      U({name:'西凉骑兵',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:6,y:8,hp:115,atk:30,def:12,mov:6,mounted:true,crit:.15,awakeR:5}),
+      U({name:'西凉骑兵',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:14,y:8,hp:115,atk:30,def:12,mov:6,mounted:true,crit:.15,awakeR:6}),
+      U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'dong',x:14,y:2,hp:85,atk:40,def:7,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
+      U({name:'胡车儿',g:'胡',cls:'猛将',kind:'guard',side:'E',fac:'dong',x:12,y:4,hp:150,atk:33,def:16,mov:6,rngShape:'square',awakeR:5,crit:.18,drop:'hudan'}),
+      U({name:'贾诩',g:'诩',cls:'军师',kind:'adv',side:'E',fac:'dong',x:13,y:2,hp:95,mp:80,int:42,atk:15,def:10,mov:4,strats:['fire'],awakeR:5,crit:.05,drop:'bingshu'}),
+      U({name:'张绣',g:'绣',cls:'猛将',kind:'chief',side:'E',fac:'dong',x:14,y:1,hp:190,atk:35,def:18,mov:6,boss:true,awakeR:4,crit:.18,drop:'bawang'}),
+    ];}},
+  ],
+  bag:{tiejian:1,changmao:1,sangmu:1,yushan:1,pijia:2,xue:1,shangyao:3,danyao:1},
+  diffs:[{n:'仁义',m:.85},{n:'枭雄',m:1},{n:'修罗',m:1.2}],
+  clsTraitPatch:{'虎卫':'双戟横扫 · 九宫格八方攻击','贼将':'黄巾悍将','贼首':'黄巾主帅 · 击破即胜'},
+};
+let activeCamp=CAMP_ZHAOYUN;
+function selectCampaign(camp){
+  activeCamp=camp;
+  CHAPTERS=camp.chapters; PLAYER_BASE=camp.playerBase;
+  DUELS=camp.duels; LAST_WORDS=camp.lastWords; ULTS=camp.ults;
+  AMBUSH_LINES=camp.ambush||{};
+  campColor=camp.color; campName=camp.faction; campLeader=camp.leader;
+  DIFFS.splice(0,DIFFS.length,...camp.diffs);
+  bag={...camp.bag}; gold=500;
+  document.querySelector('h1').innerHTML=camp.title+'<span class="seal">'+camp.seal+'</span>';
+  document.getElementById('campPre').textContent=camp.pre;
+  document.getElementById('campBig').innerHTML=camp.big;
+  document.getElementById('campSub').innerHTML=camp.sub;
+  const wm=document.querySelector('#overlay::after');
+  document.querySelector('style').textContent=document.querySelector('style').textContent.replace(/content:'[蜀魏]'/,`content:'${camp.watermark}'`);
+  document.querySelectorAll('[data-camp]').forEach(b=>b.classList.toggle('active',b.dataset.camp===camp.key));
+  document.querySelectorAll('.diffBtn[data-d]').forEach((b,i)=>{
+    b.childNodes[0].textContent=camp.diffs[i].n.split('').join(' ');
+    b.querySelector('i').textContent=i===0?'敌方较弱 · 轻松行军':i===1?'标准 · 原汁原味':'敌方强化 · 步步惊心';
+  });
+  roster=[];
+  const row=document.getElementById('heroRow');
+  row.innerHTML='';
+  PLAYER_BASE.forEach((o,i)=>{
+    const c=document.createElement('canvas');
+    c.width=58;c.height=74;
+    row.appendChild(c);
+    drawPortrait(c,U({...o}),i*173);
+  });
+  MAP=CHAPTERS[0].map;
+  renderBase();
+}
+document.querySelectorAll('[data-camp]').forEach(b=>b.onclick=()=>{
+  if(AC)sfx.select();
+  selectCampaign(b.dataset.camp==='caocao'?CAMP_CAOCAO:CAMP_ZHAOYUN);
+});
+
+selectCampaign(CAMP_ZHAOYUN);
 document.getElementById('startBtn').onclick=()=>{
   initAudio();
   sfx.select();
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
-  initBag();
+  bag={...activeCamp.bag};gold=500;
   openPrep(0);
 };
 const contBtn=document.getElementById('contBtn');
@@ -3606,7 +3857,6 @@ if(loadGame()||loadBattle())contBtn.style.display='';
 contBtn.onclick=()=>{
   initAudio();
   sfx.select();
-  // 优先恢复战斗中存档（更精确），其次章节存档
   const b=loadBattle();
   if(b){
     document.getElementById('overlay').classList.add('hidden');
@@ -3616,21 +3866,11 @@ contBtn.onclick=()=>{
   const sv=loadGame();
   if(!sv)return;
   document.getElementById('overlay').classList.add('hidden');
-  roster=[];initBag();ensureRoster();
+  roster=[];bag={...activeCamp.bag};gold=500;ensureRoster();
   restoreRoster(sv.snap);
   setDiff(sv.diffIdx??1);
   openPrep(Math.min(sv.chap,CHAPTERS.length-1));
 };
-/* 首页武将立绘 */
-(function(){
-  const row=document.getElementById('heroRow');
-  PLAYER_BASE.forEach((o,i)=>{
-    const c=document.createElement('canvas');
-    c.width=58;c.height=74;
-    row.appendChild(c);
-    drawPortrait(c,U({...o}),i*173);
-  });
-})();
 requestAnimationFrame(loop);
 </script>
 </body>
