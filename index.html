@@ -353,6 +353,57 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 }
 .deerflow-badge:hover{color:var(--gold);border-color:rgba(201,162,39,.6)}
 
+/* 军务菜单（存档/读档/返回主页） */
+#sysBtn{
+  font-family:var(--display);font-size:15px;letter-spacing:4px;
+  background:linear-gradient(170deg,#3d3526,#241f15);color:var(--paper);
+  border:1px solid rgba(201,162,39,.3);border-radius:4px;
+  padding:9px 0;width:100%;cursor:pointer;margin-top:8px;
+  transition:border-color .15s;
+}
+#sysBtn:hover{border-color:rgba(201,162,39,.6)}
+#sysBtn:disabled{opacity:.4;cursor:default}
+#sysMenu{
+  position:fixed;inset:0;z-index:82;display:flex;align-items:center;justify-content:center;
+  background:rgba(13,10,7,.82);
+}
+#sysMenu.hidden{display:none}
+#sysMenu .sinner{
+  width:min(540px,92vw);
+  background:linear-gradient(170deg,#262017,#171310);
+  border:1px solid rgba(201,162,39,.5);border-radius:6px;
+  padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.7);
+  animation:popIn .3s ease both;
+}
+#sysMenu h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
+#sysMenu .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
+.slot{
+  display:flex;justify-content:space-between;align-items:center;
+  border:1px solid rgba(201,162,39,.25);border-radius:4px;
+  padding:8px 12px;margin-bottom:8px;background:rgba(232,220,192,.04);
+}
+.slot .sinfo{font-size:13px;line-height:1.7;color:var(--paper)}
+.slot .sinfo b{font-family:var(--display);font-weight:400;letter-spacing:2px;color:var(--gold)}
+.slot .stime{color:var(--paper-dim);font-size:11.5px}
+.slot .sbtns{flex:0 0 auto}
+.slot button{
+  font-family:var(--display);font-size:15px;letter-spacing:2px;padding:5px 14px;margin-left:8px;cursor:pointer;
+  background:linear-gradient(170deg,#6b4f1d,#4a350f);color:#f4e9d0;
+  border:1px solid rgba(201,162,39,.4);border-radius:3px;
+}
+.slot button:hover:not(:disabled){background:linear-gradient(170deg,#8d6a27,#5e4413)}
+.slot button:disabled{opacity:.35;cursor:default}
+.srow2{display:flex;gap:12px;margin-top:16px}
+.srow2 button{
+  flex:1;font-family:var(--display);font-size:17px;letter-spacing:4px;
+  padding:10px 0;cursor:pointer;color:#f4e9d0;border-radius:4px;
+  border:1px solid rgba(244,233,208,.25);
+}
+#backHome{background:linear-gradient(170deg,#7e2b21,#5c1e16)}
+#backHome:hover{box-shadow:0 4px 14px rgba(176,58,46,.4)}
+#closeMenu{background:linear-gradient(170deg,#3d3526,#241f15)}
+#closeMenu:hover{border-color:rgba(201,162,39,.5)}
+
 @media (max-width:1520px){
   .main{flex-direction:column}
   .stage{align-self:center;max-width:100%}
@@ -384,6 +435,11 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   #endTurn{ /* 拇指可达的悬浮按钮 */
     position:fixed;right:10px;bottom:10px;z-index:50;width:auto;
     padding:10px 18px;font-size:17px;letter-spacing:4px;border-radius:24px;
+    box-shadow:0 6px 18px rgba(0,0,0,.55);
+  }
+  #sysBtn{
+    position:fixed;left:10px;bottom:10px;z-index:50;width:auto;margin-top:0;
+    padding:10px 16px;font-size:14px;letter-spacing:2px;border-radius:24px;
     box-shadow:0 6px 18px rgba(0,0,0,.55);
   }
   #menu{min-width:150px}
@@ -447,6 +503,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
         <div id="log"></div>
       </div>
       <button id="endTurn">回合结束</button>
+      <button id="sysBtn">军务 · 存档 / 主页</button>
       <div class="hint">
         <span class="b">蓝＝移动范围</span>　<span class="r">红＝移动后可攻范围</span>　<span style="color:#e8c655">黄框＝当前位置攻击距离</span><br>
         张飞九宫格 · 投石车十字直射 2~3 · 弓手隔格射 · 骑克步、枪克骑<br>
@@ -475,6 +532,18 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   </div>
 </div>
 
+<div id="sysMenu" class="hidden">
+  <div class="sinner">
+    <h2>军 务</h2>
+    <div class="snote">战局每回合自动保存（继续按钮可恢复）；此处可手动存档至槽位长期保留，或读取旧档。</div>
+    <div id="slotList"></div>
+    <div class="srow2">
+      <button id="backHome">返 回 主 页</button>
+      <button id="closeMenu">继 续 作 战</button>
+    </div>
+  </div>
+</div>
+
 <div id="overlay">
   <div class="frameline"></div>
   <div class="inner">
@@ -491,7 +560,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
       <button class="diffBtn active" data-d="1">虎 将<i>标准 · 原汁原味</i></button>
       <button class="diffBtn" data-d="2">修 罗<i>敌方强化 · 步步惊心</i></button>
     </div>
-    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button></div>
+    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button><button id="loadBtn">读 档</button></div>
   </div>
 </div>
 
@@ -1612,9 +1681,10 @@ function finish(win){
     if(win)sfx.victory();else sfx.defeat();
     const ov=document.getElementById('overlay');
     const btn=document.getElementById('startBtn');
-    document.getElementById('diffRow').style.display='none'; // 结算画面不显示难度/继续/立绘
+    document.getElementById('diffRow').style.display='none'; // 结算画面不显示难度/继续/立绘/战役选择
     document.getElementById('contBtn').style.display='none';
     document.getElementById('heroRow').style.display='none';
+    document.getElementById('campRow').style.display='none';
     ov.classList.remove('hidden');
     if(win){
       ov.querySelector('.pre').textContent=ch.winPre;
@@ -1632,7 +1702,7 @@ function finish(win){
       btn.onclick=()=>{
         sfx.select();
         ov.classList.add('hidden');
-        if(last){roster=[];initBag();openPrep(0);}
+        if(last){roster=[];bag={...activeCamp.bag};gold=500;openPrep(0);}
         else openPrep(chap+1);
       };
     }else{
@@ -3391,6 +3461,7 @@ function loop(t){
   ctx.restore();
   updateHud();
   document.getElementById('endTurn').disabled=!(state==='idle'&&phase==='P'&&!ended);
+  document.getElementById('sysBtn').disabled=!(state==='idle'&&phase==='P'&&!ended);
   requestAnimationFrame(loop);
 }
 
@@ -3532,7 +3603,7 @@ document.querySelectorAll('.diffBtn').forEach(b=>b.onclick=()=>{
 
 /* 存档（每章通关自动保存） */
 function saveGame(nextChap){
-  try{localStorage.setItem('zhaoyun_save',JSON.stringify({chap:nextChap,snap:snapshotRoster(),diffIdx}));}catch(e){}
+  try{localStorage.setItem('zhaoyun_save',JSON.stringify({camp:activeCamp.key,chap:nextChap,snap:snapshotRoster(),diffIdx}));}catch(e){}
 }
 function loadGame(){
   try{
@@ -3542,10 +3613,9 @@ function loadGame(){
 }
 /* 战斗中实时存档：每次行动/每回合自动保存，可中途关页恢复 */
 const BKEY='zhaoyun_battle';
-function saveBattle(){
-  if(ended)return;
-  try{
-    localStorage.setItem(BKEY,JSON.stringify({
+function battlePayload(){
+  return {
+      camp:activeCamp.key,
       chap,diffIdx,turn,gold,bag,
       treasures,
       duels:[...seenDuels],
@@ -3558,8 +3628,11 @@ function saveBattle(){
         awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,
         equip:u.equip,drop:u.drop,
       })),
-    }));
-  }catch(e){}
+  };
+}
+function saveBattle(){
+  if(ended)return;
+  try{localStorage.setItem(BKEY,JSON.stringify(battlePayload()));}catch(e){}
 }
 function loadBattle(){
   try{
@@ -3569,6 +3642,7 @@ function loadBattle(){
 }
 function clearBattle(){try{localStorage.removeItem(BKEY);}catch(e){}}
 function resumeBattle(d){
+  if(d.camp&&d.camp!==activeCamp.key)selectCampaign(d.camp==='caocao'?CAMP_CAOCAO:CAMP_ZHAOYUN);
   chap=d.chap;
   setDiff(d.diffIdx??1);
   MAP=CHAPTERS[chap].map;
@@ -3844,14 +3918,15 @@ document.querySelectorAll('[data-camp]').forEach(b=>b.onclick=()=>{
 });
 
 selectCampaign(CAMP_ZHAOYUN);
-document.getElementById('startBtn').onclick=()=>{
+function startNewRun(){
   initAudio();
   sfx.select();
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
   bag={...activeCamp.bag};gold=500;
   openPrep(0);
-};
+}
+document.getElementById('startBtn').onclick=startNewRun;
 const contBtn=document.getElementById('contBtn');
 if(loadGame()||loadBattle())contBtn.style.display='';
 contBtn.onclick=()=>{
@@ -3865,12 +3940,112 @@ contBtn.onclick=()=>{
   }
   const sv=loadGame();
   if(!sv)return;
+  if(sv.camp&&sv.camp!==activeCamp.key)selectCampaign(sv.camp==='caocao'?CAMP_CAOCAO:CAMP_ZHAOYUN);
   document.getElementById('overlay').classList.add('hidden');
   roster=[];bag={...activeCamp.bag};gold=500;ensureRoster();
   restoreRoster(sv.snap);
   setDiff(sv.diffIdx??1);
   openPrep(Math.min(sv.chap,CHAPTERS.length-1));
 };
+
+/* ===================== 军务菜单：存档槽位 / 读档 / 返回主页 ===================== */
+const SLOTKEY=i=>'sanguo_slot_'+i;
+function readSlot(i){
+  try{
+    const d=JSON.parse(localStorage.getItem(SLOTKEY(i)));
+    return (d&&d.units&&d.chap!=null)?d:null;
+  }catch(e){return null;}
+}
+function renderSlots(){
+  const host=document.getElementById('slotList');
+  const inBattle=units.length>0&&!ended&&state!=='title';
+  const pad=n=>String(n).padStart(2,'0');
+  let html='';
+  for(let i=1;i<=3;i++){
+    const d=readSlot(i);
+    if(d){
+      const camp=d.camp==='caocao'?CAMP_CAOCAO:CAMP_ZHAOYUN;
+      const title=(camp.chapters[d.chap]&&camp.chapters[d.chap].title)||'';
+      const t=new Date(d.time||0);
+      const ts=d.time?`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`:'';
+      html+=`<div class="slot">
+        <div class="sinfo"><b>槽位 ${i}</b>　${camp.seal} · ${title} · 第 ${d.turn} 回合<br><span class="stime">${ts}</span></div>
+        <div class="sbtns"><button data-save="${i}" ${inBattle?'':'disabled'}>存</button><button data-load="${i}">读</button></div>
+      </div>`;
+    }else{
+      html+=`<div class="slot">
+        <div class="sinfo"><b>槽位 ${i}</b>　<span class="stime">—— 空 ——</span></div>
+        <div class="sbtns"><button data-save="${i}" ${inBattle?'':'disabled'}>存</button><button disabled>读</button></div>
+      </div>`;
+    }
+  }
+  host.innerHTML=html;
+}
+const sysMenuEl=document.getElementById('sysMenu');
+function openSysMenu(fromTitle){
+  renderSlots();
+  document.getElementById('backHome').style.display=fromTitle?'none':'';
+  sysMenuEl.classList.remove('hidden');
+}
+function closeSysMenu(){sysMenuEl.classList.add('hidden');}
+document.getElementById('sysBtn').onclick=()=>{
+  if(state!=='idle'||ended)return;
+  if(AC)sfx.select();
+  openSysMenu(false);
+};
+document.getElementById('loadBtn').onclick=()=>{
+  initAudio();
+  sfx.select();
+  openSysMenu(true);
+};
+document.getElementById('closeMenu').onclick=()=>{
+  if(AC)sfx.select();
+  closeSysMenu();
+};
+document.getElementById('slotList').addEventListener('click',e=>{
+  const btn=e.target.closest('button');
+  if(!btn||btn.disabled)return;
+  if(btn.dataset.save){
+    const d=battlePayload();
+    d.time=Date.now();
+    try{localStorage.setItem(SLOTKEY(btn.dataset.save),JSON.stringify(d));}catch(e2){}
+    sfx.coin();
+    renderSlots();
+    log(`已存档至槽位 ${btn.dataset.save}`,'sys');
+  }else if(btn.dataset.load){
+    const d=readSlot(btn.dataset.load);
+    if(!d)return;
+    sfx.select();
+    closeSysMenu();
+    document.getElementById('overlay').classList.add('hidden');
+    document.getElementById('prep').classList.add('hidden');
+    resumeBattle(d);
+    saveBattle(); // 同步自动存档到读取后的局面
+  }
+});
+function goHome(){
+  saveBattle(); // 离开前保留战局，可从「继续」恢复
+  hideMenu();clearSel();threat=null;
+  units=[];floaters=[];particles=[];shakeT=0;flashT=0;
+  state='title';ended=false;
+  closeSysMenu();
+  selectCampaign(activeCamp); // 还原标题页文案/立绘/预览地图
+  const btn=document.getElementById('startBtn');
+  btn.textContent='出 阵';
+  btn.onclick=startNewRun;
+  document.getElementById('diffRow').style.display='';
+  document.getElementById('heroRow').style.display='';
+  document.getElementById('campRow').style.display='';
+  contBtn.style.display=(loadGame()||loadBattle())?'':'none';
+  document.getElementById('overlay').classList.remove('hidden');
+}
+document.getElementById('backHome').onclick=()=>{
+  if(AC)sfx.select();
+  goHome();
+};
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!sysMenuEl.classList.contains('hidden'))closeSysMenu();
+});
 requestAnimationFrame(loop);
 </script>
 </body>
