@@ -641,7 +641,9 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <div class="phead">行情每章浮动 ±40%（<span style="color:#9fc068">绿=低价宜囤</span>　<span style="color:#e8845a">红=高价宜抛</span>）；货舱运力 20。</div>
     <div id="prepTrade"></div>
     <h3 class="sec">锻造坊 · 淬火砺刃</h3>
-    <div class="phead">按武器种类强化，全军同名武器共享；每级武力 +2，至多 +3，越锻越贵。</div>
+    <div class="phead">按武器种类强化、全军同名共享，至多 <b style="color:var(--gold)">+9</b>：+1~3 每级武+2，+4~6 每级武+3，+7~9 每级武+4。
+    <b style="color:#e8845a">越高成功率越低，+6 起失败会掉一级</b>；「转锻」可把锻造层级继承给新武器（100金/级）。</div>
+    <div class="phead" id="forgeMsg" style="display:none"></div>
     <div id="prepForge"></div>
     <div style="display:flex;gap:10px;align-items:center">
       <button id="prepGo" style="flex:1">出 阵</button>
@@ -1639,12 +1641,31 @@ function itemDesc(k){
   if(it.mov)p.push('移动+'+it.mov);
   if(it.crit)p.push('暴击+'+Math.round(it.crit*100)+'%');
   if(it.srng)p.push('策略范围+'+it.srng);
-  if(forge[k])p.push('锻+'+forge[k]+'（武力再+'+forge[k]*2+'）');
+  if(forge[k])p.push('锻+'+forge[k]+'（武力再+'+forgeBonus(forge[k])+'）');
   if(it.legend)p.push(`★神兵 · ${it.owner}专属：武力再+${it.ownerAtk}，${it.fxDesc}`);
   return p.join('　');
 }
 let bag={}, gold=500;
-let forge={}; // 锻造层级（按武器种类，全军生效，每级武力+2，上限+3）
+let forge={}; // 锻造层级（按武器种类，全军共享）。上限+9：越高成功率越低、加成越大，+6起失败掉级
+const FORGE_MAX=9;
+const FORGE_RATE=[1,.95,.85,.7,.55,.45,.35,.25,.15]; // 第 lv→lv+1 次淬火成功率
+function forgeBonus(lv){let b=0;for(let i=1;i<=(lv||0);i++)b+=i<=3?2:i<=6?3:4;return b;} // 累计武力加成
+function forgeCost(k){const lv=forge[k]||0;return Math.round(ITEMS[k].price*.6*Math.pow(1.5,lv)/(talentOn('t_forge')?2:1)/50)*50;}
+/* 淬火一次：扣费并掷成功率；+6 起失败掉一级 */
+function attemptForge(k){
+  const lv=forge[k]||0;
+  if(lv>=FORGE_MAX)return {ok:false,full:true};
+  const cost=forgeCost(k);
+  if(gold<cost)return {ok:false,poor:true};
+  gold-=cost;
+  if(Math.random()<FORGE_RATE[lv]){
+    forge[k]=lv+1;
+    return {ok:true,lv:lv+1};
+  }
+  const drop=lv>=5;
+  if(drop)forge[k]=lv-1;
+  return {ok:false,drop,lv:forge[k]||0};
+}
 let runTurns=0, ngPlus=0; // 本周目累计回合数 / 周目数（多周目敌军额外强化）
 let escapedN=0; // 护送战：已抵达出口的百姓/粮车数
 let barrels=[]; // 战场机关：火油桶（攻击引爆，3×3 烈焰，敌我不分，可连环）
@@ -1807,7 +1828,7 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
   if(u.equip)for(const sl of ['wp','ar','ac']){
     const k=u.equip[sl], it=k&&ITEMS[k];
     if(it&&it[stat])v+=it[stat];
-    if(sl==='wp'&&stat==='atk'&&k&&forge[k])v+=forge[k]*2;
+    if(sl==='wp'&&stat==='atk'&&k&&forge[k])v+=forgeBonus(forge[k]);
     if(sl==='wp'&&stat==='atk'&&it&&it.legend&&it.owner===u.name)v+=it.ownerAtk||0; // 神兵认主
     if(it&&it.legend&&it.owner===u.name&&it.ownerBonus&&it.ownerBonus[stat])v+=it.ownerBonus[stat]; // 名宝认主
   }
@@ -5733,11 +5754,22 @@ function renderPrep(animate){
   document.getElementById('prepForge').innerHTML=wkeys.length
     ?'<div class="shopgrid">'+wkeys.map(k=>{
       const lv=forge[k]||0;
-      const cost=Math.round(ITEMS[k].price*.6*Math.pow(2,lv)/(talentOn('t_forge')?2:1)/50)*50;
-      return `<div class="shopcard">
-        <div class="sname">${ITEMS[k].n}${lv?` <span style="color:#ffd24a">+${lv}</span>`:''}</div>
-        <div class="sdesc">${itemDesc(k)}</div>
-        <div class="srow"><span class="price">${lv>=3?'已至极限':cost+' 金'}</span><button data-forge="${k}" ${(lv>=3||gold<cost)?'disabled':''}>淬 火</button></div>
+      const cost=forgeCost(k);
+      const rate=lv<FORGE_MAX?Math.round(FORGE_RATE[lv]*100):0;
+      const risky=lv>=5;
+      const moving=forgeMove&&forgeMove!==k;
+      const moveFee=forgeMove?100*(forge[forgeMove]||0):0;
+      return `<div class="shopcard" style="${forgeMove===k?'border-color:#8fc4e8;box-shadow:0 0 10px rgba(140,200,255,.3)':''}">
+        <div class="sname">${ITEMS[k].n}${lv?` <span style="color:#ffd24a">+${lv}</span>`:''}${forgeMove===k?' <span style="color:#8fc4e8">转出中…</span>':''}</div>
+        <div class="sdesc">${itemDesc(k)}${lv<FORGE_MAX?`<br>下次成功率 <b style="color:${rate>=70?'#9fc068':rate>=45?'#e8c655':'#e8845a'}">${rate}%</b>${risky?' <b style="color:#e8845a">失败掉级！</b>':''}`:'<br><b style="color:var(--gold)">已臻化境（+9）</b>'}</div>
+        <div class="srow">
+          <span class="price">${lv>=FORGE_MAX?'—':cost+' 金'}</span>
+          <span>
+          ${moving?`<button data-frecv="${k}" ${gold>=moveFee?'':'disabled'}>接收（${moveFee}金）</button>`
+            :`<button data-forge="${k}" ${(lv>=FORGE_MAX||gold<cost)?'disabled':''}>淬 火</button>
+              ${lv>0?`<button data-fmove="${k}">${forgeMove===k?'取消':'转 锻'}</button>`:''}`}
+          </span>
+        </div>
       </div>`;
     }).join('')+'</div>'
     :'<span class="chip" style="opacity:.5">暂无可锻造的武器</span>';
@@ -5781,16 +5813,52 @@ document.getElementById('prepTrade').addEventListener('click',e=>{
   sfx.coin();
   renderPrep(false);
 });
+let forgeMove=null; // 转锻：待转出的武器
+function forgeFlash(msg,good){
+  const el=document.getElementById('forgeMsg');
+  el.style.display='';
+  el.innerHTML=`<b style="color:${good?'#9fc068':'#e8845a'}">${msg}</b>`;
+}
 document.getElementById('prepForge').addEventListener('click',e=>{
-  const btn=e.target.closest('button[data-forge]');
-  if(!btn||btn.disabled)return;
-  const k=btn.dataset.forge, lv=forge[k]||0;
-  const cost=Math.round(ITEMS[k].price*.6*Math.pow(2,lv)/(talentOn('t_forge')?2:1)/50)*50;
-  if(lv>=3||gold<cost)return;
-  gold-=cost;
-  forge[k]=lv+1;
-  sfx.levelup();
-  renderPrep(false);
+  const fb=e.target.closest('button[data-forge]');
+  if(fb&&!fb.disabled){
+    const k=fb.dataset.forge;
+    const r=attemptForge(k);
+    if(r.ok){
+      sfx.levelup();
+      forgeFlash(`叮——【${ITEMS[k].n}】淬火成功，锻 +${r.lv}！（武力再+${forgeBonus(r.lv)}）`,true);
+    }else if(r.drop){
+      sfx.bolt();
+      forgeFlash(`铛！火候失了——【${ITEMS[k].n}】淬火失败，锻造跌至 +${r.lv}……`,false);
+    }else if(!r.poor&&!r.full){
+      sfx.hit();
+      forgeFlash(`【${ITEMS[k].n}】淬火失败，费用打了水漂（等级未损）。`,false);
+    }
+    renderPrep(false);
+    return;
+  }
+  const mb=e.target.closest('button[data-fmove]');
+  if(mb){
+    const k=mb.dataset.fmove;
+    forgeMove=forgeMove===k?null:k;
+    sfx.select();
+    renderPrep(false);
+    return;
+  }
+  const rb=e.target.closest('button[data-frecv]');
+  if(rb&&!rb.disabled&&forgeMove){
+    const src=forgeMove, dst=rb.dataset.frecv;
+    const fee=100*(forge[src]||0);
+    if(gold<fee)return;
+    gold-=fee;
+    forge[dst]=Math.max(forge[dst]||0,forge[src]||0);
+    forge[src]=0;
+    forgeMove=null;
+    sfx.coin();
+    forgeFlash(`匠人妙手——【${ITEMS[dst].n}】继承了锻造层级（+${forge[dst]}）！`,true);
+    renderPrep(false);
+    return;
+  }
 });
 document.getElementById('prepShop').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-buy]');
@@ -6132,7 +6200,7 @@ function rollEvent(){
     const owned=[...new Set([
       ...Object.keys(bag).filter(k=>ITEMS[k].slot==='wp'&&bag[k]>0),
       ...roster.map(u=>u.equip&&u.equip.wp).filter(Boolean),
-    ])].filter(k=>(forge[k]||0)<3);
+    ])].filter(k=>(forge[k]||0)<FORGE_MAX);
     const k=owned[Math.floor(Math.random()*owned.length)];
     if(k){forge[k]=(forge[k]||0)+1;return `军中老匠为【${ITEMS[k].n}】免费淬火 → 锻+${forge[k]}`;}
     gold+=150;return '工匠无事可做，帮忙变卖杂物得 +150 金';
