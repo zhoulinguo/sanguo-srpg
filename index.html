@@ -1889,6 +1889,7 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
     if(stat==='mov'&&TAL.has('t_mov'))v+=1;
     if(stat==='mov'&&TAL.has('t4_cloud'))v+=2; // 筋斗云
   }
+  if(u.side==='P'&&!u.npc&&stat==='mov'&&rbHas(u,'movP2'))v+=2; // 转生·风驰电掣
   if(stat==='mov'&&curWeather()==='snow')v=Math.max(2,v-1);
   if(stat==='mov'&&hasStatus(u,'slow'))v=Math.max(1,v-2);
   if(stat==='mov')v=Math.max(1,v);
@@ -1954,6 +1955,7 @@ function legendFx(u){
   const k=u&&u.equip&&u.equip.wp, it=k&&ITEMS[k];
   return (it&&it.legend&&it.owner===u.name)?it.fx:null;
 }
+function extraReach(u){return (legendFx(u)==='reach'?1:0)+(typeof rbHas==='function'&&rbHas(u,'reach')?1:0);}
 function gearFx(u,fx){
   if(!u||!u.equip)return false;
   for(const sl of ['ar','ac']){
@@ -1968,12 +1970,12 @@ function shapeOk(u,dx,dy){
   if(u.rngShape==='square')d=Math.max(ax,ay);
   else if(u.rngShape==='cross'){if(ax>0&&ay>0)return false;d=ax+ay;}
   else d=ax+ay;
-  const rmax=u.rngMax+(legendFx(u)==='reach'?1:0);
+  const rmax=u.rngMax+extraReach(u);
   return d>=u.rngMin&&d<=rmax;
 }
 function offsetsFor(u){
   const out=[];
-  const rm=u.rngMax+(legendFx(u)==='reach'?1:0);
+  const rm=u.rngMax+extraReach(u);
   for(let dx=-rm;dx<=rm;dx++)for(let dy=-rm;dy<=rm;dy++){
     if(dx===0&&dy===0)continue;
     if(shapeOk(u,dx,dy))out.push([dx,dy]);
@@ -1981,7 +1983,7 @@ function offsetsFor(u){
   return out;
 }
 function rngLabel(u){
-  const rm=u.rngMax+(legendFx(u)==='reach'?1:0);
+  const rm=u.rngMax+extraReach(u);
   const r=u.rngMin===rm?String(rm):`${u.rngMin}~${rm}`;
   if(u.rngShape==='square')return '九宫格';
   if(u.rngShape==='cross')return `十字${r}`;
@@ -2071,6 +2073,7 @@ function stratRng(u,s){ // 法术范围 = 基础 + 扇笛等装备增程 + 转�
   }
   if(u.srng)r+=u.srng;
   if(u.side==='P'&&!u.npc&&talentOn('t4_laojun'))r+=1;
+  if(rbHas(u,'srng1'))r+=1; // 转生·玄思入微
   return r;
 }
 /* ===================== 转职（Lv15 解锁，按兵种一次性强化） ===================== */
@@ -2460,6 +2463,8 @@ function dmgRange(a,d){
   if(a.side==='P'&&!a.npc&&retryN>0)base*=retryMul();   // 越挫越勇：增伤
   if(d.side==='P'&&!d.npc&&retryN>0)base*=retryGuard(); // 越挫越勇：减伤
   if(a.side==='P'&&!a.npc&&talentOn('t4_asura'))base*=1.15; // 修罗契约：增伤
+  if(rbHas(a,'dmgUp'))base*=1.15;   // 转生·天子剑气
+  if(rbHas(d,'tankDown'))base*=.85; // 转生·坚壁如山/百战余生
   if(d.side==='P'&&!d.npc&&talentOn('t4_asura'))base*=1.1;  // 修罗契约：代价
   if(d.side==='P'&&!d.npc&&talentOn('t4_bell'))base*=.9;    // 金钟罩
   if(shieldBlocks(a,d))base*=.4; // 盾卫正面：减伤六成
@@ -2471,7 +2476,7 @@ function rollDmg(a,d){
   const [lo,hi]=dmgRange(a,d);
   let dmg=lo+Math.random()*(hi-lo);
   const crit=Math.random()<critOf(a);
-  if(crit)dmg*=(a.rb>=3?2:1.5); // 灭世重瞳：暴伤翻倍
+  if(crit)dmg*=(rbHas(a,'critX2')?2:1.5); // 灭世重瞳：暴伤翻倍
   return {dmg:Math.max(1,Math.round(dmg)),crit};
 }
 function stratDmg(a,d,sk){
@@ -2482,6 +2487,7 @@ function stratDmg(a,d,sk){
     if(talentOn('t_spell'))v*=1.2;   // 太平残页
     if(talentOn('t4_laojun'))v*=1.4; // 太上老君亲传
   }
+  if(rbHas(a,'spell30'))v*=1.3;      // 转生·天机洞明
   return Math.max(1,Math.round(v));
 }
 
@@ -2597,14 +2603,61 @@ function addStat(u,dmg,killed){ // 章节战绩：伤害/击破数（MVP结算�
    经验需求随等级递增（越往后越慢），上限 Lv100；
    满级可转生：回 Lv1、保留转职/觉醒、属性留四成、成长 +25%/次，至多九转；
    第 1/3/7/9 转分别觉醒神级能力 */
-const LV_MAX=100, RB_MAX=9, RB_KEEP=.4;
-const RB_POWERS=[
-  {rb:1,n:'浴火涅槃',d:'每章开战怒气全满'},
-  {rb:3,n:'灭世重瞳',d:'暴击伤害 1.5 → 2 倍'},
-  {rb:7,n:'不灭金身',d:'每章免死一次（1 兵力撑住）'},
-  {rb:9,n:'时空缭乱',d:'每回合首次行动后可再动一次'},
-];
-function rbPowersOf(u){return RB_POWERS.filter(p=>(u.rb||0)>=p.rb);}
+const LV_MAX=100, RB_MAX=9, RB_KEEP=.6; // 保留六成：经测算回本约 32 级，深谷期可控
+/* 兵种专属转生神力：1/3 转按兵种分化，7/9 转统一为金身/双动两大盖帽 */
+const RB_KIND={
+  lord:[
+    {rb:1,fx:'rageArmy',n:'王者威仪',d:'每章开战全军怒气 +30'},
+    {rb:3,fx:'dmgUp',  n:'天子剑气',d:'造成伤害 +15%'},
+    {rb:7,fx:'golden', n:'真龙不灭',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'君临天下',d:'每回合首次行动后可再动一次'},
+  ],
+  cav:[
+    {rb:1,fx:'rageFull',n:'烈火骑魂',d:'每章开战怒气全满'},
+    {rb:3,fx:'movP2',  n:'风驰电掣',d:'移动 +2'},
+    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'神驹分影',d:'每回合首次行动后可再动一次'},
+  ],
+  hcav:[
+    {rb:1,fx:'reach',  n:'鹰眼',    d:'攻击距离 +1'},
+    {rb:3,fx:'critX2', n:'灭世重瞳',d:'暴击伤害 1.5 → 2 倍'},
+    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'连珠神射',d:'每回合首次行动后可再动一次'},
+  ],
+  spear:[
+    {rb:1,fx:'tankDown',n:'坚壁如山',d:'所受伤害 −15%'},
+    {rb:3,fx:'splash', n:'横扫千军',d:'攻击溅射相邻敌军四成伤害'},
+    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'枪出双影',d:'每回合首次行动后可再动一次'},
+  ],
+  adv:[
+    {rb:1,fx:'srng1',  n:'玄思入微',d:'法术范围 +1'},
+    {rb:3,fx:'spell30',n:'天机洞明',d:'法术伤害 +30%'},
+    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'周天再演',d:'每回合首次行动后可再动一次'},
+  ],
+  guard:[
+    {rb:1,fx:'rageFull',n:'怒火燎原',d:'每章开战怒气全满'},
+    {rb:3,fx:'splash', n:'横扫千军',d:'攻击溅射相邻敌军四成伤害'},
+    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'战神附体',d:'每回合首次行动后可再动一次'},
+  ],
+  vanguard:[
+    {rb:1,fx:'rageFull',n:'先登锐气',d:'每章开战怒气全满'},
+    {rb:3,fx:'critX2', n:'灭世重瞳',d:'暴击伤害 1.5 → 2 倍'},
+    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'影分身',  d:'每回合首次行动后可再动一次'},
+  ],
+  chief:[
+    {rb:1,fx:'tankDown',n:'百战余生',d:'所受伤害 −15%'},
+    {rb:3,fx:'vamp',   n:'嗜血',    d:'攻击吸血 25%'},
+    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:9,fx:'extra',  n:'死地再战',d:'每回合首次行动后可再动一次'},
+  ],
+};
+RB_KIND.brig=RB_KIND.chief;
+function rbPowersOf(u){return (RB_KIND[u.kind]||RB_KIND.chief).filter(p=>(u.rb||0)>=p.rb);}
+function rbHas(u,fx){return !!(u&&u.rb&&rbPowersOf(u).some(p=>p.fx===fx));}
 function expNeed(lv){return 100+lv*6;}
 function rbGrowth(rb){return {hp:Math.round(10*(1+(rb||0)*.25)),st:Math.round(2*(1+(rb||0)*.25))};}
 function doRebirth(u){
@@ -2622,7 +2675,7 @@ function doRebirth(u){
 function gainExp(u,amt){
   if(u.side!=='P'||!u.alive)return;
   if(u.lv>=LV_MAX){u.exp=0;return;} // 满级：唯转生可再进
-  u.exp+=Math.round(amt);
+  u.exp+=Math.round(amt*(1+(u.rb||0)*.15)); // 转生者经验加成：深谷期逐转缩短
   let need=expNeed(u.lv);
   while(u.exp>=need&&u.lv<LV_MAX){
     u.exp-=need;u.lv++;
@@ -2947,7 +3000,7 @@ async function doDamage(target,dmg,color='#ffd9c4'){
     await bossPhase(target);
   }
   if(target.hp<=0&&target.side==='P'&&!target.npc&&!target.temp){
-    if((target.rb||0)>=7&&!target.goldenUsed){
+    if(rbHas(target,'golden')&&!target.goldenUsed){
       target.goldenUsed=true;
       target.hp=1;
       sfx.heal();addHealFx(target.x,target.y);
@@ -3217,8 +3270,8 @@ async function doAttack(a,d){
     log(`<b>${a.name}</b> 顺手割走钱袋 <b>${st}</b> 金（击杀可双倍夺回）`,'hit');
     updateHud();
   }
-  // 精英词缀·吸血
-  if(a.affixDrain&&dmg>0&&a.alive&&a.hp<a.maxhp){
+  // 精英词缀·吸血 / 转生·嗜血
+  if((a.affixDrain||rbHas(a,'vamp'))&&dmg>0&&a.alive&&a.hp<a.maxhp){
     const hl=Math.min(Math.round(dmg*.3),a.maxhp-a.hp);
     if(hl>0){a.hp+=hl;addFloat(a.px,a.py-26,'+'+hl,'#b8e986');}
   }
@@ -3262,7 +3315,7 @@ async function doAttack(a,d){
     const adead=await doDamage(a,ref,'#e87a6a');
     if(adead||ended)return;
   }
-  if(lfx==='splash'){
+  if(lfx==='splash'||rbHas(a,'splash')){
     const around=units.filter(x=>x.alive&&x.side===d.side&&x!==d&&Math.max(Math.abs(x.x-d.x),Math.abs(x.y-d.y))<=1);
     for(const sp of around){
       const sd=Math.max(1,Math.round(dmg*.4));
@@ -3897,7 +3950,7 @@ async function finishAction(){
   if(selected&&selected.side==='P'&&selected.alive)checkTreasure(selected);
   if(selected){
     selected.acted=true;
-    if((selected.rb||0)>=9&&!selected.extraUsed&&selected.alive){ // 时空缭乱：再动！
+    if(rbHas(selected,'extra')&&!selected.extraUsed&&selected.alive){ // 双动神力：再动！
       selected.extraUsed=true;
       selected.acted=false;
       addFloat(selected.px,selected.py-34,'时空缭乱·再动！','#8fc4e8',true);
@@ -5897,7 +5950,7 @@ function startChapter(i){
   party.forEach((u,idx)=>{
     u.alive=true;u.fade=1;u.flash=0;u.acted=false;u.rage=0;u.kills=0;u.dmgSum=0;u.revUsed=false;u.status=[];u.guard=false;
     u.goldenUsed=false;u.extraUsed=false;
-    if((u.rb||0)>=1)u.rage=100; // 浴火涅槃
+    if(rbHas(u,'rageFull'))u.rage=100; // 烈火骑魂等
     u.hp=u.maxhp;u.mp=u.maxmp;
     u.x=ch.spawns[idx][0];u.y=ch.spawns[idx][1];
     u.px=(u.x+.5)*TILE;u.py=(u.y+.5)*TILE;
@@ -5968,6 +6021,7 @@ function startChapter(i){
   if(warOrder)log(`军情已布【${WAR_ORDERS[warOrder].n}】：${WAR_ORDERS[warOrder].desc}（本战生效）`,'good');
   if(barrels.length)log('战场上散落着<b>火油桶</b>——攻击引爆，3×3 烈焰敌我不分，亦会殃及相邻油桶！','sys');
   if(talentOn('t_rage')){party.forEach(u=>addRage(u,30));log('天赋【怒涛之势】发动：全军怒气 +30','good');}
+  if(party.some(u=>rbHas(u,'rageArmy'))){party.forEach(u=>addRage(u,30));log('转生神力【王者威仪】：全军怒气 +30','good');}
   if(talentOn('t_bean')){
     let bn=0;
     for(let bi=party.length;bi<ch.spawns.length&&bn<2;bi++){
@@ -6090,7 +6144,7 @@ function renderPrep(animate){
     else if(u.promoted&&!u.awakened&&aw)promoTag+=` <span style="color:rgba(232,220,192,.6)">Lv${AWAKE_LV} 可觉醒</span>`;
     const rb=u.rb||0;
     if(u.lv>=LV_MAX&&rb<RB_MAX){
-      promoTag+=` <button class="depBtn on" data-rb="${ri}" style="width:auto;padding:3px 10px;color:#ff6a9a;border-color:#ff6a9a" title="回到 Lv1：保留转职/觉醒，属性保留四成，成长+25%/转；第1/3/7/9转觉醒神级能力（涅槃满怒/暴伤2倍/免死金身/回合双动）">转 生 ✦ 第${rb+1}转</button>`;
+      promoTag+=` <button class="depBtn on" data-rb="${ri}" style="width:auto;padding:3px 10px;color:#ff6a9a;border-color:#ff6a9a" title="回到 Lv1：保留转职/觉醒，属性保留六成，成长+25%/转、经验+15%/转；第1/3/7/9转觉醒兵种专属神力（7转免死金身、9转回合双动）">转 生 ✦ 第${rb+1}转</button>`;
     }else if(u.lv>=LV_MAX){
       promoTag+=` <span style="color:#ff6a9a">九转功成 · 仙凡有别</span>`;
     }
@@ -6341,13 +6395,14 @@ document.getElementById('prepRoster').addEventListener('click',e=>{
   if(rbtn){
     const u=roster[+rbtn.dataset.rb];
     let yes=true;
-    try{yes=window.confirm(`${u.name} 第 ${(u.rb||0)+1} 次转生：\n回到 Lv1（保留转职/觉醒），属性保留四成，此后成长 +25%。\n确定凤凰涅槃？`);}catch(e2){}
+    try{yes=window.confirm(`${u.name} 第 ${(u.rb||0)+1} 次转生：\n回到 Lv1（保留转职/觉醒），属性保留六成，此后成长 +25%、经验获取 +15%。\n确定凤凰涅槃？`);}catch(e2){}
     if(!yes)return;
     if(doRebirth(u)){
       sfx.ult();
       const jl=document.getElementById('prepJoin');
       jl.style.display='';
-      jl.innerHTML=`<b style="color:#ff6a9a">${u.name} 凤凰涅槃——第 ${u.rb} 转！</b>${RB_POWERS.find(p=>p.rb===u.rb)?`觉醒神力【${RB_POWERS.find(p=>p.rb===u.rb).n}】：${RB_POWERS.find(p=>p.rb===u.rb).d}`:'成长再上一层。'}`;
+      const np=(RB_KIND[u.kind]||RB_KIND.chief).find(p=>p.rb===u.rb);
+      jl.innerHTML=`<b style="color:#ff6a9a">${u.name} 凤凰涅槃——第 ${u.rb} 转！</b>${np?`觉醒神力【${np.n}】：${np.d}`:'成长再上一层。'}`;
       renderPrep(false);
     }
     return;
