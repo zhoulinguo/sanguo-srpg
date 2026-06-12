@@ -395,20 +395,20 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 #sysBtn:disabled{opacity:.4;cursor:default}
 #fastBtn.on{color:#ffd24a;border-color:rgba(255,210,74,.6)}
 #dangerBtn.on{color:#e87a6a;border-color:rgba(212,121,106,.65)}
-#sysMenu,#codex{
+#sysMenu,#codex,#choice{
   position:fixed;inset:0;z-index:82;display:flex;align-items:center;justify-content:center;
   background:rgba(13,10,7,.82);
 }
-#sysMenu.hidden,#codex.hidden{display:none}
-#sysMenu .sinner,#codex .sinner{
+#sysMenu.hidden,#codex.hidden,#choice.hidden{display:none}
+#sysMenu .sinner,#codex .sinner,#choice .sinner{
   width:min(540px,92vw);
   background:linear-gradient(170deg,#262017,#171310);
   border:1px solid rgba(201,162,39,.5);border-radius:6px;
   padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.7);
   animation:popIn .3s ease both;
 }
-#sysMenu h2,#codex h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
-#sysMenu .snote,#codex .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
+#sysMenu h2,#codex h2,#choice h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
+#sysMenu .snote,#codex .snote,#choice .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
 #codex .sinner{width:min(680px,94vw);max-height:88vh;overflow-y:auto}
 #codex h3{font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:4px;color:var(--gold);margin:14px 0 6px;display:flex;align-items:center;gap:10px}
 #codex h3::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(201,162,39,.45),transparent)}
@@ -568,7 +568,8 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
       <div class="hint">
         <span class="b">蓝＝移动范围</span>　<span class="r">红＝移动后可攻范围</span>　<span style="color:#e8c655">黄框＝当前位置攻击距离</span><br>
         张飞九宫格 · 投石车十字直射 2~3 · 弓手隔格射 · 骑克步、枪克骑<br>
-        <span style="color:#ffb066">前后夹击伤害 ×1.3 · 羁绊武将相邻有加成（详见武将卡）· Lv15 备战时可转职</span><br>
+        <span style="color:#ffb066">前后夹击 ×1.3 · 羁绊并肩成长 C→B→A · 点敌将可「合击」一键围殴 · 「戒备」自动反击</span><br>
+        <span style="color:#e8a07a">火计/油桶留下燃烧地块 · 虎卫近战可击退（落水重创/撞物眩晕/撞桶殉爆） · 点敌将看「预计行动」</span><br>
         左键选择/移动　右键或 Esc 取消　点敌将或按「危险区」看威胁　<span style="color:#e8c655">金光处藏宝</span><br>
         手机：长按画面＝取消　攻击需点两次确认　战场可左右滑动
       </div>
@@ -607,6 +608,18 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
       <button id="backHome">返 回 主 页</button>
       <button id="closeMenu">继 续 作 战</button>
     </div>
+  </div>
+</div>
+
+<div id="choice" class="hidden">
+  <div class="sinner">
+    <h2>抉 择</h2>
+    <div class="snote" id="choiceQ" style="font-size:14px;line-height:2"></div>
+    <div class="srow2" style="flex-direction:column;gap:10px">
+      <button id="choiceA" style="text-align:left"></button>
+      <button id="choiceB" style="text-align:left"></button>
+    </div>
+    <div class="snote" style="margin-top:10px;margin-bottom:0">仁可感召降将（劝降门槛放宽），霸可立威三军（全军暴击+3%）——道路不同，结局亦不同。</div>
   </div>
 </div>
 
@@ -865,6 +878,9 @@ let CHAPTERS=[
   map:ZY_XIEMIN,
   weather:'rain',
   barrels:[[13,6]],
+  choice:{q:'虎豹骑迫近，扶老携幼的百姓拖慢了行军，众将请示——',
+    a:{t:'与民同行，不弃一人',dao:1,fx:()=>{bag.shangyao=(bag.shangyao||0)+2;return '军民同心，获赠【伤药】×2';}},
+    b:{t:'轻装疾进，命部曲断后掩护',dao:-1,fx:()=>{gold+=300;return '折卖辎重，军资 +300';}}},
   win:{type:'protect',tiles:[[20,6],[21,6]],need:2,desc:'护送至少 <em>2</em> 名百姓过桥抵达东岸（或击破 <em>曹纯</em>）'},
   npcs(){return [
     U({name:'百姓',g:'民',cls:'百姓',kind:'brig',side:'P',npc:true,x:4,y:5,hp:60,atk:0,def:8,mov:4,rngMin:0,rngMax:0}),
@@ -1073,6 +1089,9 @@ let CHAPTERS=[
  {
   title:'第八章 · 入川 · 义释严颜',
   deploy:7,
+  choice:{q:'巴郡城下，数千川兵丢盔弃甲请降——',
+    a:{t:'编入行伍，秋毫无犯',dao:1,fx:()=>{units.filter(x=>x.side==='P'&&!x.npc).forEach(x=>gainExp(x,15));return '降卒感恩效力，全军经验 +15';}},
+    b:{t:'尽收粮械，遣散归田',dao:-1,fx:()=>{gold+=400;return '收缴军械折卖，军资 +400';}}},
   boss:'刘璝',
   map:ZY_RUCHUAN,
   spawns:[[2,6],[1,6],[2,5],[2,7],[3,6],[3,5],[3,7],[1,5]],
@@ -1317,6 +1336,9 @@ let CHAPTERS=[
   deploy:9,
   weather:'fog',
   barrels:[[10,6],[16,6]],
+  choice:{q:'马遵遣使诈降，欲拖延至援军赶到，丞相问计——',
+    a:{t:'将计就计，以礼纳使',dao:1,fx:()=>{bag.danyao=(bag.danyao||0)+1;return '使者感愧，献【丹药】×1';}},
+    b:{t:'斩使立威，三军震肃',dao:-1,fx:()=>{units.filter(x=>x.side==='P'&&!x.npc).forEach(x=>addRage(x,30));return '三军肃然，全军怒气 +30';}}},
   boss:'马遵',
   map:ZY_TIANSHUI,
   spawns:[[2,6],[1,6],[2,5],[2,7],[3,6],[3,5],[3,7],[1,5],[1,7]],
@@ -1447,6 +1469,47 @@ let runTurns=0, ngPlus=0; // 本周目累计回合数 / 周目数（多周目敌
 let escapedN=0; // 护送战：已抵达出口的百姓/粮车数
 let barrels=[]; // 战场机关：火油桶（攻击引爆，3×3 烈焰，敌我不分，可连环）
 function barrelAt(x,y){return barrels.find(b=>b.x===x&&b.y===y);}
+let fireTiles=[]; // 燃烧地块：火计/油桶留下，停留其上每回合受伤，持续数回合
+let bondExp={}; // 羁绊熟练：并肩作战回合数，C→B(8)→A(18) 加成递增
+let dao=0; // 仁霸值：战场抉择累积，+仁 −霸，影响劝降难度/暴击/结局
+function fireAt(x,y){return fireTiles.find(f=>f.x===x&&f.y===y);}
+/* 状态效果：灼烧/中毒（回合伤害）、眩晕（跳过行动） */
+const STATUS_INFO={
+  burn:{n:'灼烧',g:'燃',color:'#f3a33c',dmg:10},
+  poison:{n:'中毒',g:'毒',color:'#8fc46a',dmg:8},
+  stun:{n:'眩晕',g:'晕',color:'#ffd24a',dmg:0},
+};
+function addStatus(u,k,t){
+  if(!u.alive)return;
+  u.status=u.status||[];
+  const ex=u.status.find(s=>s.k===k);
+  if(ex)ex.t=Math.max(ex.t,t);
+  else u.status.push({k,t});
+  addFloat(u.px,u.py-40,STATUS_INFO[k].n,STATUS_INFO[k].color);
+}
+function hasStatus(u,k){return !!(u.status&&u.status.find(s=>s.k===k&&s.t>0));}
+/* 回合开始结算：灼烧/中毒掉血、燃烧地块烧灼、状态递减。返回是否有单位倒下 */
+async function tickStatus(side){
+  for(const u of units.filter(x=>x.alive&&x.side===side)){
+    let dmg=0,tags=[];
+    for(const st of (u.status||[])){
+      const inf=STATUS_INFO[st.k];
+      if(inf.dmg>0){dmg+=inf.dmg;tags.push(inf.n);}
+    }
+    const ft=fireAt(u.x,u.y);
+    if(ft){dmg+=12;tags.push('烈焰');addFire(u.x,u.y);}
+    if(dmg>0){
+      log(`${u.name} 受${tags.join('/')}之苦，损失 <b>${dmg}</b> 兵力`,u.side==='P'?'hit':'good');
+      await doDamage(u,dmg,'#e8884a');
+      if(ended)return;
+    }
+    if(u.status){
+      u.status.forEach(st=>st.t--);
+      u.status=u.status.filter(st=>st.t>0);
+    }
+  }
+  checkEnd();
+}
 function enemyMult(){return diffMult()*(1+ngPlus*.5);}
 function initBag(){bag={tiejian:1,changmao:2,sangmu:1,yushan:1,pijia:2,xue:1,shangyao:3,danyao:1};gold=500;}
 initBag();
@@ -1472,6 +1535,7 @@ function curWeather(){
 }
 function critOf(u){
   let c=u.crit??.12;
+  if(u.side==='P'&&!u.npc&&typeof dao!=='undefined'&&dao<=-2)c+=.03; // 霸道立威：全军暴击+3%
   if(u.equip)for(const sl of ['wp','ar','ac']){
     const it=u.equip[sl]&&ITEMS[u.equip[sl]];
     if(it&&it.crit)c+=it.crit;
@@ -1567,7 +1631,7 @@ function U(o){
     atk:20,def:10,mov:5,rngMin:1,rngMax:1,rngShape:'diamond',crit:.12,
     mounted:false,strats:[],boss:false,leader:false,kind:'spear',
     equip:{wp:null,ar:null,ac:null},
-    rage:0,kills:0,dmgSum:0,
+    rage:0,kills:0,dmgSum:0,status:[],guard:false,
     side:'P',acted:false,awake:false,alive:true,fade:1,awakeR:6,
   },o);
   u.maxhp=u.hp; u.maxmp=u.mp;
@@ -1575,9 +1639,10 @@ function U(o){
   return u;
 }
 const STRAT={
-  fire:{name:'火计',mp:12,rng:3,kind:'dmg',desc:'范围3 · 火攻伤害，无视地形（扇笛可增程）'},
-  heal:{name:'治愈',mp:10,rng:3,kind:'heal',desc:'范围3 · 恢复友军兵力（智力×1.1）'},
-  bolt:{name:'妖术',mp:10,rng:3,kind:'dmg',desc:'范围3 · 妖法伤害，无视地形加成'},
+  fire:{name:'火计',mp:12,rng:4,kind:'dmg',desc:'范围4 · 火攻伤害＋灼烧2回合，落点燃烧（雨天减半）'},
+  heal:{name:'治愈',mp:10,rng:4,kind:'heal',desc:'范围4 · 恢复友军兵力（智力×1.1）并解除灼烧/中毒'},
+  bolt:{name:'妖术',mp:10,rng:4,kind:'dmg',desc:'范围4 · 妖法伤害，无视地形加成'},
+  poison:{name:'毒计',mp:10,rng:4,kind:'dmg',desc:'范围4 · 小伤害＋中毒3回合（每回合损 8 兵力）'},
 };
 function stratRng(u,s){ // 法术范围 = 基础 + 扇笛等装备增程 + 转职增程
   let r=s.rng;
@@ -1674,6 +1739,8 @@ function snapshotRoster(){
     units:roster.map(serRosterUnit),
     bag:{...bag},
     forge:{...forge},
+    bondExp:{...bondExp},
+    dao,
     gold,
   };
 }
@@ -1681,6 +1748,8 @@ function restoreRoster(snap){
   if(!snap||!snap.units)return;
   bag={...snap.bag};
   forge={...(snap.forge||{})};
+  bondExp={...(snap.bondExp||{})};
+  dao=snap.dao||0;
   gold=snap.gold;
   roster=snap.units.map(deserRosterUnit);
   // 旧档中不符职业的装备自动卸回辎重
@@ -1823,30 +1892,60 @@ function advMult(a,d){
 /* ===================== 羁绊 / 夹击 ===================== */
 /* 羁绊：指定组合的武将彼此相邻（含斜向）时获得攻防加成，双方阵营通用 */
 const BONDS=[
-  {n:'桃园结义',names:['刘备','关羽','张飞'],atk:4,def:4},
+  {n:'桃园结义',names:['刘备','关羽','张飞'],atk:4,def:4,talk:[['刘备','不求同年同月生……'],['张飞','但求同年同月死！哥哥，俺护着你！']]},
   {n:'鱼水君臣',names:['赵云','刘备'],atk:3,def:3},
   {n:'师徒相承',names:['赵云','姜维'],atk:4,def:2},
   {n:'义释之谊',names:['张飞','严颜'],atk:3,def:3},
   {n:'长沙旧部',names:['黄忠','魏延'],atk:3,def:2},
-  {n:'虎卫护主',names:['曹操','典韦','许褚'],atk:4,def:4},
+  {n:'虎卫护主',names:['曹操','典韦','许褚'],atk:4,def:4,talk:[['曹操','有卿等在侧，孤可高枕。'],['典韦','谁敢近主公一步，先问俺的双戟！']]},
   {n:'夏侯双雄',names:['夏侯惇','夏侯渊'],atk:4,def:2},
   {n:'王佐之约',names:['曹操','荀彧'],atk:2,def:4},
   {n:'五子同袍',names:['张辽','张郃','乐进'],atk:3,def:3},
-  {n:'卧龙凤雏',names:['诸葛亮','庞统'],atk:3,def:3},
+  {n:'卧龙凤雏',names:['诸葛亮','庞统'],atk:3,def:3,talk:[['庞统','卧龙凤雏，得一可安天下——'],['诸葛亮','今主公兼得，天下可图。']]},
   {n:'鬼才知遇',names:['曹操','郭嘉'],atk:3,def:3},
 ];
+const bondKey=(a,b)=>[a,b].sort().join('|');
+function bondRankOf(exp){return exp>=18?'A':exp>=8?'B':'C';}
 function bondActive(u){
   const out=[];
   if(!u||u.npc)return out;
   for(const b of BONDS){
     if(!b.names.includes(u.name))continue;
-    const mate=units.find(o=>o!==u&&o.alive&&o.side===u.side&&b.names.includes(o.name)
+    const mates=units.filter(o=>o!==u&&o.alive&&o.side===u.side&&b.names.includes(o.name)
       &&Math.max(Math.abs(o.x-u.x),Math.abs(o.y-u.y))<=1);
-    if(mate)out.push(b);
+    if(!mates.length)continue;
+    let rank='C';
+    for(const m of mates){
+      const rk=bondRankOf(bondExp[bondKey(u.name,m.name)]||0);
+      if(rk==='A'){rank='A';break;}
+      if(rk==='B')rank='B';
+    }
+    const mult=rank==='A'?2:rank==='B'?1.5:1;
+    out.push({n:b.n,rank,atk:Math.round(b.atk*mult),def:Math.round(b.def*mult)});
   }
   return out;
 }
 function bondStat(u,k){let s=0;for(const b of bondActive(u))s+=b[k]||0;return s;}
+/* 羁绊熟练：每个我方回合结束时，相邻的羁绊组合 +1，升档时触发支援对话 */
+async function tickBonds(){
+  for(const b of BONDS){
+    const ps=units.filter(u=>u.alive&&u.side==='P'&&!u.npc&&b.names.includes(u.name));
+    for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
+      const u=ps[i],m=ps[j];
+      if(Math.max(Math.abs(u.x-m.x),Math.abs(u.y-m.y))>1)continue;
+      const k=bondKey(u.name,m.name);
+      const was=bondExp[k]||0;
+      bondExp[k]=was+1;
+      const nr=bondRankOf(bondExp[k]);
+      if(nr!==bondRankOf(was)){
+        sfx.levelup();
+        addFloat((u.px+m.px)/2,(u.py+m.py)/2-32,`羁绊 ${nr} ！`,'#ffb066',true);
+        log(`<b>${u.name}</b> 与 <b>${m.name}</b> 并肩日久，羁绊【${b.n}】升至 <b>${nr}</b> 级（加成 ×${nr==='A'?2:1.5}）`,'good');
+        await say(b.talk||[[u.name,'有你在侧，何惧千军！'],[m.name,'并肩到底！']],2000);
+      }
+    }
+  }
+}
 /* 夹击：攻击方在目标对侧有同阵营友军时，伤害 ×1.3 */
 function pincerAlly(a,d){
   const px=2*d.x-a.x,py=2*d.y-a.y;
@@ -2285,9 +2384,11 @@ async function explodeCore(u,b){
   addFire(b.x,b.y);
   addFloat((b.x+.5)*TILE,(b.y+.5)*TILE-20,'轰 ！','#f3a33c','huge');
   await sleep(320);
+  if(!fireAt(b.x,b.y)&&tch(b.x,b.y)!=='w')fireTiles.push({x:b.x,y:b.y,t:2});
   for(const t of units.filter(x=>x.alive&&Math.max(Math.abs(x.x-b.x),Math.abs(x.y-b.y))<=1)){
     addFire(t.x,t.y);
     const dead=await doDamage(t,45,'#f3a33c');
+    if(!dead&&t.alive)addStatus(t,'burn',1);
     if(u.side==='P'&&t.side==='E'){gainExp(u,18+(dead?30:0));addStat(u,45,dead);addRage(u,12);}
     if(ended)return;
   }
@@ -2306,6 +2407,65 @@ async function explodeBarrel(u,b){
   if(ended)return;
   selected=u;
   await finishAction(); // 引爆即本回合行动
+}
+/* 敌方意图预告：按当前局面预演该敌单位的最优行动（与敌方 AI 同一套评分） */
+function predictEnemy(e){
+  if(!e.alive)return null;
+  if(hasStatus(e,'stun'))return {act:'stun',label:'眩晕中，无法行动'};
+  if(!e.awake){
+    const near=alive('P').some(p=>manh(p,e)<=e.awakeR);
+    if(!near)return {act:'sleep',label:`按兵不动（警戒范围 ${e.awakeR} 格内无我军）`};
+  }
+  const r=reachable(e);
+  const lands=landTiles(e,r.dist);
+  let best=null;
+  for(const k of lands){
+    const [tx,ty]=k.split(',').map(Number);
+    for(const p of alive('P')){
+      if(shapeOk(e,p.x-tx,p.y-ty)){
+        const fake={...e,x:tx,y:ty};
+        const [lo,hi]=dmgRange(fake,p);
+        const est=(lo+hi)/2;
+        let score=est+(est>=p.hp?120:0)
+          +(p.cls==='军师'?14:0)+(p.leader?10:0)
+          +terrDef(tx,ty)*40-(r.dist.get(k)||0)*.5;
+        if(shapeOk(p,tx-p.x,ty-p.y)&&est<p.hp)score-=10;
+        if(!best||score>best.score)best={score,target:p,est:Math.round(est),act:'atk'};
+      }
+      for(const sk of e.strats){
+        const s2=STRAT[sk];
+        if(s2.kind!=='dmg'||e.mp<s2.mp)continue;
+        const md=Math.abs(tx-p.x)+Math.abs(ty-p.y);
+        if(md<1||md>stratRng(e,s2))continue;
+        const est=stratDmg(e,p,sk);
+        const score=est+6+(est>=p.hp?120:0)
+          +(p.cls==='军师'?14:0)+(p.leader?10:0)
+          +terrDef(tx,ty)*40-(r.dist.get(k)||0)*.5;
+        if(!best||score>best.score)best={score,target:p,est,act:'strat',sk};
+      }
+    }
+  }
+  if(!best)return {act:'move',label:'向我军逼近（暂够不到任何人）'};
+  if(best.act==='strat')return {act:'strat',label:`预计施放【${STRAT[best.sk].name}】→ ${best.target.name}（约 ${best.est} 伤）`,target:best.target};
+  return {act:'atk',label:`预计攻击 → ${best.target.name}（约 ${best.est} 伤${best.est>=best.target.hp?'，<b style="color:#ff6a5a">有性命之危！</b>':''}）`,target:best.target};
+}
+/* 戒备反击：敌单位移动落位后，处于射程内的戒备武将自动出手（八成伤害，敌不反击） */
+async function guardCheck(e){
+  if(!e.alive)return;
+  for(const g of units.filter(u=>u.side==='P'&&u.alive&&u.guard)){
+    if(!e.alive)break;
+    if(!shapeOk(g,e.x-g.x,e.y-g.y))continue;
+    g.guard=false;
+    sfx.crit();
+    addFloat(g.px,g.py-32,'戒备反击！','#ffd24a');
+    await animLunge(g,e);
+    const {dmg}=rollDmg(g,e);
+    const gd=Math.max(1,Math.round(dmg*.8));
+    log(`<b>${g.name}</b> 戒备反击 ${e.name}，造成 <b>${gd}</b> 伤害！`,'good');
+    const dead=await doDamage(e,gd,'#ffd24a');
+    gainExp(g,gd*.5+(dead?35:0));addRage(g,25);addStat(g,gd,dead);
+    if(checkEnd())return;
+  }
 }
 async function doAttack(a,d){
   // 历史单挑事件：固定场景，每章一次，仅玩家主动发起，触发后替代本次普通攻击
@@ -2340,8 +2500,13 @@ async function doAttack(a,d){
   else sfx.hit();
   log(`${a.name} 攻击 ${d.name}，造成 <b>${dmg}</b> 伤害${crit?'（暴击！）':''}${pin?`（与 ${pin.name} 夹击！）`:''}`, a.side==='P'?'good':'hit');
   const dead=await doDamage(d,dmg,crit?'#f6d35e':'#ffd9c4');
-  if(a.side==='P'){gainExp(a,dmg*.5+(dead?35:0));addRage(a,dead?50:25);addStat(a,dmg,dead);}
+  if(a.side==='P'){gainExp(a,dmg*.5+(dead?50:25));addRage(a,dead?50:25);addStat(a,dmg,dead);}
   if(checkEnd())return;
+  // 虎卫系（戟卫）近身重击震退目标一格：落水重创、撞物眩晕、撞上油桶殉爆
+  if(!dead&&d.alive&&a.kind==='guard'&&Math.max(Math.abs(a.x-d.x),Math.abs(a.y-d.y))<=1&&!d.boss){
+    await doKnockback(a,d);
+    if(checkEnd())return;
+  }
   if(!dead&&d.alive){
     if(shapeOk(d,a.x-d.x,a.y-d.y)){
       await sleep(180);
@@ -2356,6 +2521,51 @@ async function doAttack(a,d){
     }
   }
 }
+/* 击退：沿攻击方向推一格 */
+async function doKnockback(a,d){
+  const dx=Math.sign(d.x-a.x),dy=Math.sign(d.y-a.y);
+  if(dx===0&&dy===0)return;
+  const nx=d.x+dx,ny=d.y+dy;
+  addFloat(d.px,d.py-44,'击 退','#ff9a3c');
+  sfx.hit();
+  if(!inMap(nx,ny)||unitAt(nx,ny)||!isFinite(moveCost(d,tch(nx,ny)))&&tch(nx,ny)!=='w'){
+    // 撞墙/撞人：附加伤害并眩晕
+    const xd=10;
+    log(`${d.name} 被震退撞上障碍，受 <b>${xd}</b> 伤并眩晕！`,a.side==='P'?'good':'hit');
+    const dead=await doDamage(d,xd,'#ffd9c4');
+    if(!dead&&d.alive)addStatus(d,'stun',1);
+    if(a.side==='P'&&!dead)addStat(a,xd,false);
+    return;
+  }
+  if(tch(nx,ny)==='w'){
+    // 落水：重创并挣扎爬回原地，眩晕一回合
+    const wd=Math.max(15,Math.round(d.maxhp*.3));
+    shakeT=.35;
+    log(`${d.name} 被震落水中，呛水重创 <b>${wd}</b>，狼狈爬回岸上！`,a.side==='P'?'good':'hit');
+    const dead=await doDamage(d,wd,'#8fc4e8');
+    if(!dead&&d.alive)addStatus(d,'stun',1);
+    if(a.side==='P'&&!dead)addStat(a,wd,false);
+    return;
+  }
+  // 正常推移一格
+  d.x=nx;d.y=ny;
+  await tween(140,k=>{
+    d.px=(d.x-dx+.5)*TILE+dx*TILE*k;
+    d.py=(d.y-dy+.5)*TILE+dy*TILE*k;
+  });
+  d.px=(d.x+.5)*TILE;d.py=(d.y+.5)*TILE;
+  const b=barrelAt(nx,ny);
+  if(b){
+    log(`${d.name} 被震得撞翻<b>火油桶</b>——轰然殉爆！`,a.side==='P'?'good':'hit');
+    await explodeCore(a,b);
+  }
+  const ft=fireAt(nx,ny);
+  if(ft&&d.alive){
+    log(`${d.name} 跌入烈焰之中！`,a.side==='P'?'good':'hit');
+    await doDamage(d,12,'#f3a33c');
+    if(d.alive)addStatus(d,'burn',1);
+  }
+}
 async function doStrategy(a,stratKey,d){
   const s=STRAT[stratKey];
   a.mp-=s.mp;
@@ -2363,9 +2573,17 @@ async function doStrategy(a,stratKey,d){
     if(stratKey==='bolt'){sfx.bolt();addBolt(d.x,d.y);}
     else{sfx.fire();addFire(d.x,d.y);}
     await sleep(380);
-    const dmg=stratDmg(a,d,stratKey);
+    let dmg=stratDmg(a,d,stratKey);
+    if(stratKey==='poison')dmg=Math.max(1,Math.round(dmg*.6));
     log(`${a.name} 施放【${s.name}】，${d.name} 受到 <b>${dmg}</b> 伤害`, a.side==='P'?'good':'hit');
-    const dead=await doDamage(d,dmg,stratKey==='bolt'?'#cf9ae4':'#f3a33c');
+    const dead=await doDamage(d,dmg,stratKey==='bolt'?'#cf9ae4':stratKey==='poison'?'#8fc46a':'#f3a33c');
+    if(!dead&&d.alive){
+      if(stratKey==='fire'){
+        addStatus(d,'burn',2);
+        if(!fireAt(d.x,d.y)&&tch(d.x,d.y)!=='w')fireTiles.push({x:d.x,y:d.y,t:2});
+      }
+      if(stratKey==='poison')addStatus(d,'poison',3);
+    }
     if(a.side==='P'){gainExp(a,dmg*.5+(dead?35:0));addRage(a,20);addStat(a,dmg,dead);}
     checkEnd();
   }else{
@@ -2375,8 +2593,11 @@ async function doStrategy(a,stratKey,d){
     const amt=Math.round(S(a,'int')*1.1);
     const real=Math.min(amt,d.maxhp-d.hp);
     d.hp+=real;
+    if(d.status&&d.status.length){
+      d.status=d.status.filter(st=>st.k==='stun'); // 治愈解除灼烧/中毒
+    }
     addFloat(d.px,d.py-26,'+'+real,'#b8e986');
-    log(`${a.name} 施放【${s.name}】，${d.name} 恢复 <b>${real}</b> 兵力`, a.side==='P'?'good':'hit');
+    log(`${a.name} 施放【${s.name}】，${d.name} 恢复 <b>${real}</b> 兵力，沉疴尽去`, a.side==='P'?'good':'hit');
     gainExp(a,real*.4);
   }
 }
@@ -2466,9 +2687,12 @@ function finish(win,loseMsg){
         ov.querySelector('.sub').innerHTML+=
           `<br><span style="font-family:var(--display);font-size:22px;color:${grade==='S'?'#ffd24a':grade==='A'?'#e8c655':'#c9b896'}">战役总评　${grade} 级 · ${total} 分</span>`+
           `<br><span style="font-size:11.5px;color:rgba(232,220,192,.55)">难度 ${diffPct}% × ${ngPlus+1}周目 · 全程 ${runTurns} 回合（均 ${avg.toFixed(1)}）</span>`;
+        const daoTitle=dao>=3?'仁德之主 · 箪食壶浆，万民归心':dao<=-3?'乱世枭雄 · 威加海内，群雄俯首':'中庸之道 · 恩威并济，社稷自安';
+        ov.querySelector('.sub').innerHTML+=
+          `<br><span style="color:#c9b896">道路注定——<b style="color:${dao>=3?'#9fd089':dao<=-3?'#e8845a':'#e8c655'}">${daoTitle}</b></span>`;
         codexMark(c=>{
           const cc=campCodex(c);
-          cc.clear.push({d:diffPct,t:runTurns,ng:ngPlus,g:grade,date:Date.now()});
+          cc.clear.push({d:diffPct,t:runTurns,ng:ngPlus,g:grade,dao,date:Date.now()});
           if(cc.clear.length>20)cc.clear=cc.clear.slice(-20);
         });
         // 多周目：继承名册/装备/军资，敌军再强化 50%
@@ -2547,8 +2771,11 @@ function showUnitCard(u){
       ${u.side==='P'?`<div class="bar xp"><i style="width:${u.exp}%"></i></div>`:''}
       ${u.side==='P'&&ULTS[u.name]?`<div class="bar rage"><i style="width:${u.rage}%"></i></div>`:''}
       <div class="statline"><span>武 <b>${S(u,'atk')}${S(u,'atk')>u.atk?'<span style="color:#9fc068">↑</span>':''}</b></span><span>守 <b>${S(u,'def')}${S(u,'def')>u.def?'<span style="color:#9fc068">↑</span>':''}</b></span><span>移 <b>${S(u,'mov')}</b></span><span>射 <b>${rng}</b></span><span>暴 <b>${Math.round(critOf(u)*100)}%</b></span><span>地形 <b>${t.name}${t.def?` +${Math.round(t.def*100)}%`:''}</b></span></div>
+      ${u.status&&u.status.length?`<div class="trait">${u.status.map(st=>`<span style="color:${STATUS_INFO[st.k].color}">【${STATUS_INFO[st.k].n}】余 ${st.t} 回合</span>`).join('　')}</div>`:''}
+      ${u.side==='P'&&u.guard?`<div class="trait" style="color:#8cdcff">戒备中：敌进入射程自动反击</div>`:''}
+      ${u.side==='E'&&u.alive&&phase==='P'?`<div class="trait" style="color:#e8a0a0">${(predictEnemy(u)||{}).label||''}</div>`:''}
       <div class="trait">${clsTrait(u)}</div>
-      ${(()=>{const bs=bondActive(u);return bs.length?`<div class="trait" style="color:#ffb066">羁绊 ${bs.map(b=>`【${b.n}】武+${b.atk} 守+${b.def}`).join('　')}</div>`:'';})()}
+      ${(()=>{const bs=bondActive(u);return bs.length?`<div class="trait" style="color:#ffb066">羁绊 ${bs.map(b=>`【${b.n}·${b.rank}】武+${b.atk} 守+${b.def}`).join('　')}</div>`:'';})()}
       ${u.side==='E'&&u.recruit?`<div class="trait" style="color:#ffd24a">可劝降：兵力打至 ${Math.round(u.recruit.hpr*100)}% 以下，由${u.recruit.by||'主帅'}相邻出面${recruitReady(u)?'——条件已达成！':''}</div>`:''}
       ${u.side==='P'?`<div class="trait" style="color:#9db4d8">装备：${['wp','ar','ac'].map(s2=>u.equip&&u.equip[s2]?`${ITEMS[u.equip[s2]].n}（${itemDesc(u.equip[s2])}）`:null).filter(Boolean).join('　')||'无'}</div>`:''}
       ${u.side==='P'&&ULTS[u.name]?`<div class="trait" style="color:#ffb066">必杀【${ULTS[u.name].label}】${ULTS[u.name].desc}（怒气 ${u.rage}/100）</div>`:''}
@@ -2585,7 +2812,7 @@ function recruitTalker(u,e){
   if(!r)return false;
   return r.by?r.by===u.name:!!u.leader;
 }
-function recruitReady(e){return e.recruit&&e.hp<=Math.ceil(e.maxhp*e.recruit.hpr);}
+function recruitReady(e){return e.recruit&&e.hp<=Math.ceil(e.maxhp*(e.recruit.hpr+(dao>=2?.1:0)));} // 仁德之名远播，劝降门槛放宽
 async function doRecruit(u,t){
   hideMenu();state='busy';
   sfx.ult();flashT=.3;
@@ -2630,6 +2857,7 @@ function showMenu(u){
   }
   const hasItem=Object.keys(bag).some(k=>bag[k]>0&&ITEMS[k].use);
   html+=`<button data-act="item" ${hasItem?'':'disabled'}>道 具</button>`;
+  html+=`<button data-act="guard">戒 备<i class="udesc">敌军进入射程时自动反击一次（八成伤害）</i></button>`;
   html+=`<button data-act="wait">待 机</button><button data-act="cancel">取 消</button>`;
   menuEl.innerHTML=html;
   menuEl.style.display='flex';
@@ -2666,11 +2894,26 @@ function stratTargets(u,sk){
 }
 menuEl.addEventListener('click',async e=>{
   const btn=e.target.closest('button');
-  if(!btn||btn.disabled||!selected)return;
+  if(!btn||btn.disabled)return;
   const act=btn.dataset.act;
+  if(act==='gang'){ // 合击：未行动武将依次自动围殴目标
+    sfx.select();
+    const t=units[+btn.dataset.ti];
+    hideMenu();
+    if(t&&t.alive&&t.side==='E')await doGangUp(t);
+    return;
+  }
+  if(act==='cancel2'){sfx.select();hideMenu();threat=null;return;}
+  if(!selected)return;
   sfx.select();
   if(act==='cancel'){revertMove();return;}
   if(act==='wait'){hideMenu();await finishAction();return;}
+  if(act==='guard'){
+    selected.guard=true;
+    addFloat(selected.px,selected.py-30,'戒 备','#ffd24a');
+    log(`${selected.name} 进入戒备，弓上弦、刀出鞘`,'sys');
+    hideMenu();await finishAction();return;
+  }
   if(act==='atk'){
     const u=selected;
     const tiles=new Set();
@@ -2717,26 +2960,44 @@ menuEl.addEventListener('click',async e=>{
   }
   if(act==='useitem'){
     const k=btn.dataset.item, it=ITEMS[k], u=selected;
-    bag[k]--;
-    hideMenu();state='busy';
-    if(it.use==='hp60'||it.use==='hpfull'){
-      const amt=it.use==='hpfull'?u.maxhp-u.hp:Math.min(60,u.maxhp-u.hp);
-      u.hp+=amt;
-      sfx.heal();addHealFx(u.x,u.y);
-      addFloat(u.px,u.py-26,'+'+amt,'#b8e986');
-      log(`${u.name} 使用【${it.n}】，恢复 <b>${amt}</b> 兵力`,'good');
-    }else if(it.use==='mp30'){
-      const amt=Math.min(30,u.maxmp-u.mp);
-      u.mp+=amt;
-      sfx.heal();addHealFx(u.x,u.y);
-      addFloat(u.px,u.py-26,'+'+amt+' MP','#8fc4e8');
-      log(`${u.name} 使用【${it.n}】，策略恢复 <b>${amt}</b>`,'good');
+    // 可对九宫格内自己与友军（含百姓/粮车）使用
+    const tiles=new Set();
+    for(const p of alive('P')){
+      if(Math.max(Math.abs(p.x-u.x),Math.abs(p.y-u.y))>1)continue;
+      if(it.use==='mp30'&&!(p.maxmp>0))continue;
+      if((it.use==='hp60'||it.use==='hpfull')&&p.hp>=p.maxhp&&p!==u)continue;
+      tiles.add(key(p.x,p.y));
     }
-    await sleep(380);
-    await finishAction();
+    targeting={kind:'item',item:k,tiles};
+    hideMenu();state='targeting';
+    showForecast(`选择【${it.n}】的使用对象（九宫格内友军）`);
     return;
   }
 });
+/* 对目标友军使用道具 */
+async function applyItem(u,target,k){
+  const it=ITEMS[k];
+  if(!(bag[k]>0))return;
+  bag[k]--;
+  hideMenu();state='busy';
+  if(it.use==='hp60'||it.use==='hpfull'){
+    const amt=it.use==='hpfull'?target.maxhp-target.hp:Math.min(60,target.maxhp-target.hp);
+    target.hp+=amt;
+    if(target.status)target.status=target.status.filter(st=>st.k==='stun'); // 良药兼解灼烧/中毒
+    sfx.heal();addHealFx(target.x,target.y);
+    addFloat(target.px,target.py-26,'+'+amt,'#b8e986');
+    log(`${u.name} 对 ${target===u?'自己':target.name} 使用【${it.n}】，恢复 <b>${amt}</b> 兵力`,'good');
+  }else if(it.use==='mp30'){
+    const amt=Math.min(30,target.maxmp-target.mp);
+    target.mp+=amt;
+    sfx.heal();addHealFx(target.x,target.y);
+    addFloat(target.px,target.py-26,'+'+amt+' MP','#8fc4e8');
+    log(`${u.name} 对 ${target===u?'自己':target.name} 使用【${it.n}】，策略恢复 <b>${amt}</b>`,'good');
+  }
+  await sleep(380);
+  selected=u;
+  await finishAction();
+}
 function revertMove(){
   if(selected&&origin){
     selected.x=origin[0];selected.y=origin[1];
@@ -2808,6 +3069,9 @@ cv.addEventListener('mousemove',e=>{
         const ult=ULTS[selected.name];
         const dd=Math.max(1,Math.round(S(selected,'atk')*ult.mult-S(target,'def')*.8));
         showForecast(`必杀【${ult.label}】→ ${target.name}<br><span class="big">${dd}</span> 必杀伤害（必中）`);
+      }else if(targeting.kind==='item'){
+        const it=ITEMS[targeting.item];
+        showForecast(`【${it.n}】→ ${target.name}<br>${itemDesc(targeting.item)}`);
       }else{
         const s=STRAT[targeting.strat];
         if(s.kind==='dmg')showForecast(`【${s.name}】→ ${target.name}<br><span class="big">${stratDmg(selected,target,targeting.strat)}</span> ${s.name}伤害（无视地形${targeting.strat==='fire'&&curWeather()==='rain'?'，雨天减半':''}）`);
@@ -2837,6 +3101,10 @@ function mobPreview(target){
     const ult=ULTS[selected.name];
     const dd=Math.max(1,Math.round(S(selected,'atk')*ult.mult-S(target,'def')*.8));
     return `必杀【${ult.label}】→ ${target.name}　伤害 ${dd}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
+  }
+  if(targeting.kind==='item'){
+    const it=ITEMS[targeting.item];
+    return `【${it.n}】→ ${target.name}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
   }
   const s=STRAT[targeting.strat];
   if(s.kind==='dmg')return `【${s.name}】→ ${target.name}　伤害 ${stratDmg(selected,target,targeting.strat)}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
@@ -2908,6 +3176,7 @@ cv.addEventListener('click',async e=>{
       const tg=targeting;targeting=null;showForecast('');
       if(tg.kind==='attack')await doAttack(u,target);
       else if(tg.kind==='ult'){await castUlt(u,target);return;} // castUlt 内部已结算行动
+      else if(tg.kind==='item'){await applyItem(u,target,tg.item);return;} // applyItem 内部已结算
       else await doStrategy(u,tg.strat,target);
       selected=u;
       await finishAction();
@@ -2942,7 +3211,7 @@ cv.addEventListener('click',async e=>{
   if(u&&u.side==='E'){
     sfx.select();
     clearSel();
-    if(threat&&threat.unit===u){threat=null;return;}
+    if(threat&&threat.unit===u){threat=null;hideMenu();return;}
     const r=reachable(u);
     const tiles=new Set();
     for(const k of r.dist.keys()){
@@ -2954,10 +3223,67 @@ cv.addEventListener('click',async e=>{
       }
     }
     threat={unit:u,tiles};
+    // 合击菜单：一键令所有够得着的武将围殴此敌
+    const n=gatherStrikers(u).length;
+    menuEl.innerHTML=`<button data-act="gang" data-ti="${units.indexOf(u)}" ${n?'':'disabled'}>合 击（${n} 将可出）<i class="udesc">未行动武将自动接力围攻此敌，省去逐个点选</i></button>
+      <button data-act="cancel2">关 闭</button>`;
+    menuEl.style.display='flex';
+    placeMenu(u);
     return;
   }
-  clearSel();threat=null;
+  clearSel();threat=null;hideMenu();
 });
+/* 合击：收集所有未行动且本回合能攻击到目标的武将 */
+function gatherStrikers(t){
+  const out=[];
+  for(const u of alive('P').filter(x=>!x.acted&&!x.npc)){
+    const r=reachable(u);
+    const lands=landTiles(u,r.dist);
+    let best=null;
+    for(const k of lands){
+      const [tx,ty]=k.split(',').map(Number);
+      if(!shapeOk(u,t.x-tx,t.y-ty))continue;
+      const fake={...u,x:tx,y:ty};
+      const [lo,hi]=dmgRange(fake,t);
+      const est=(lo+hi)/2+terrDef(tx,ty)*20;
+      if(!best||est>best.est)best={k,est};
+    }
+    if(best)out.push({u,est:best.est});
+  }
+  return out.sort((a,b)=>b.est-a.est);
+}
+async function doGangUp(t){
+  clearSel();threat=null;state='busy';
+  banner('合 击');
+  await sleep(700);
+  while(t.alive&&!ended){
+    const ss=gatherStrikers(t);
+    if(!ss.length)break;
+    const u=ss[0].u;
+    const r=reachable(u);
+    const lands=landTiles(u,r.dist);
+    let best=null;
+    for(const k of lands){
+      const [tx,ty]=k.split(',').map(Number);
+      if(!shapeOk(u,t.x-tx,t.y-ty))continue;
+      const fake={...u,x:tx,y:ty};
+      const [lo,hi]=dmgRange(fake,t);
+      const est=(lo+hi)/2+terrDef(tx,ty)*20;
+      if(!best||est>best.est)best={k,est};
+    }
+    if(!best)break;
+    if(best.k!==key(u.x,u.y))await animMove(u,buildPath(r.parent,key(u.x,u.y),best.k));
+    await doAttack(u,t);
+    u.acted=true;
+    if(u.alive)checkTreasure(u);
+    if(ended)return;
+    await sleep(180);
+  }
+  saveBattle();
+  if(dangerOn)calcDanger();
+  state='idle';
+  if(alive('P').filter(x=>!x.npc).every(x=>x.acted))await endPlayerPhase();
+}
 
 /* ===================== 回合流程 ===================== */
 document.getElementById('endTurn').addEventListener('click',async()=>{
@@ -2967,6 +3293,7 @@ document.getElementById('endTurn').addEventListener('click',async()=>{
 async function endPlayerPhase(){
   clearSel();threat=null;hideMenu();
   state='busy';phase='E';updateHud();
+  await tickBonds(); // 羁绊熟练累积
   await moveNpcs(); // 护送对象先行赶路
   if(ended)return;
   banner('敌 军 回 合');
@@ -3031,9 +3358,19 @@ async function enemyPhase(){
       await sleep(1100);
     }
   }
+  await tickStatus('E'); // 敌方状态结算（灼烧/中毒/燃烧地块）
+  if(ended)return;
   for(const e of units.filter(u=>u.side==='E')){
     if(ended)return;
     if(!e.alive)continue;
+    if(hasStatus(e,'stun')){
+      addFloat(e.px,e.py-30,'眩 晕','#ffd24a');
+      log(`${e.name} 眩晕中，无法行动`,'good');
+      e.status.find(s2=>s2.k==='stun').t--;
+      e.status=e.status.filter(s2=>s2.t>0);
+      await sleep(260);
+      continue;
+    }
     if(!e.awake){
       const near=alive('P').some(p=>manh(p,e)<=e.awakeR);
       if(near||turn>=10){
@@ -3086,6 +3423,9 @@ async function enemyPhase(){
     if(best){
       const path=buildPath(r.parent,key(e.x,e.y),best.k);
       await animMove(e,path);
+      await guardCheck(e);
+      if(ended)return;
+      if(!e.alive){await sleep(160);continue;}
       if(best.act==='strat')await doStrategy(e,best.sk,best.target);
       else await doAttack(e,best.target);
       if(ended)return;
@@ -3103,6 +3443,8 @@ async function enemyPhase(){
         }
         if(bestK&&bestK!==key(e.x,e.y)){
           await animMove(e,buildPath(r.parent,key(e.x,e.y),bestK));
+          await guardCheck(e);
+          if(ended)return;
         }
       }
     }
@@ -3118,8 +3460,20 @@ async function enemyPhase(){
   if(w&&w.type==='timed'&&turn>w.turns){
     finish(false,'吴船扬帆而去，周善携阿斗遁入大江……');return;
   }
+  await tickStatus('P'); // 我方状态结算
+  if(ended)return;
+  fireTiles.forEach(f=>f.t--);
+  fireTiles=fireTiles.filter(f=>f.t>0);
   for(const p of units.filter(u=>u.side==='P'&&u.alive)){
-    p.acted=false;
+    p.guard=false;
+    if(hasStatus(p,'stun')){
+      p.acted=true; // 眩晕：本回合无法行动
+      addFloat(p.px,p.py-30,'眩 晕','#ffd24a');
+      p.status.find(s2=>s2.k==='stun').t--;
+      p.status=p.status.filter(s2=>s2.t>0);
+    }else{
+      p.acted=false;
+    }
     if(p.maxmp>0)p.mp=Math.min(p.maxmp,p.mp+5);
   }
   phase='P';updateHud();
@@ -4225,6 +4579,28 @@ function drawUnits(time){
       ctx.fillStyle=`rgba(255,255,255,${u.flash})`;
       ctx.beginPath();ctx.arc(u.px,u.py-4,22,0,Math.PI*2);ctx.fill();
     }
+    // 戒备：青色警戒环
+    if(u.side==='P'&&u.alive&&u.guard){
+      ctx.strokeStyle=`rgba(140,220,255,${.45+Math.sin(time/220)*.25})`;
+      ctx.lineWidth=2;
+      ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.arc(u.px,u.py-2,20,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // 状态角标（灼烧/中毒/眩晕）
+    if(u.alive&&u.status&&u.status.length){
+      u.status.forEach((st,si)=>{
+        const inf=STATUS_INFO[st.k];
+        if(!inf)return;
+        const sx=u.x*TILE+TILE-9, sy=u.y*TILE+3+si*13;
+        ctx.fillStyle=inf.color;
+        ctx.beginPath();ctx.roundRect(sx-6,sy-1,13,12,2.5);ctx.fill();
+        ctx.fillStyle='#1c1812';
+        ctx.font='9px "Noto Serif SC","Songti SC",serif';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(inf.g,sx+.5,sy+5);
+      });
+    }
     // 满怒金色光环
     if(u.side==='P'&&u.alive&&u.rage>=100){
       ctx.strokeStyle=`rgba(255,210,74,${.5+Math.sin(time/160)*.3})`;
@@ -4414,6 +4790,21 @@ function loop(t){
       :['rgba(70,170,110,.42)','rgba(150,230,170,.7)'];
     fillTiles(targeting.tiles,c[0],c[1]);
   }
+  // 燃烧地块
+  for(const f of fireTiles){
+    const px=f.x*TILE,py=f.y*TILE;
+    const pu=(Math.sin(t/140+f.x*2.3+f.y*1.1)+1)/2;
+    ctx.fillStyle=`rgba(232,100,44,${.18+pu*.14})`;
+    ctx.fillRect(px,py,TILE,TILE);
+    ctx.strokeStyle=`rgba(243,163,60,${.5+pu*.3})`;ctx.lineWidth=2;
+    ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
+    for(let i=0;i<3;i++){
+      const fx=px+10+((f.x*7+i*17+Math.floor(t/90))%32);
+      const fy=py+TILE-8-((t/55+i*13+f.y*9)%26);
+      ctx.fillStyle=`rgba(${230+i*8},${120+i*30},40,${.5*(1-((t/55+i*13+f.y*9)%26)/26)})`;
+      ctx.beginPath();ctx.arc(fx,fy,2.6-i*.5,0,Math.PI*2);ctx.fill();
+    }
+  }
   // 火油桶
   for(const b of barrels){
     const px=(b.x+.5)*TILE, py=(b.y+.5)*TILE;
@@ -4513,6 +4904,7 @@ function startChapter(i){
   reinforced=new Set();
   treasures=(ch.treasures||[]).map(t=>({...t}));
   barrels=(ch.barrels||[]).map(([x,y])=>({x,y}));
+  fireTiles=[];
   if(ch.weather==='fog')foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-2);}); // 大雾：警戒收窄
   ended=false;turn=1;phase='P';state='idle';
   floaters=[];particles=[];shakeT=0;flashT=0;threat=null;
@@ -4528,6 +4920,28 @@ function startChapter(i){
   updateHud();
   banner(campName.split('').join(' ')+' 回 合');
   saveBattle();
+  if(ch.choice&&!ch.extra)showChoice(ch.choice);
+}
+/* 战场抉择：仁/霸二选一，即时入账并累积道路值 */
+function showChoice(c){
+  state='busy';
+  document.getElementById('choiceQ').innerHTML=c.q;
+  const bA=document.getElementById('choiceA'),bB=document.getElementById('choiceB');
+  const pick=(opt,tag)=>{
+    sfx.select();
+    dao+=opt.dao;
+    let fxMsg='';
+    try{fxMsg=opt.fx?opt.fx():'';}catch(e){}
+    document.getElementById('choice').classList.add('hidden');
+    log(`抉择【${tag}】${opt.t}${fxMsg?`——${fxMsg}`:''}（${opt.dao>0?'仁':'霸'}${opt.dao>0?'+':''}${opt.dao}，当前 ${dao>0?'仁':dao<0?'霸':'中'} ${Math.abs(dao)}）`,'sys');
+    state='idle';
+    saveBattle();
+  };
+  bA.innerHTML=`仁 · ${c.a.t}`;
+  bB.innerHTML=`霸 · ${c.b.t}`;
+  bA.onclick=()=>pick(c.a,'仁');
+  bB.onclick=()=>pick(c.b,'霸');
+  document.getElementById('choice').classList.remove('hidden');
 }
 /* ===================== 备战界面 ===================== */
 let prepChap=0;
@@ -4772,7 +5186,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,runTurns,ngPlus,escapedN,barrels,
+      chap,diffPct,turn,gold,bag,forge,bondExp,dao,runTurns,ngPlus,escapedN,barrels,fireTiles,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -4783,7 +5197,7 @@ function battlePayload(){
         x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
         int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
         crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,srng:u.srng,npc:u.npc,escaped:u.escaped,
-        awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,
+        awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
         equip:u.equip,drop:u.drop,recruit:u.recruit||null,
       })),
@@ -4812,8 +5226,10 @@ function resumeBattle(d){
   setMapSize(MAP);
   renderBase();
   gold=d.gold;bag={...d.bag};forge={...(d.forge||{})};
+  bondExp={...(d.bondExp||{})};dao=d.dao||0;
   treasures=(d.treasures||[]).map(t=>({...t}));
   barrels=(d.barrels||[]).map(b=>({...b}));
+  fireTiles=(d.fireTiles||[]).map(f=>({...f}));
   seenDuels=new Set(d.duels||[]);
   reinforced=new Set(d.reinforced||[]);
   rosterSnap=d.snap;
@@ -4854,7 +5270,7 @@ const CAMP_ZHAOYUN={
   hidden:[{
     joinCh:2,unlock:'集齐赵云传劝降录（严颜、姜维）',
     cond:c=>{const r=campCodex(c,'zhaoyun').rec;return r.includes('严颜')&&r.includes('姜维');},
-    def:{name:'庞统',g:'统',cls:'军师',kind:'adv',side:'P',x:0,y:0,lv:5,hp:92,mp:70,int:42,atk:18,def:11,mov:5,strats:['fire','heal'],crit:.05},
+    def:{name:'庞统',g:'统',cls:'军师',kind:'adv',side:'P',x:0,y:0,lv:5,hp:92,mp:70,int:42,atk:18,def:11,mov:5,strats:['fire','poison'],crit:.05},
   }],
   extra:{
     extra:true,
@@ -4896,7 +5312,7 @@ const CAMP_ZHAOYUN={
       U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'wei',x:18,y:8,hp:130,atk:52,def:10,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
       U({name:'郭淮',g:'淮',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:21,y:10,hp:235,atk:40,def:21,mov:6,awakeR:5,crit:.16,drop:'lingzhi'}),
       U({name:'张郃',g:'郃',cls:'猛将',kind:'cav',side:'E',fac:'wei',x:14,y:6,hp:260,atk:42,def:24,mov:7,mounted:true,awakeR:5,crit:.18,drop:'bawang'}),
-      U({name:'司马懿',g:'懿',cls:'军师',kind:'adv',side:'E',fac:'wei',x:22,y:3,hp:320,mp:99,int:48,atk:34,def:24,mov:5,strats:['fire'],boss:true,awakeR:4,crit:.12,drop:'bingshu'}),
+      U({name:'司马懿',g:'懿',cls:'军师',kind:'adv',side:'E',fac:'wei',x:22,y:3,hp:320,mp:99,int:48,atk:34,def:24,mov:5,strats:['fire','poison'],boss:true,awakeR:4,crit:.12,drop:'bingshu'}),
     ];},
   },
 };
@@ -5147,6 +5563,9 @@ const CAMP_CAOCAO={
       "..t......f......h.",".tt..h........tt..","......zz......t...","..f...zz..f.......",
       ".ff.......f.ccc.g.","......f.....ccc.g.","..t.......g.ccc..."].concat([".....f.......tt..."]),
     deploy:6,
+    choice:{q:'青州黄巾三十万众乞降，谋士议论纷纷——',
+      a:{t:'拣选精壮为兵，余者归农',dao:1,fx:()=>{bag.shangyao=(bag.shangyao||0)+2;return '流民感念，献【伤药】×2';}},
+      b:{t:'尽数充军，以战养战',dao:-1,fx:()=>{gold+=400;return '尽收其资，军资 +400';}}},
     spawns:[[1,3],[1,2],[1,4],[2,3],[2,4],[0,3],[2,2]],
     intro:[['青州黄巾百万入兖州。曹操迎击于寿张之东。','sys'],['贼众虽多——各个击破，谨防人海围困！','sys'],['双妖师藏于贼阵深处，宜遣骑兵先除之。','sys']],
     winPre:'青州平定 · 收编精锐',winSub:t=>`第 ${t} 回合击破管亥，收降卒三十万，谯县虎士许褚亦慕名来投！<br>急报——吕布袭兖州，陈宫献计据濮阳——回师夺城！`,
@@ -5194,6 +5613,9 @@ const CAMP_CAOCAO={
       U({name:'陈宫',g:'宫',cls:'军师',kind:'adv',side:'E',fac:'dong',x:19,y:5,hp:120,mp:80,int:44,atk:18,def:12,mov:4,strats:['fire'],boss:true,awakeR:5,crit:.05,drop:'bingshu'}),
     ];}},
    {title:'第六章 · 宛城之变',boss:'张绣',deploy:7,
+    choice:{q:'宛城突围在即，城中乱兵四起，部将请命——',
+      a:{t:'约束部曲，不扰百姓',dao:1,fx:()=>{bag.lingzhi=(bag.lingzhi||0)+1;return '城中父老冒死献【灵芝】×1';}},
+      b:{t:'纵兵夺路，先出城再说',dao:-1,fx:()=>{gold+=500;return '乱中取财，军资 +500';}}},
     win:{type:'escape',tiles:[[16,6],[17,6]],desc:'<em>曹操</em>突围至东侧大道出口（或击破 <em>张绣</em>）'},
     map:[
       "..t.....r...cccc..",".h......r...cccc..","........r...cccc..","..f..t..r....h....",
@@ -5227,7 +5649,7 @@ const CAMP_CAOCAO={
       U({name:'西凉骑兵',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:14,y:8,hp:115,atk:30,def:12,mov:6,mounted:true,crit:.15,awakeR:5}),
       U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'dong',x:14,y:2,hp:85,atk:40,def:7,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
       U({name:'胡车儿',g:'胡',cls:'猛将',kind:'guard',side:'E',fac:'dong',x:12,y:4,hp:150,atk:33,def:16,mov:6,rngShape:'square',awakeR:4,crit:.18,drop:'hudan'}),
-      U({name:'贾诩',g:'诩',cls:'军师',kind:'adv',side:'E',fac:'dong',x:13,y:2,hp:95,mp:80,int:42,atk:15,def:10,mov:4,strats:['fire'],awakeR:5,crit:.05,drop:'bingshu'}),
+      U({name:'贾诩',g:'诩',cls:'军师',kind:'adv',side:'E',fac:'dong',x:13,y:2,hp:95,mp:80,int:42,atk:15,def:10,mov:4,strats:['fire','poison'],awakeR:5,crit:.05,drop:'bingshu'}),
       U({name:'张绣',g:'绣',cls:'猛将',kind:'chief',side:'E',fac:'dong',x:14,y:1,hp:190,atk:35,def:18,mov:6,boss:true,awakeR:4,crit:.18,drop:'bawang'}),
     ];}},
    {title:'第七章 · 下邳之战',boss:'吕布',map:CC_XIAPI,deploy:8,weather:'rain',barrels:[[9,6],[14,6]],
@@ -5311,6 +5733,9 @@ const CAMP_CAOCAO={
       U({name:'韩猛',g:'猛',cls:'猛将',kind:'cav',side:'E',fac:'yuan',x:19,y:5,hp:185,atk:34,def:17,mov:7,mounted:true,boss:true,awakeR:4,crit:.17,drop:'dilu'}),
     ];}},
    {title:'第九章 · 官渡之战',boss:'袁绍',map:CC_GUANDU,deploy:9,barrels:[[19,6],[20,2]],
+    choice:{q:'军中搜出诸将私通袁绍的密信一箱，众人惶恐——',
+      a:{t:'付之一炬，既往不咎',dao:1,fx:()=>{units.filter(x=>x.side==='P'&&!x.npc).forEach(x=>addRage(x,30));return '三军感泣愿效死力，全军怒气 +30';}},
+      b:{t:'按名清算，以儆效尤',dao:-1,fx:()=>{gold+=400;return '抄没家资，军资 +400';}}},
     spawns:[[2,6],[1,6],[3,6],[2,5],[2,7],[3,5],[3,7],[1,5],[1,7]],
     intro:[
      ['建安五年，袁绍率河北大军南下，曹操据官渡迎战——以弱抗强，存亡一线！','sys'],
@@ -5409,7 +5834,7 @@ function selectCampaign(camp){
   DUELS=camp.duels; LAST_WORDS=camp.lastWords; ULTS=camp.ults;
   AMBUSH_LINES=camp.ambush||{};
   campColor=camp.color; campName=camp.faction; campLeader=camp.leader;
-  bag={...camp.bag}; gold=500; forge={};
+  bag={...camp.bag}; gold=500; forge={}; bondExp={}; dao=0;
   document.querySelector('h1').innerHTML=camp.title+'<span class="seal">'+camp.seal+'</span>';
   document.getElementById('campPre').textContent=camp.pre;
   document.getElementById('campBig').innerHTML=camp.big;
@@ -5446,7 +5871,7 @@ function startNewRun(){
   sfx.select();
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
-  bag={...activeCamp.bag};gold=500;forge={};
+  bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;
   runTurns=0;ngPlus=0;
   openPrep(0);
 }
@@ -5639,7 +6064,8 @@ function renderCodex(){
       ?'<div class="cstamp">'+cc.clear.slice(-8).reverse().map(s=>{
           const d=new Date(s.date);
           const pad=x=>String(x).padStart(2,'0');
-          return `<b>${s.g} 级</b>　难度 ${s.d}% · ${s.ng+1}周目 · 全程 ${s.t} 回合　<span style="color:rgba(232,220,192,.45)">${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}</span>`;
+          const dt=s.dao>=3?'仁德之主':s.dao<=-3?'乱世枭雄':s.dao!==undefined?'中庸之道':'';
+          return `<b>${s.g} 级</b>　难度 ${s.d}% · ${s.ng+1}周目 · ${s.t} 回合${dt?` · ${dt}`:''}　<span style="color:rgba(232,220,192,.45)">${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}</span>`;
         }).join('<br>')+'</div>'
       :'<div class="cstamp" style="color:var(--paper-dim)">—— 尚未通关 ——</div>';
   }
