@@ -1791,9 +1791,12 @@ const GOODS=[
 ];
 const CARGO_CAP=20;
 let tradeShift={}; // 本次备战的行情冲击：每买一件现价+5%、卖一件-5%（防无风险套利）
+let goodTrend={}; // 长期行情：战后某货物真实涨价的累积倍率（随存档继承）
+function rumorGoodIdx(){return Math.floor(hash(prepChap*9+ngPlus*5+2,prepChap*3+7)*GOODS.length)%GOODS.length;}
+const RUMOR_TXT=['市井传闻：江南<b>蜀锦</b>近日洛阳贵人争购，怕是要俏……','边关私语：北方战事将起，<b>盐铁</b>怕要涨价……','驿馆听闻：西凉<b>战马</b>断了商道，识货的早早囤些……','茶肆闲谈：南中<b>茶砖</b>今岁歉收，明眼人都在收……'];
 function goodPrice(gi){
   const base=GOODS[gi].base*(0.6+hash(prepChap*7+gi*13+1,ngPlus*17+gi*31+3)*0.8);
-  const shift=Math.max(.4,Math.min(2,1+(tradeShift[GOODS[gi].k]||0)));
+  const shift=Math.max(.4,Math.min(2,1+(tradeShift[GOODS[gi].k]||0)))*(goodTrend[GOODS[gi].k]||1);
   return Math.max(20,Math.round(base*shift/5)*5);
 }
 function cargoTotal(){return Object.values(cargo).reduce((a,b)=>a+b,0);}
@@ -2286,6 +2289,7 @@ function snapshotRoster(){
     bondExp:{...bondExp},
     chains:{...chains},
     cargo:{...cargo},
+    goodTrend:{...goodTrend},
     fort:{...fort},
     dao,
     gold,
@@ -2298,6 +2302,7 @@ function restoreRoster(snap){
   bondExp={...(snap.bondExp||{})};
   chains={...(snap.chains||{})};
   cargo={...(snap.cargo||{})};
+  goodTrend={...(snap.goodTrend||{})};
   fort=Object.assign({camp:0,drill:0,smith:0,clinic:0,stable:0},snap.fort||{});
   dao=snap.dao||0;
   gold=snap.gold;
@@ -2843,8 +2848,11 @@ function gainExp(u,amt){
     const g=rbGrowth(u.rb);
     u.maxhp+=g.hp;u.atk+=g.st;u.def+=g.st;u.int+=g.st;
     if(u.maxmp>0){u.maxmp+=5;u.mp=Math.min(u.maxmp,u.mp+5);}
-    u.hp=Math.min(u.maxhp,u.hp+Math.round(u.maxhp*.25));
+    u.hp=Math.min(u.maxhp,u.hp+30); // 升级回复固定 30 兵力（不再回满）
+    u.spin=1; // 升级原地转圈特效
+    addHealFx(u.x,u.y);
     addFloat(u.px,u.py-30,u.lv>=LV_MAX?'满 级 !':'升 级 !','#f6d35e',true);
+    addFloat(u.px,u.py-48,'+30','#b8e986');
     log(`<b>${u.name}</b> 升至 ${u.lv} 级！${u.lv>=LV_MAX?'已臻凡人极限——备战界面可转生':'武力、守备上升'}`, 'good');
     sfx.levelup();
     checkLearn(u);
@@ -3026,7 +3034,7 @@ let ULTS={
   '刘备':  {label:'仁德之心',desc:'全军恢复 40 兵力',quote:'有德者居之！全军——随朕进击！',type:'heal_flat',amt:40},
   '关羽':  {label:'青龙偃月',desc:'武器范围内单体 220% 伤害',quote:'关某温酒斩华雄——看刀！',type:'single',mult:2.2},
   '张飞':  {label:'当阳之喝',desc:'九宫格内所有敌人受 150% 伤害',quote:'燕人张翼德在此！谁敢来决一死战！',type:'aoe',mult:1.5},
-  '诸葛亮':{label:'八阵图',  desc:'全军恢复（智力×1.2）兵力',quote:'鞠躬尽瘁，死而后已。',type:'heal_int',mult:1.2},
+  '诸葛亮':{label:'八阵图',  desc:'九宫格内所有敌人受 智力×2.2 法术重创',quote:'此阵可挡十万兵——困龙锁地！',type:'aoe_int',mult:2.2},
   '黄忠':  {label:'百步穿杨',desc:'射程内至多三敌各受 130% 伤害',quote:'老将黄忠在此！箭来！',type:'triple',mult:1.3},
   '魏延':  {label:'奇袭子午',desc:'单体 240% 伤害（必定暴击）',quote:'谁敢杀我——',type:'single',mult:2.4},
   '严颜':  {label:'断头之志',desc:'自身+55，相邻友军+25',quote:'我州但有断头将军，无降将军！',type:'heal_self',selfAmt:55,allyAmt:25},
@@ -3070,7 +3078,7 @@ function addRage(u,amt){
 function ultTargets(u){
   const ult=ultOf(u);
   if(!ult)return [];
-  if(ult.type==='aoe')return alive('E').filter(e=>Math.max(Math.abs(e.x-u.x),Math.abs(e.y-u.y))<=1);
+  if(ult.type==='aoe'||ult.type==='aoe_int')return alive('E').filter(e=>Math.max(Math.abs(e.x-u.x),Math.abs(e.y-u.y))<=1);
   if(ult.type==='single'||ult.type==='triple')return alive('E').filter(e=>shapeOk(u,e.x-u.x,e.y-u.y));
   return [u];
 }
@@ -3132,12 +3140,14 @@ async function castUlt(u,target){
       if(checkEnd())return;
       await sleep(200);
     }
-  }else if(ult.type==='aoe'){
+  }else if(ult.type==='aoe'||ult.type==='aoe_int'){
     const ts=ultTargets(u);
     shakeT=.55;
+    const isInt=ult.type==='aoe_int';
+    if(isInt){sfx.fire();ts.forEach(e2=>addFire(e2.x,e2.y));await sleep(360);}
     for(const e2 of ts){
       sfx.hit();addCritBurst(e2.px,e2.py);
-      const dd=ultDmg(ult.mult,e2);
+      const dd=isInt?Math.max(1,Math.round(S(u,'int')*ult.mult-S(e2,'def')*.4)):ultDmg(ult.mult,e2);
       log(`${u.name}【${ult.label}】横扫 ${e2.name}，<b>${dd}</b> 伤害！`,'good');
       const dead=await doDamage(e2,dd,'#ffd24a');
       gainExp(u,dd*.4+(dead?35:0));addStat(u,dd,dead);
@@ -3773,9 +3783,23 @@ function finish(win,loseMsg){
     ov.classList.remove('hidden');
     if(win){
       runTurns+=turn;
+      // 战后行情兑现：备战时的传闻有约六成几率应验，被点名货物真实涨价（随机幅度）
+      if(!isExtra){
+        const ri=rumorGoodIdx(), gk=GOODS[ri].k;
+        if(Math.random()<0.6){
+          const up=1.3+Math.random()*0.4;
+          goodTrend[gk]=Math.min(2.6,(goodTrend[gk]||1)*up);
+          ov.querySelector('.sub')&&0;
+          setTimeout(()=>{try{log&&0;}catch(e){}},0);
+          ov._rumorMsg=`<br><span style="color:#e8c655">行情应验：${GOODS[ri].n} 价格上扬 ${Math.round((up-1)*100)}%！囤货者大赚。</span>`;
+        }else ov._rumorMsg=`<br><span style="color:rgba(232,220,192,.6)">行情失准：${GOODS[ri].n} 风声过去，价格如常。</span>`;
+        // 其余货物缓慢回归基准，防长期通胀
+        for(const g of GOODS)if(g.k!==gk&&goodTrend[g.k])goodTrend[g.k]=1+(goodTrend[g.k]-1)*0.85;
+      }
       ov.querySelector('.pre').textContent=ch.winPre;
       ov.querySelector('.big').innerHTML='大<span class="red">捷</span>';
-      ov.querySelector('.sub').innerHTML=ch.winSub(turn);
+      ov.querySelector('.sub').innerHTML=ch.winSub(turn)+(ov._rumorMsg||'');
+      ov._rumorMsg='';
       if(ch.reward){
         const names=Object.entries(ch.reward).map(([k,n])=>`${ITEMS[k].n}${n>1?'×'+n:''}`).join('、');
         for(const [k,n] of Object.entries(ch.reward))bag[k]=(bag[k]||0)+n;
@@ -4694,15 +4718,20 @@ async function enemyPhase(){
       continue;
     }
     if(!e.awake){
+      const isAmbush=(e.awakeR||6)<=3||!!AMBUSH_LINES[e.name]; // 真·伏兵：低警戒/有伏兵台词
       const near=alive('P').some(p=>manh(p,e)<=e.awakeR);
-      if(near||turn>=10){
-        e.awake=true;
-        if(AMBUSH_LINES[e.name]){
-          sfx.bolt();shakeT=.25;
-          addFloat(e.px,e.py-30,'伏兵！','#ff4444','huge');
-          log(`<b>${e.name}</b> 杀出！「${AMBUSH_LINES[e.name]}」`,'hit');
-          await say([[e.name,AMBUSH_LINES[e.name]]],1400);
-        }
+      // 伏兵唯有踏入埋伏圈才现身（不再到回合数就强制冒头）；普通敌军 turn>=12 兜底防龟缩卡关
+      if(near||(!isAmbush&&turn>=12)){
+        if(isAmbush){
+          // 伏兵联动：一处触发，周围 5 格内所有伏兵一齐杀出
+          const burst=units.filter(x=>x.alive&&x.side==='E'&&!x.awake&&((x.awakeR||6)<=3||AMBUSH_LINES[x.name])&&Math.max(Math.abs(x.x-e.x),Math.abs(x.y-e.y))<=5);
+          if(!burst.includes(e))burst.push(e);
+          sfx.bolt();shakeT=.4;flashT=.25;
+          burst.forEach(a2=>{a2.awake=true;addFloat(a2.px,a2.py-30,'伏兵！','#ff4444','huge');});
+          const line=AMBUSH_LINES[e.name]||'杀——！中伏了！';
+          log(`<b>${burst.length}</b> 路伏兵齐出！「${line}」`,'hit');
+          await say([[e.name,line]],1400);
+        }else e.awake=true;
       }
       else continue;
     }
@@ -5943,7 +5972,10 @@ function drawUnitSprite(u,time){
   const bob=(state!=='busy')?Math.sin(time/340+u._i*1.7)*1.1:0;
   ctx.save();
   ctx.translate(u.px,u.py+bob-2);
-  ctx.scale(curDir,1);
+  if(u.spin>0){ // 升级原地转圈
+    u.spin-=0.045;
+    ctx.scale(Math.cos(u.spin*Math.PI*2)*curDir,1); // Y轴旋转错觉
+  }else ctx.scale(curDir,1);
   ctx.lineJoin='round';ctx.lineCap='round';
   (SPRITES[u.kind]||SPRITES.spear)(u,p,time);
   ctx.restore();
@@ -6520,11 +6552,12 @@ function openPrep(i){
   const ev=chainStepFor(i);
   if(ev&&!CHAPTERS[i].extra)showChain(ev);
 }
-function renderPrep(animate){
+function renderPrep(animate,skipRoster){
   const host=document.getElementById('prepRoster');
   const cap=deployCap(prepChap);
   const depCnt=roster.filter(u=>u.dep).length;
   document.getElementById('prepDep').textContent=`出战席位 ${depCnt} / ${cap}`;
+  if(skipRoster){renderPrepEcon();return;} // 经济操作：只刷军市/军府/商贸，不重绘武将立绘（消除闪屏）
   host.innerHTML=roster.map((u,ri)=>{
     const sels=['wp','ar','ac'].map(slot=>{
       const cur=u.equip[slot];
@@ -6573,6 +6606,9 @@ function renderPrep(animate){
     </div>`;
   }).join('');
   roster.forEach((u,ri)=>drawPortrait(document.getElementById('pcv'+ri),u,ri*137));
+  renderPrepEcon(animate);
+}
+function renderPrepEcon(animate){
   const chips=filter=>Object.keys(bag).filter(k=>bag[k]>0&&filter(ITEMS[k])).map(k=>
     `<span class="chip">${ITEMS[k].n}×${bag[k]}<i>${itemDesc(k)}</i><button data-sell="${k}" title="售出一件">售 ${Math.floor((ITEMS[k].price||0)/2)}金</button></span>`
   ).join('')||'<span class="chip" style="opacity:.5">无</span>';
@@ -6623,7 +6659,8 @@ function renderPrep(animate){
     </div>`;
   }).join('')+'</div>';
   // 商队贸易
-  document.getElementById('prepTrade').innerHTML='<div class="shopgrid">'+GOODS.map((g,gi)=>{
+  const ri=rumorGoodIdx();
+  document.getElementById('prepTrade').innerHTML=`<div class="phead" style="color:#e8c655;border-left:2px solid rgba(232,198,85,.5);padding-left:8px">${RUMOR_TXT[ri]}<br><span style="font-size:11px;opacity:.7">（传闻未必应验，囤货需自担风险）</span></div><div class="shopgrid">`+GOODS.map((g,gi)=>{
     const p=goodPrice(gi);
     const pct=Math.round(p/g.base*100);
     const col=pct<=85?'#9fc068':pct>=115?'#e8845a':'var(--paper-dim)';
@@ -6659,7 +6696,7 @@ function renderPrep(animate){
           <span>
           ${moving?`<button data-frecv="${k}" ${gold>=moveFee?'':'disabled'}>接收（${moveFee}金）</button>`
             :`<button data-forge="${k}" ${gold<cost?'disabled':''}>淬 火</button>
-              ${lv>0?`<button data-fmove="${k}">${forgeMove===k?'取消':'转 锻'}</button>`:''}`}
+              ${lv>0&&!ITEMS[k].legend?`<button data-fmove="${k}">${forgeMove===k?'取消':'转 锻'}</button>`:''}`}
           </span>
         </div>
       </div>`;
@@ -6681,7 +6718,7 @@ document.getElementById('prepStrat').addEventListener('click',e=>{
     warPlan=k;
   }
   sfx.coin();
-  renderPrep(false);
+  renderPrep(false,true);
 });
 document.getElementById('prepOrders').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-order]');
@@ -6697,7 +6734,7 @@ document.getElementById('prepOrders').addEventListener('click',e=>{
     warOrder=k;
   }
   sfx.coin();
-  renderPrep(false);
+  renderPrep(false,true);
 });
 document.getElementById('prepFort').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-fort]');
@@ -6710,7 +6747,7 @@ document.getElementById('prepFort').addEventListener('click',e=>{
   gold-=cost;
   fort[k]=lv+1;
   sfx.levelup();
-  renderPrep(false);
+  renderPrep(false,true);
 });
 document.getElementById('prepTrade').addEventListener('click',e=>{
   const bb=e.target.closest('button[data-buy-good]');
@@ -6739,7 +6776,7 @@ document.getElementById('prepTrade').addEventListener('click',e=>{
     cargo[g.k]=0;gold+=got;
   }
   sfx.coin();
-  renderPrep(false);
+  renderPrep(false,true);
 });
 let forgeMove=null; // 转锻：待转出的武器
 function forgeFlash(msg,good){
@@ -6762,7 +6799,7 @@ document.getElementById('prepForge').addEventListener('click',e=>{
       sfx.hit();
       forgeFlash(`【${ITEMS[k].n}】淬火失败，费用打了水漂（等级未损）。`,false);
     }
-    renderPrep(false);
+    renderPrep(false,true);
     return;
   }
   const mb=e.target.closest('button[data-fmove]');
@@ -6770,12 +6807,13 @@ document.getElementById('prepForge').addEventListener('click',e=>{
     const k=mb.dataset.fmove;
     forgeMove=forgeMove===k?null:k;
     sfx.select();
-    renderPrep(false);
+    renderPrep(false,true);
     return;
   }
   const rb=e.target.closest('button[data-frecv]');
   if(rb&&!rb.disabled&&forgeMove){
     const src=forgeMove, dst=rb.dataset.frecv;
+    if(ITEMS[src].legend||ITEMS[dst].legend){forgeFlash('神兵乃天授之物，锻造层级不可转移。',false);forgeMove=null;renderPrep(false);return;}
     const fee=100*(forge[src]||0);
     if(gold<fee)return;
     gold-=fee;
@@ -6784,7 +6822,7 @@ document.getElementById('prepForge').addEventListener('click',e=>{
     forgeMove=null;
     sfx.coin();
     forgeFlash(`匠人妙手——【${ITEMS[dst].n}】继承了锻造层级（+${forge[dst]}）！`,true);
-    renderPrep(false);
+    renderPrep(false,true);
     return;
   }
 });
@@ -6796,7 +6834,7 @@ document.getElementById('prepShop').addEventListener('click',e=>{
   gold-=it.price;
   bag[k]=(bag[k]||0)+1;
   sfx.coin();
-  renderPrep(false);
+  renderPrep(false,true);
 });
 document.getElementById('prepBag').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-sell]');
@@ -6806,7 +6844,7 @@ document.getElementById('prepBag').addEventListener('click',e=>{
   bag[k]--;
   gold+=Math.floor((ITEMS[k].price||0)/2);
   sfx.coin();
-  renderPrep(false);
+  renderPrep(false,true);
 });
 document.getElementById('prepRoster').addEventListener('click',e=>{
   const ubtn=e.target.closest('button[data-ultsel]');
@@ -7081,7 +7119,7 @@ document.getElementById('casTonic').onclick=()=>{
   sfx.coin();
   casMsg(`掌柜从柜底摸出一颗【${ITEMS[k].n}】——${ITEMS[k].lore}`);
   saveGame(prepChap);
-  casHead();renderPrep(false);
+  casHead();renderPrep(false,true);
 };
 document.getElementById('closeCasino').onclick=()=>{
   if(casBusy)return;
@@ -8130,7 +8168,7 @@ function selectCampaign(camp){
   DUELS=camp.duels; LAST_WORDS=camp.lastWords; ULTS=camp.ults;
   AMBUSH_LINES=camp.ambush||{};
   campColor=camp.color; campName=camp.faction; campLeader=camp.leader;
-  bag={...camp.bag}; gold=500; forge={}; bondExp={}; dao=0; chains={}; cargo={}; fort={camp:0,drill:0,smith:0,clinic:0,stable:0};
+  bag={...camp.bag}; gold=500; forge={}; bondExp={}; dao=0; chains={}; cargo={}; goodTrend={}; fort={camp:0,drill:0,smith:0,clinic:0,stable:0};
   document.querySelector('h1').innerHTML=camp.title+'<span class="seal">'+camp.seal+'</span>';
   document.getElementById('campPre').textContent=camp.pre;
   document.getElementById('campBig').innerHTML=camp.big;
@@ -8167,7 +8205,7 @@ function startNewRun(){
   sfx.select();
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
-  bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;chains={};cargo={};
+  bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;chains={};cargo={};goodTrend={};
   fort={camp:0,drill:0,smith:0,clinic:0,stable:0};
   if(talentOn('t_gold'))gold+=500;
   if(talentOn('t_supply')){bag.shangyao=(bag.shangyao||0)+3;bag.danyao=(bag.danyao||0)+2;}
@@ -8489,7 +8527,7 @@ function talSpent(c){
   return (c.talents||[]).reduce((s2,k)=>{const t=TALENTS.find(x=>x.k===k);return s2+(t?t.cost:0);},0);
 }
 function talentOn(k){return TAL.has(k);}
-function diffBonus(){return Math.max(0,Math.round((diffPct-100)/10));} // 高难赠点：每+10%难度送1点
+function diffBonus(){return Math.max(0,Math.round((diffPct-100)/5));} // 高难赠点：每+5%难度送1点（800%=+140）
 function talBudget(c){return achPoints(c)+diffBonus();}
 /* 开战时按品级顺序裁切超出预算的天赋（仅本战禁用，搭配保留） */
 function enforceTalents(){
