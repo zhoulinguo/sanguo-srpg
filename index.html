@@ -395,21 +395,33 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 #sysBtn:disabled{opacity:.4;cursor:default}
 #fastBtn.on{color:#ffd24a;border-color:rgba(255,210,74,.6)}
 #dangerBtn.on{color:#e87a6a;border-color:rgba(212,121,106,.65)}
-#sysMenu,#codex,#choice{
+#sysMenu,#codex,#choice,#chlog{
   position:fixed;inset:0;z-index:82;display:flex;align-items:center;justify-content:center;
   background:rgba(13,10,7,.82);
 }
-#sysMenu.hidden,#codex.hidden,#choice.hidden{display:none}
-#sysMenu .sinner,#codex .sinner,#choice .sinner{
+#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden{display:none}
+#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner{
   width:min(540px,92vw);
   background:linear-gradient(170deg,#262017,#171310);
   border:1px solid rgba(201,162,39,.5);border-radius:6px;
   padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.7);
   animation:popIn .3s ease both;
 }
-#sysMenu h2,#codex h2,#choice h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
-#sysMenu .snote,#codex .snote,#choice .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
+#sysMenu h2,#codex h2,#choice h2,#chlog h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
+#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
 #codex .sinner{width:min(680px,94vw);max-height:88vh;overflow-y:auto}
+#chlog .sinner{width:min(620px,94vw);max-height:88vh;overflow-y:auto}
+#chlog .chsec{font-family:var(--display);font-size:15px;letter-spacing:4px;color:var(--gold);margin:12px 0 6px;text-align:center}
+.chrow{
+  display:flex;justify-content:space-between;align-items:center;width:100%;
+  font-family:var(--body);font-size:13px;letter-spacing:1px;text-align:left;
+  background:rgba(232,220,192,.04);color:var(--paper);
+  border:1px solid rgba(201,162,39,.22);border-radius:4px;
+  padding:7px 12px;margin-bottom:5px;cursor:pointer;transition:all .12s;
+}
+.chrow:hover:not(:disabled){border-color:rgba(201,162,39,.6);background:rgba(201,162,39,.08)}
+.chrow:disabled{opacity:.32;cursor:default}
+.chrow .chst{font-size:11.5px;color:var(--gold);flex:0 0 auto;margin-left:10px}
 #codex h3{font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:4px;color:var(--gold);margin:14px 0 6px;display:flex;align-items:center;gap:10px}
 #codex h3::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(201,162,39,.45),transparent)}
 #codex .cgrid{display:flex;flex-wrap:wrap;gap:6px}
@@ -627,6 +639,15 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   </div>
 </div>
 
+<div id="chlog" class="hidden">
+  <div class="sinner">
+    <h2>战 记 · 选 关</h2>
+    <div class="snote">回访已通关章节：可补刷神兵、练级、劝降与单挑名场面；最远进度不会倒退。沿用当前章节存档的名册与难度。</div>
+    <div id="chlogBody"></div>
+    <div class="srow2"><button id="closeChlog">返 回</button></div>
+  </div>
+</div>
+
 <div id="codex" class="hidden">
   <div class="sinner">
     <h2>图 鉴 · 战 功 录</h2>
@@ -655,7 +676,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
         <i class="dsHint">敌军强度 80%—800%　拖动滑条自定难度</i>
       </div>
     </div>
-    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button><button id="loadBtn">读 档</button><button id="codexBtn">图 鉴</button><button id="extraBtn" style="display:none">外 传</button></div>
+    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button><button id="loadBtn">读 档</button><button id="codexBtn">图 鉴</button><button id="chlogBtn">战 记</button><button id="extraBtn" style="display:none">外 传</button></div>
   </div>
 </div>
 
@@ -1567,6 +1588,7 @@ function barrelAt(x,y){return barrels.find(b=>b.x===x&&b.y===y);}
 let fireTiles=[]; // 燃烧地块：火计/油桶留下，停留其上每回合受伤，持续数回合
 let bondExp={}; // 羁绊熟练：并肩作战回合数，C→B(8)→A(18) 加成递增
 let warOrder=null; // 战前军情：备战时颁布，仅本场战斗生效
+let maxChap=0; // 战役最远进度（战记选关解锁上限）
 const WAR_ORDERS={
   drums:  {n:'擂鼓助威',cost:300,desc:'全军武力 +3',atk:3},
   march:  {n:'轻装疾行',cost:300,desc:'全军移动 +1',mov:1},
@@ -2151,8 +2173,8 @@ function stratDmg(a,d,sk){
 }
 
 /* ===================== 工具 / 动画 ===================== */
-let fastMode=false; // 敌方回合加速
-const spd=()=>(fastMode&&phase==='E')?2.4:1;
+let fastMode=(()=>{try{return localStorage.getItem('sanguo_speed')||'off';}catch(e){return 'off';}})(); // off / enemy / all
+const spd=()=>fastMode==='all'?2.2:(fastMode==='enemy'&&phase==='E')?2.4:1;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms/spd()));
 function tween(dur,fn){
   dur/=spd();
@@ -5495,7 +5517,14 @@ document.getElementById('diffRange').addEventListener('input',e=>{
 /* 存档（每章通关自动保存）。SAVE_VER：章节结构变更时递增，旧档拒读防崩溃 */
 const SAVE_VER=4;
 function saveGame(nextChap){
-  try{localStorage.setItem('zhaoyun_save',JSON.stringify({ver:SAVE_VER,camp:activeCamp.key,chap:nextChap,snap:snapshotRoster(),diffPct,runTurns,ngPlus}));}catch(e){}
+  maxChap=Math.max(maxChap,nextChap);
+  try{localStorage.setItem('zhaoyun_save',JSON.stringify({ver:SAVE_VER,camp:activeCamp.key,chap:nextChap,snap:snapshotRoster(),diffPct,runTurns,ngPlus,maxChap}));}catch(e){}
+  // 自动备份轮换（最近三次章节存档，防误删误覆盖）
+  try{
+    const idx=(parseInt(localStorage.getItem('sanguo_auto_ptr'))||0)%3+1;
+    localStorage.setItem('sanguo_auto_'+idx,JSON.stringify({ver:SAVE_VER,camp:activeCamp.key,chap:nextChap,snap:snapshotRoster(),diffPct,runTurns,ngPlus,maxChap,time:Date.now()}));
+    localStorage.setItem('sanguo_auto_ptr',String(idx));
+  }catch(e){}
 }
 /* ===================== 图鉴（跨周目永久收藏） ===================== */
 const CODEX_KEY='sanguo_codex';
@@ -6474,7 +6503,7 @@ function startNewRun(){
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
   bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;
-  runTurns=0;ngPlus=0;
+  runTurns=0;ngPlus=0;maxChap=0;
   openPrep(0);
 }
 document.getElementById('startBtn').onclick=startNewRun;
@@ -6511,7 +6540,7 @@ contBtn.onclick=()=>{
   roster=[];bag={...activeCamp.bag};gold=500;ensureRoster();
   restoreRoster(sv.snap);
   setDiff(sv.diffPct??100);
-  runTurns=sv.runTurns||0;ngPlus=sv.ngPlus||0;
+  runTurns=sv.runTurns||0;ngPlus=sv.ngPlus||0;maxChap=sv.maxChap??sv.chap??0;
   openPrep(Math.min(sv.chap,CHAPTERS.length-1));
 };
 
@@ -6551,7 +6580,28 @@ function renderSlots(){
       </div>`;
     }
   }
+  // 自动备份（最近三次章节存档）
+  html+='<div style="font-family:var(--display);font-size:14px;letter-spacing:3px;color:var(--gold);margin:10px 0 6px">自动备份（每章开打前轮换三份）</div>';
+  const autos=[];
+  for(let i=1;i<=3;i++){
+    try{
+      const d=JSON.parse(localStorage.getItem('sanguo_auto_'+i));
+      if(d&&d.ver===SAVE_VER&&d.snap)autos.push(d);
+    }catch(e){}
+  }
+  autos.sort((a,b)=>(b.time||0)-(a.time||0));
+  if(!autos.length)html+='<div class="slot"><div class="sinfo"><span class="stime">—— 暂无备份 ——</span></div></div>';
+  autos.forEach((d,ai)=>{
+    const camp=d.camp==='caocao'?CAMP_CAOCAO:CAMP_ZHAOYUN;
+    const title=(camp.chapters[d.chap]&&camp.chapters[d.chap].title)||(camp.chapters[d.chap-1]&&'已通关');
+    const t2=new Date(d.time||0);
+    html+=`<div class="slot">
+      <div class="sinfo"><b>备份</b>　${camp.seal} · ${title||''}<br><span class="stime">${t2.getFullYear()}-${pad(t2.getMonth()+1)}-${pad(t2.getDate())} ${pad(t2.getHours())}:${pad(t2.getMinutes())}</span></div>
+      <div class="sbtns"><button data-autoload="${ai}">读</button></div>
+    </div>`;
+  });
   host.innerHTML=html;
+  host._autos=autos;
 }
 const sysMenuEl=document.getElementById('sysMenu');
 function openSysMenu(fromTitle){
@@ -6565,13 +6615,18 @@ document.getElementById('sysBtn').onclick=()=>{
   if(AC)sfx.select();
   openSysMenu(false);
 };
-document.getElementById('fastBtn').onclick=()=>{
-  fastMode=!fastMode;
+function renderFastBtn(){
   const b=document.getElementById('fastBtn');
-  b.textContent=fastMode?'敌速 ×2':'敌速 ×1';
-  b.classList.toggle('on',fastMode);
+  b.textContent=fastMode==='all'?'全速 ×2':fastMode==='enemy'?'敌速 ×2':'常 速';
+  b.classList.toggle('on',fastMode!=='off');
+}
+document.getElementById('fastBtn').onclick=()=>{
+  fastMode=fastMode==='off'?'enemy':fastMode==='enemy'?'all':'off';
+  try{localStorage.setItem('sanguo_speed',fastMode);}catch(e){}
+  renderFastBtn();
   if(AC)sfx.select();
 };
+renderFastBtn();
 document.getElementById('dangerBtn').onclick=()=>{
   dangerOn=!dangerOn;
   if(dangerOn)calcDanger();
@@ -6590,6 +6645,22 @@ document.getElementById('closeMenu').onclick=()=>{
 document.getElementById('slotList').addEventListener('click',e=>{
   const btn=e.target.closest('button');
   if(!btn||btn.disabled)return;
+  if(btn.dataset.autoload!==undefined){
+    const d=document.getElementById('slotList')._autos[+btn.dataset.autoload];
+    if(!d)return;
+    sfx.select();
+    closeSysMenu();
+    if(d.camp&&d.camp!==activeCamp.key)selectCampaign(d.camp==='caocao'?CAMP_CAOCAO:CAMP_ZHAOYUN);
+    document.getElementById('overlay').classList.add('hidden');
+    document.getElementById('prep').classList.add('hidden');
+    roster=[];bag={...activeCamp.bag};gold=500;ensureRoster();
+    restoreRoster(d.snap);
+    setDiff(d.diffPct??100);
+    runTurns=d.runTurns||0;ngPlus=d.ngPlus||0;maxChap=d.maxChap??d.chap??0;
+    units=[];ended=false;state='title';
+    openPrep(Math.min(d.chap,CHAPTERS.length-1));
+    return;
+  }
   if(btn.dataset.save){
     const d=battlePayload();
     d.time=Date.now();
@@ -6686,6 +6757,46 @@ function renderCodex(){
     }).join('')+'</div>';
   document.getElementById('codexBody').innerHTML=html;
 }
+function renderChlog(){
+  const sv=loadGame();
+  const mine=sv&&sv.camp===activeCamp.key;
+  const mc=mine?(sv.maxChap??sv.chap??0):0;
+  const cur=mine?sv.chap:0;
+  let html='';
+  CHAPTERS.forEach((c,i)=>{
+    if(activeCamp.key==='zhaoyun'&&i===13)html+='<div class="chsec">—— 神 纪 · 倒 转 的 时 光 ——</div>';
+    const unlocked=i<=mc;
+    const st=i<mc?'✓ 已克':(i===cur&&mine?'▶ 当前':(unlocked?'可出阵':'未抵达'));
+    html+=`<button class="chrow" data-ch="${i}" ${unlocked?'':'disabled'}><span>${c.title}</span><span class="chst">${st}</span></button>`;
+  });
+  document.getElementById('chlogBody').innerHTML=html;
+}
+document.getElementById('chlogBtn').onclick=()=>{
+  initAudio();sfx.select();
+  renderChlog();
+  document.getElementById('chlog').classList.remove('hidden');
+};
+document.getElementById('closeChlog').onclick=()=>{
+  if(AC)sfx.select();
+  document.getElementById('chlog').classList.add('hidden');
+};
+document.getElementById('chlogBody').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-ch]');
+  if(!btn||btn.disabled)return;
+  sfx.select();
+  const i=+btn.dataset.ch;
+  const sv=loadGame();
+  document.getElementById('chlog').classList.add('hidden');
+  document.getElementById('overlay').classList.add('hidden');
+  roster=[];bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;runTurns=0;ngPlus=0;maxChap=0;
+  ensureRoster();
+  if(sv&&sv.camp===activeCamp.key&&sv.snap){
+    restoreRoster(sv.snap);
+    setDiff(sv.diffPct??100);
+    runTurns=sv.runTurns||0;ngPlus=sv.ngPlus||0;maxChap=sv.maxChap??sv.chap??0;
+  }
+  openPrep(i);
+});
 document.getElementById('codexBtn').onclick=()=>{
   if(AC)sfx.select();
   renderCodex();
@@ -6718,6 +6829,7 @@ document.getElementById('backHome').onclick=()=>{
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&!sysMenuEl.classList.contains('hidden'))closeSysMenu();
   if(e.key==='Escape')document.getElementById('codex').classList.add('hidden');
+  if(e.key==='Escape')document.getElementById('chlog').classList.add('hidden');
 });
 requestAnimationFrame(loop);
 </script>
