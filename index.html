@@ -1605,6 +1605,7 @@ let warOrder=null; // 战前军情：备战时颁布，仅本场战斗生效
 let maxChap=0; // 战役最远进度（战记选关解锁上限）
 let fallenFlag=false; // 本章是否有我方武将阵亡（三星战功·无伤）
 let retryN=0; // 本章败北重试次数（越挫越勇：每败一次全军伤害+5%/受伤-4%，至多5层）
+let lampUsed=false; // 七星续命灯：主将每章免死一次
 function retryMul(){return 1+Math.min(retryN,5)*.05;}
 function retryGuard(){return 1-Math.min(retryN,5)*.04;}
 const WAR_ORDERS={
@@ -1653,6 +1654,7 @@ async function tickStatus(side){
     }
     const ft=fireAt(u.x,u.y);
     if(ft){dmg+=rattan?24:12;tags.push('烈焰');addFire(u.x,u.y);}
+    if(dmg>0&&u.side==='P'&&!u.npc&&talentOn('t_dot'))dmg=Math.max(1,Math.round(dmg/2)); // 青囊遗风
     if(dmg>0){
       log(`${u.name} 受${tags.join('/')}之苦，损失 <b>${dmg}</b> 兵力`,u.side==='P'?'hit':'good');
       await doDamage(u,dmg,'#e8884a');
@@ -1683,8 +1685,10 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
   }
   if(u.side==='P'&&!u.npc&&TAL.size){
     if(stat==='atk'&&TAL.has('t_atk'))v+=2;
+    if(stat==='atk'&&TAL.has('t_forgeall')&&u.equip&&u.equip.wp)v+=2; // 玄铁重铸
     if(stat==='def'&&TAL.has('t_def'))v+=2;
     if(stat==='mov'&&TAL.has('t_mov'))v+=1;
+    if(stat==='mov'&&TAL.has('t4_cloud'))v+=2; // 筋斗云
   }
   if(stat==='mov'&&curWeather()==='snow')v=Math.max(2,v-1);
   if(stat==='mov'&&hasStatus(u,'slow'))v=Math.max(1,v-2);
@@ -1705,6 +1709,7 @@ function critOf(u){
   if(legendFx(u)==='sure_crit')return 1; // 青龙偃月：刀刀暴击
   let c=u.crit??.12;
   if(u.side==='P'&&!u.npc&&warOrder&&WAR_ORDERS[warOrder].crit)c+=WAR_ORDERS[warOrder].crit;
+  if(u.side==='P'&&!u.npc&&talentOn('t_xuanyuan'))c+=.08;
   if(u.side==='P'&&!u.npc&&typeof dao!=='undefined'&&dao<=-2)c+=.03; // 霸道立威：全军暴击+3%
   if(u.equip)for(const sl of ['wp','ar','ac']){
     const it=u.equip[sl]&&ITEMS[u.equip[sl]];
@@ -1863,6 +1868,7 @@ function stratRng(u,s){ // 法术范围 = 基础 + 扇笛等装备增程 + 转�
     if(it&&it.srng)r+=it.srng;
   }
   if(u.srng)r+=u.srng;
+  if(u.side==='P'&&!u.npc&&talentOn('t4_laojun'))r+=1;
   return r;
 }
 /* ===================== 转职（Lv15 解锁，按兵种一次性强化） ===================== */
@@ -2209,9 +2215,13 @@ function dmgRange(a,d){
   const atk=S(a,'atk')+bondStat(a,'atk')+(hasStatus(a,'rally')?6:0)+auraBonus(a);
   let def=S(d,'def')+bondStat(d,'def');
   if(legendFx(a)==='pierce')def*=.5; // 七星宝刀：穿透
-  let base=atk*advMult(a,d)-def*(1+terrDef(d.x,d.y));
+  const tmul=(d.side==='P'&&!d.npc&&talentOn('t_terr'))?1.5:1; // 八门金锁阵
+  let base=atk*advMult(a,d)-def*(1+terrDef(d.x,d.y)*tmul);
   if(a.side==='P'&&!a.npc&&retryN>0)base*=retryMul();   // 越挫越勇：增伤
   if(d.side==='P'&&!d.npc&&retryN>0)base*=retryGuard(); // 越挫越勇：减伤
+  if(a.side==='P'&&!a.npc&&talentOn('t4_asura'))base*=1.15; // 修罗契约：增伤
+  if(d.side==='P'&&!d.npc&&talentOn('t4_asura'))base*=1.1;  // 修罗契约：代价
+  if(d.side==='P'&&!d.npc&&talentOn('t4_bell'))base*=.9;    // 金钟罩
   if(pincerAlly(a,d))base*=1.3;
   if(curWeather()==='rain'&&a.rngMax>=2)base*=.85; // 雨天弓弦松弛
   return [Math.max(1,Math.round(base*.9)),Math.max(1,Math.round(base*1.1))];
@@ -2227,6 +2237,10 @@ function stratDmg(a,d,sk){
   let v=S(a,'int')*1.3-S(d,'def')*.3;
   if(sk==='fire'&&curWeather()==='rain')v*=.5; // 霖雨浇熄火攻
   if((sk==='fire'||sk==='firestorm')&&gearFx(d,'rattan'))v*=1.8; // 藤甲遇火即燃
+  if(a.side==='P'&&!a.npc){
+    if(talentOn('t_spell'))v*=1.2;   // 太平残页
+    if(talentOn('t4_laojun'))v*=1.4; // 太上老君亲传
+  }
   return Math.max(1,Math.round(v));
 }
 
@@ -2656,11 +2670,30 @@ async function doDamage(target,dmg,color='#ffd9c4'){
   target.awake=true;
   addRage(target,30);
   addFloat(target.px,target.py-26,String(dmg),color);
+  if(target.hp<=0&&target.side==='P'&&!target.npc&&!target.temp){
+    if(target.leader&&talentOn('t_lamp')&&!lampUsed){
+      lampUsed=true;
+      target.hp=1;
+      sfx.heal();addHealFx(target.x,target.y);
+      addFloat(target.px,target.py-36,'七星续命！','#ffd24a','huge');
+      log(`<b>七星续命灯</b>燃尽一盏——${target.name} 以 1 兵力撑住了！`,'good');
+      return false;
+    }
+    if(!target.leader&&talentOn('t4_revive')&&!target.revUsed){
+      target.revUsed=true;
+      target.hp=1;
+      sfx.heal();addHealFx(target.x,target.y);
+      addFloat(target.px,target.py-36,'复活甲！','#8fc4e8','huge');
+      log(`<b>复活甲</b>碎裂——${target.name} 以 1 兵力站住了！`,'good');
+      return false;
+    }
+  }
   if(target.hp<=0){
     if(target.side==='P'&&!target.npc&&!target.temp)fallenFlag=true;
     log(`<b>${target.name}</b> 被击破！`, target.side==='E'?'good':'hit');
     if(target.side==='E'){
-      const g=target.boss?300:(LAST_WORDS[target.name]?120:50);
+      let g=target.boss?300:(LAST_WORDS[target.name]?120:50);
+      if(talentOn('t_muniu'))g=Math.round(g*1.15);
       gold+=g;
       addFloat(target.px,target.py-62,'+'+g+' 金','#e8c655');
     }
@@ -2685,11 +2718,12 @@ async function explodeCore(u,b){
   addFloat((b.x+.5)*TILE,(b.y+.5)*TILE-20,'轰 ！','#f3a33c','huge');
   await sleep(320);
   if(!fireAt(b.x,b.y)&&tch(b.x,b.y)!=='w')fireTiles.push({x:b.x,y:b.y,t:2});
+  const bdmg=(u.side==='P'&&talentOn('t_barrel'))?65:45;
   for(const t of units.filter(x=>x.alive&&Math.max(Math.abs(x.x-b.x),Math.abs(x.y-b.y))<=1)){
     addFire(t.x,t.y);
-    const dead=await doDamage(t,45,'#f3a33c');
+    const dead=await doDamage(t,bdmg,'#f3a33c');
     if(!dead&&t.alive)addStatus(t,'burn',1);
-    if(u.side==='P'&&t.side==='E'){gainExp(u,18+(dead?30:0));addStat(u,45,dead);addRage(u,12);}
+    if(u.side==='P'&&t.side==='E'){gainExp(u,18+(dead?30:0));addStat(u,bdmg,dead);addRage(u,12);}
     if(ended)return;
   }
   if(checkEnd())return;
@@ -3008,7 +3042,7 @@ function finish(win,loseMsg){
       if(ch.reward){
         const names=Object.entries(ch.reward).map(([k,n])=>`${ITEMS[k].n}${n>1?'×'+n:''}`).join('、');
         for(const [k,n] of Object.entries(ch.reward))bag[k]=(bag[k]||0)+n;
-        const gr=ch.goldReward?Math.round(ch.goldReward*(1+Math.max(0,diffPct-100)/100*.8)):0;
+        const gr=ch.goldReward?Math.round(ch.goldReward*(1+Math.max(0,diffPct-100)/100*.8)*(talentOn('t_muniu')?1.15:1)):0;
         ov.querySelector('.sub').innerHTML+=`<br><span style="color:#c9a227">战利品：${names}${gr?`　军资 +${gr} 金${gr>ch.goldReward?`（高难加成）`:''}`:''}</span>`;
         if(gr)gold+=gr;
       }
@@ -3367,15 +3401,16 @@ async function applyItem(u,target,k){
   if(!(bag[k]>0))return;
   bag[k]--;
   hideMenu();state='busy';
+  const im=talentOn('t_item')?1.5:1;
   if(it.use==='hp60'||it.use==='hpfull'){
-    const amt=it.use==='hpfull'?target.maxhp-target.hp:Math.min(60,target.maxhp-target.hp);
+    const amt=it.use==='hpfull'?target.maxhp-target.hp:Math.min(Math.round(60*im),target.maxhp-target.hp);
     target.hp+=amt;
     if(target.status)target.status=target.status.filter(st=>st.k==='stun'); // 良药兼解灼烧/中毒
     sfx.heal();addHealFx(target.x,target.y);
     addFloat(target.px,target.py-26,'+'+amt,'#b8e986');
     log(`${u.name} 对 ${target===u?'自己':target.name} 使用【${it.n}】，恢复 <b>${amt}</b> 兵力`,'good');
   }else if(it.use==='mp30'){
-    const amt=Math.min(30,target.maxmp-target.mp);
+    const amt=Math.min(Math.round(30*im),target.maxmp-target.mp);
     target.mp+=amt;
     sfx.heal();addHealFx(target.x,target.y);
     addFloat(target.px,target.py-26,'+'+amt+' MP','#8fc4e8');
@@ -5302,8 +5337,9 @@ function startChapter(i){
   renderBase();
   ensureRoster();
   const party=roster.filter(u=>u.dep!==false); // 出战名单（备战界面勾选）
+  lampUsed=false;
   party.forEach((u,idx)=>{
-    u.alive=true;u.fade=1;u.flash=0;u.acted=false;u.rage=0;u.kills=0;u.dmgSum=0;
+    u.alive=true;u.fade=1;u.flash=0;u.acted=false;u.rage=0;u.kills=0;u.dmgSum=0;u.revUsed=false;u.status=[];u.guard=false;
     u.hp=u.maxhp;u.mp=u.maxmp;
     u.x=ch.spawns[idx][0];u.y=ch.spawns[idx][1];
     u.px=(u.x+.5)*TILE;u.py=(u.y+.5)*TILE;
@@ -5328,6 +5364,7 @@ function startChapter(i){
   if(ch.weather==='fog')foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-2);}); // 大雾：警戒收窄
   if(warOrder&&WAR_ORDERS[warOrder].awake)foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)+WAR_ORDERS[warOrder].awake);}); // 虚张声势
   if(talentOn('t_scout'))foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-1);}); // 天赋·斥候先行
+  if(talentOn('t_qianli'))foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-1);}); // 天赋·千里镜
   ended=false;turn=1;phase='P';state='idle';
   floaters=[];particles=[];shakeT=0;flashT=0;threat=null;
   dangerOn=false;dangerTiles=null;
@@ -5341,6 +5378,20 @@ function startChapter(i){
   if(warOrder)log(`军情已布【${WAR_ORDERS[warOrder].n}】：${WAR_ORDERS[warOrder].desc}（本战生效）`,'good');
   if(barrels.length)log('战场上散落着<b>火油桶</b>——攻击引爆，3×3 烈焰敌我不分，亦会殃及相邻油桶！','sys');
   if(talentOn('t_rage')){party.forEach(u=>addRage(u,30));log('天赋【怒涛之势】发动：全军怒气 +30','good');}
+  if(talentOn('t_bean')){
+    let bn=0;
+    for(let bi=party.length;bi<ch.spawns.length&&bn<2;bi++){
+      const [bx2,by2]=ch.spawns[bi];
+      if(unitAt(bx2,by2))continue;
+      const bean=U({name:'豆兵',g:'豆',cls:'贼兵',kind:'brig',side:'P',temp:true,x:bx2,y:by2,
+        hp:80+chap*5,atk:24+chap,def:12+Math.round(chap*.5),mov:5,crit:.1});
+      units.push(bean);bn++;
+    }
+    if(bn){units.forEach((u2,i2)=>u2._i=i2);log(`天赋【撒豆成兵】：${bn} 名豆兵破土而出，本战助阵！`,'good');}
+  }
+  loadTalents();
+  const talDropped=enforceTalents();
+  if(talDropped.length)log(`成就点不足（当前难度赠点 ${diffBonus()}），以下天赋本战未生效：${talDropped.join('、')}`,'hit');
   fallenFlag=false;
   if(retryN>0)log(`【越挫越勇】第 ${retryN} 次重整旗鼓：全军伤害 +${Math.min(retryN,5)*5}%、受伤 −${Math.min(retryN,5)*4}%`,'good');
   if(diffPct>=150&&!ch.extra){
@@ -5683,7 +5734,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,bondExp,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,retryN,fallenFlag,
+      chap,diffPct,turn,gold,bag,forge,bondExp,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,retryN,fallenFlag,lampUsed,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -5694,7 +5745,7 @@ function battlePayload(){
         x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
         int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
         crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,awakened:u.awakened,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,
-        awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,
+        awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,revUsed:!!u.revUsed,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
         equip:u.equip,drop:u.drop,recruit:u.recruit||null,
       })),
@@ -5724,7 +5775,7 @@ function resumeBattle(d){
   renderBase();
   gold=d.gold;bag={...d.bag};forge={...(d.forge||{})};
   bondExp={...(d.bondExp||{})};dao=d.dao||0;warOrder=d.warOrder||null;
-  retryN=d.retryN||0;fallenFlag=!!d.fallenFlag;
+  retryN=d.retryN||0;fallenFlag=!!d.fallenFlag;lampUsed=!!d.lampUsed;
   treasures=(d.treasures||[]).map(t=>({...t}));
   barrels=(d.barrels||[]).map(b=>({...b}));
   fireTiles=(d.fireTiles||[]).map(f=>({...f}));
@@ -6608,6 +6659,11 @@ function startNewRun(){
   bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;
   if(talentOn('t_gold'))gold+=500;
   if(talentOn('t_supply')){bag.shangyao=(bag.shangyao||0)+3;bag.danyao=(bag.danyao||0)+2;}
+  if(talentOn('t4_smuggle')){
+    const lg=Object.keys(ITEMS).filter(k=>ITEMS[k].legend);
+    const k=lg[Math.floor(Math.random()*lg.length)];
+    bag[k]=(bag[k]||0)+1;
+  }
   runTurns=0;ngPlus=0;maxChap=0;
   openPrep(0);
 }
@@ -6844,15 +6900,36 @@ const ACHV=[
 function anyClear(c,fn){return ['zhaoyun','caocao'].some(k=>campCodex(c,k).clear.some(fn));}
 /* ===================== 天赋（成就点兑换，跨周目永久生效，可随时重新搭配） ===================== */
 const TALENTS=[
-  {k:'t_gold',  n:'富甲一方',cost:10,d:'每次新开局军资 +500'},
-  {k:'t_supply',n:'兵精粮足',cost:10,d:'每次新开局伤药×3、丹药×2'},
-  {k:'t_scout', n:'斥候先行',cost:10,d:'敌军警戒范围 −1'},
-  {k:'t_mercy', n:'仁望天下',cost:10,d:'劝降门槛再放宽 5%'},
-  {k:'t_atk',   n:'虎贲之锐',cost:20,d:'全军武力 +2'},
-  {k:'t_def',   n:'铁壁之坚',cost:20,d:'全军守备 +2'},
-  {k:'t_forge', n:'天工开物',cost:20,d:'锻造费用减半'},
-  {k:'t_rage',  n:'怒涛之势',cost:20,d:'每章开战全军怒气 +30'},
-  {k:'t_mov',   n:'急行军',  cost:30,d:'全军移动 +1'},
+  // 凡品 · 10 点
+  {k:'t_gold',  n:'富甲一方',tier:'凡品',cost:10,d:'每次新开局军资 +500'},
+  {k:'t_supply',n:'兵精粮足',tier:'凡品',cost:10,d:'每次新开局伤药×3、丹药×2'},
+  {k:'t_scout', n:'斥候先行',tier:'凡品',cost:10,d:'敌军警戒范围 −1'},
+  {k:'t_mercy', n:'仁望天下',tier:'凡品',cost:10,d:'劝降门槛再放宽 5%'},
+  {k:'t_qianli',n:'千里镜',  tier:'凡品',cost:10,d:'敌军警戒范围再 −1（与斥候叠加）'},
+  {k:'t_muniu', n:'木牛流马',tier:'凡品',cost:10,d:'击破赏金与章节军资 +15%'},
+  // 良品 · 25 点
+  {k:'t_atk',   n:'虎贲之锐',tier:'良品',cost:25,d:'全军武力 +2'},
+  {k:'t_def',   n:'铁壁之坚',tier:'良品',cost:25,d:'全军守备 +2'},
+  {k:'t_forge', n:'天工开物',tier:'良品',cost:25,d:'锻造费用减半'},
+  {k:'t_rage',  n:'怒涛之势',tier:'良品',cost:25,d:'每章开战全军怒气 +30'},
+  {k:'t_spell', n:'太平残页',tier:'良品',cost:25,d:'全军法术伤害 +20%'},
+  {k:'t_item',  n:'华佗再传',tier:'良品',cost:25,d:'道具恢复效果 +50%'},
+  {k:'t_barrel',n:'火器图谱',tier:'良品',cost:25,d:'我方引爆的火油桶伤害 45 → 65'},
+  {k:'t_dot',   n:'青囊遗风',tier:'良品',cost:25,d:'我方所受灼烧/中毒/烈焰伤害减半'},
+  // 神品 · 60 点
+  {k:'t_mov',     n:'急行军',    tier:'神品',cost:60,d:'全军移动 +1'},
+  {k:'t_xuanyuan',n:'轩辕剑气',  tier:'神品',cost:60,d:'全军暴击 +8%'},
+  {k:'t_terr',    n:'八门金锁阵',tier:'神品',cost:60,d:'我方受地形守备加成效果 ×1.5'},
+  {k:'t_bean',    n:'撒豆成兵',  tier:'神品',cost:60,d:'每章开战凭空召出两名豆兵助战（随章节成长）'},
+  {k:'t_lamp',    n:'七星续命灯',tier:'神品',cost:60,d:'主将每章免死一次（剩 1 兵力撑住）'},
+  {k:'t_forgeall',n:'玄铁重铸',  tier:'神品',cost:60,d:'全军武器额外视为锻造 +1（武+2）'},
+  // 天外乱入 · 120 点
+  {k:'t4_cloud',  n:'筋斗云',    tier:'天外',cost:120,d:'全军移动 +2——十万八千里，一个跟头的事'},
+  {k:'t4_smuggle',n:'时空走私',  tier:'天外',cost:120,d:'每次新开局随机一件神兵凭空入库'},
+  {k:'t4_bell',   n:'金钟罩',    tier:'天外',cost:120,d:'全军所受一切攻击伤害 −10%'},
+  {k:'t4_laojun', n:'太上老君亲传',tier:'天外',cost:120,d:'法术伤害 +40% 且施法范围 +1（与太平残页叠乘）'},
+  {k:'t4_revive', n:'复活甲',    tier:'天外',cost:120,d:'非主将武将每章各免死一次——来自异界的黑科技'},
+  {k:'t4_asura',  n:'修罗契约',  tier:'天外',cost:120,d:'全军伤害 +15%，但所受伤害 +10%——与魔共舞'},
 ];
 let TAL=new Set();
 function loadTalents(){
@@ -6876,6 +6953,22 @@ function talSpent(c){
   return (c.talents||[]).reduce((s2,k)=>{const t=TALENTS.find(x=>x.k===k);return s2+(t?t.cost:0);},0);
 }
 function talentOn(k){return TAL.has(k);}
+function diffBonus(){return Math.max(0,Math.round((diffPct-100)/10));} // 高难赠点：每+10%难度送1点
+function talBudget(c){return achPoints(c)+diffBonus();}
+/* 开战时按品级顺序裁切超出预算的天赋（仅本战禁用，搭配保留） */
+function enforceTalents(){
+  let budget;
+  try{budget=talBudget(loadCodex());}catch(e){return [];}
+  let spent=0;
+  const keep=new Set(), dropped=[];
+  for(const t of TALENTS){
+    if(!TAL.has(t.k))continue;
+    if(spent+t.cost<=budget){spent+=t.cost;keep.add(t.k);}
+    else dropped.push(t.n);
+  }
+  TAL=keep;
+  return dropped;
+}
 function renderCodex(){
   const c=loadCodex();
   let html='';
@@ -6929,17 +7022,23 @@ function renderCodex(){
 }
 function renderTalent(){
   const c=loadCodex();
-  const earned=achPoints(c);
+  const base=achPoints(c);
+  const bonus=diffBonus();
+  const earned=base+bonus;
   const spent=talSpent(c);
-  let html=`<div class="snote">成就点：剩余 <b style="color:#ffd24a">${earned-spent}</b> ／ 共 ${earned}（图鉴成就解锁获得；天赋可随时重新搭配，全程生效）</div>`;
-  html+=TALENTS.map(t=>{
-    const on=(c.talents||[]).includes(t.k);
-    const afford=on||(earned-spent)>=t.cost;
-    return `<div class="slot" style="${on?'border-color:var(--gold);box-shadow:0 0 10px rgba(201,162,39,.2)':''}">
-      <div class="sinfo"><b>${t.n}</b>${on?' <span style="color:#ffd24a">已装备</span>':''}　${t.d}<br><span class="stime">${t.cost} 点</span></div>
-      <div class="sbtns"><button data-tal="${t.k}" ${afford?'':'disabled'}>${on?'卸 下':'装 备'}</button></div>
-    </div>`;
-  }).join('');
+  let html=`<div class="snote">成就点 <b style="color:#ffd24a">${earned-spent}</b> ／ ${earned}　＝　成就与战功 ${base} ＋ <b style="color:#e8845a">高难赠点 ${bonus}</b>（当前难度 ${diffPct}%，每+10%送1点）<br>天赋远多于点数——取舍即流派；难度调低时超出预算的天赋将临时失效。</div>`;
+  const TIER_C={'凡品':'#c9b896','良品':'#9fc068','神品':'#8fc4e8','天外':'#e8845a'};
+  for(const tier of ['凡品','良品','神品','天外']){
+    html+=`<div style="font-family:var(--display);font-size:14px;letter-spacing:3px;color:${TIER_C[tier]};margin:12px 0 6px">${tier==='天外'?'天外乱入':tier} · ${TALENTS.find(t=>t.tier===tier).cost} 点</div>`;
+    html+=TALENTS.filter(t=>t.tier===tier).map(t=>{
+      const on=(c.talents||[]).includes(t.k);
+      const afford=on||(earned-spent)>=t.cost;
+      return `<div class="slot" style="${on?`border-color:${TIER_C[tier]};box-shadow:0 0 10px rgba(201,162,39,.2)`:''}">
+        <div class="sinfo"><b style="color:${TIER_C[tier]}">${t.n}</b>${on?' <span style="color:#ffd24a">已装备</span>':''}　${t.d}</div>
+        <div class="sbtns"><button data-tal="${t.k}" ${afford?'':'disabled'}>${on?'卸 下':'装 备'}</button></div>
+      </div>`;
+    }).join('');
+  }
   document.getElementById('talentBody').innerHTML=html;
 }
 document.getElementById('talentBtn').onclick=()=>{
@@ -6961,7 +7060,7 @@ document.getElementById('talentBody').addEventListener('click',e=>{
     if(i>=0)c.talents.splice(i,1);
     else{
       const t=TALENTS.find(x=>x.k===k);
-      if(achPoints(c)-talSpent(c)>=t.cost)c.talents.push(k);
+      if(talBudget(c)-talSpent(c)>=t.cost)c.talents.push(k);
     }
   });
   loadTalents();
