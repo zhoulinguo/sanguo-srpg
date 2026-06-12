@@ -1933,7 +1933,7 @@ function hasStatus(u,k){return !!(u.status&&u.status.find(s=>s.k===k&&s.t>0));}
 async function tickStatus(side){
   for(const u of units.filter(x=>x.alive&&x.side===side)){
     // 青囊书回春 + 军府医馆
-    const rg=hasStatus(u,'seal')?0:(gearFx(u,'regen')?12:0)+(u.side==='P'&&!u.npc?(fort.clinic||0)*3:0);
+    const rg=hasStatus(u,'seal')?0:(gearFx(u,'regen')?12:0)+(u.side==='P'&&!u.npc?(fort.clinic||0)*3+(talentOn('t5_regen')?Math.round(u.maxhp*.08):0):0);
     if(rg>0&&u.hp<u.maxhp){
       const hl=Math.min(rg,u.maxhp-u.hp);
       u.hp+=hl;addHealFx(u.x,u.y);addFloat(u.px,u.py-26,'+'+hl,'#b8e986');
@@ -1981,10 +1981,10 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
     if(stat==='atk'){const tt=titleOf(u.name);if(tt)v+=tt.atk;} // 战功称号
   }
   if(u.side==='P'&&!u.npc&&TAL.size){
-    if(stat==='atk'&&TAL.has('t_atk'))v+=2;
+    if(stat==='atk'&&TAL.has('t_atk'))v+=3;   // 虎贲之锐
     if(stat==='atk'&&TAL.has('t_forgeall')&&u.equip&&u.equip.wp)v+=2; // 玄铁重铸
-    if(stat==='def'&&TAL.has('t_def'))v+=2;
-    if(stat==='mov'&&TAL.has('t_mov'))v+=1;
+    if(stat==='def'&&TAL.has('t_def'))v+=3;   // 铁壁之坚
+    if(stat==='mov'&&TAL.has('t_mov'))v+=2;   // 风火急行
     if(stat==='mov'&&TAL.has('t4_cloud'))v+=2; // 筋斗云
   }
   if(u.side==='P'&&!u.npc&&stat==='mov'&&rbHas(u,'movP2'))v+=2; // 转生·风驰电掣
@@ -2079,12 +2079,12 @@ function shapeOk(u,dx,dy){
   if(u.rngShape==='square')d=Math.max(ax,ay);
   else if(u.rngShape==='cross'){if(ax>0&&ay>0)return false;d=ax+ay;}
   else d=ax+ay;
-  const rmax=u.rngMax+extraReach(u)+(u.side==='P'&&formStat(u,'rng')?1:0);
+  const rmax=u.rngMax+extraReach(u)+(u.side==='P'&&formStat(u,'rng')?1:0)+(u.side==='P'&&!u.npc&&talentOn('t5_range')?1:0);
   return d>=u.rngMin&&d<=rmax;
 }
 function offsetsFor(u){
   const out=[];
-  const rm=u.rngMax+extraReach(u)+(u.side==='P'&&formStat(u,'rng')?1:0);
+  const rm=u.rngMax+extraReach(u)+(u.side==='P'&&formStat(u,'rng')?1:0)+(u.side==='P'&&!u.npc&&talentOn('t5_range')?1:0);
   for(let dx=-rm;dx<=rm;dx++)for(let dy=-rm;dy<=rm;dy++){
     if(dx===0&&dy===0)continue;
     if(shapeOk(u,dx,dy))out.push([dx,dy]);
@@ -2672,15 +2672,16 @@ function dmgRange(a,d){
   let base=atk*advMult(a,d)-def*(1+terrDef(d.x,d.y)*tmul);
   if(a.side==='P'&&!a.npc&&retryN>0)base*=retryMul();   // 越挫越勇：增伤
   if(d.side==='P'&&!d.npc&&retryN>0)base*=retryGuard(); // 越挫越勇：减伤
-  if(a.side==='P'&&!a.npc&&talentOn('t4_asura'))base*=1.15; // 修罗契约：增伤
+  if(a.side==='P'&&!a.npc&&talentOn('t4_asura'))base*=1.30; // 修罗契约：增伤
+  if(a.side==='P'&&!a.npc&&talentOn('t5_dmg'))base*=1.25; // 天命所归：全军增伤
   if(rbHas(a,'dmgUp'))base*=1.15;   // 转生·天子剑气
   if(rbHas(d,'tankDown'))base*=.85; // 转生·坚壁如山/百战余生
   if(rbHas(a,'lastStand')&&a.hp<a.maxhp*.5)base*=1.3;  // 背水死战：增伤
   if(rbHas(d,'lastStand')&&d.hp<d.maxhp*.5)base*=.85;  // 背水死战：减伤
   if(units.some(o=>o.alive&&o.side!==a.side&&rbHas(o,'menace')
     &&Math.max(Math.abs(o.x-a.x),Math.abs(o.y-a.y))<=1))base-=5; // 威压领域
-  if(d.side==='P'&&!d.npc&&talentOn('t4_asura'))base*=1.1;  // 修罗契约：代价
-  if(d.side==='P'&&!d.npc&&talentOn('t4_bell'))base*=.9;    // 金钟罩
+  if(d.side==='P'&&!d.npc&&talentOn('t4_asura'))base*=1.12;  // 修罗契约：代价
+  if(d.side==='P'&&!d.npc&&talentOn('t4_bell'))base*=.82;    // 金钟罩
   if(shieldBlocks(a,d))base*=.4; // 盾卫正面：减伤六成
   if(pincerAlly(a,d))base*=1.3;
   if(curWeather()==='rain'&&a.rngMax>=2)base*=.85; // 雨天弓弦松弛
@@ -6513,6 +6514,7 @@ function startChapter(i){
   if(warPlan)log(`军师献策【${WAR_PLANS[warPlan].n}】：${WAR_PLANS[warPlan].desc}`,'good');
   if(barrels.length)log('战场上散落着<b>火油桶</b>——攻击引爆，3×3 烈焰敌我不分，亦会殃及相邻油桶！','sys');
   if(talentOn('t_rage')){party.forEach(u=>addRage(u,30));log('天赋【怒涛之势】发动：全军怒气 +30','good');}
+  if(talentOn('t5_stun')){foes.forEach(e=>addStatus(e,'stun',1));log('天赋【鬼神莫测】：全体敌军当头一震，眩晕 1 回合！','good');}
   if(party.some(u=>rbHas(u,'rageArmy'))){party.forEach(u=>addRage(u,30));log('转生神力【王者威仪】：全军怒气 +30','good');}
   if(talentOn('t_bean')){
     let bn=0;
@@ -8503,38 +8505,42 @@ const ACHV=[
 ];
 function anyClear(c,fn){return ['zhaoyun','caocao'].some(k=>campCodex(c,k).clear.some(fn));}
 /* ===================== 天赋（成就点兑换，跨周目永久生效，可随时重新搭配） ===================== */
+const TALENT_SLOTS=10; // 天赋槽位上限：最多同时装备 10 个
 const TALENTS=[
-  // 凡品 · 10 点
-  {k:'t_gold',  n:'富甲一方',tier:'凡品',cost:10,d:'每次新开局军资 +500'},
-  {k:'t_supply',n:'兵精粮足',tier:'凡品',cost:10,d:'每次新开局伤药×3、丹药×2'},
-  {k:'t_scout', n:'斥候先行',tier:'凡品',cost:10,d:'敌军警戒范围 −1'},
-  {k:'t_mercy', n:'仁望天下',tier:'凡品',cost:10,d:'劝降门槛再放宽 5%'},
-  {k:'t_qianli',n:'千里镜',  tier:'凡品',cost:10,d:'敌军警戒范围再 −1（与斥候叠加）'},
-  {k:'t_muniu', n:'木牛流马',tier:'凡品',cost:10,d:'击破赏金与章节军资 +15%'},
-  // 良品 · 25 点
-  {k:'t_atk',   n:'虎贲之锐',tier:'良品',cost:25,d:'全军武力 +2'},
-  {k:'t_def',   n:'铁壁之坚',tier:'良品',cost:25,d:'全军守备 +2'},
-  {k:'t_forge', n:'天工开物',tier:'良品',cost:25,d:'锻造费用减半'},
-  {k:'t_rage',  n:'怒涛之势',tier:'良品',cost:25,d:'每章开战全军怒气 +30'},
-  {k:'t_spell', n:'太平残页',tier:'良品',cost:25,d:'全军法术伤害 +20%'},
-  {k:'t_item',  n:'华佗再传',tier:'良品',cost:25,d:'道具恢复效果 +50%'},
-  {k:'t_barrel',n:'火器图谱',tier:'良品',cost:25,d:'我方引爆的火油桶伤害 45 → 65'},
-  {k:'t_dot',   n:'青囊遗风',tier:'良品',cost:25,d:'我方所受灼烧/中毒/烈焰伤害减半'},
-  // 神品 · 60 点
-  {k:'t_mov',     n:'急行军',    tier:'神品',cost:60,d:'全军移动 +1'},
-  {k:'t_xuanyuan',n:'轩辕剑气',  tier:'神品',cost:60,d:'全军暴击 +8%'},
-  {k:'t_terr',    n:'八门金锁阵',tier:'神品',cost:60,d:'我方受地形守备加成效果 ×1.5'},
-  {k:'t_bean',    n:'撒豆成兵',  tier:'神品',cost:60,d:'每章开战凭空召出两名豆兵助战（随章节成长）'},
-  {k:'t_lamp',    n:'七星续命灯',tier:'神品',cost:60,d:'主将每章免死一次（剩 1 兵力撑住）'},
-  {k:'t_forgeall',n:'玄铁重铸',  tier:'神品',cost:60,d:'全军武器额外视为锻造 +1（武+2）'},
-  // 天外乱入 · 120 点
-  {k:'t4_cloud',  n:'筋斗云',    tier:'天外',cost:120,d:'全军移动 +2——十万八千里，一个跟头的事'},
-  {k:'t4_smuggle',n:'时空走私',  tier:'天外',cost:120,d:'每次新开局随机一件神兵凭空入库'},
-  {k:'t4_bell',   n:'金钟罩',    tier:'天外',cost:120,d:'全军所受一切攻击伤害 −10%'},
-  {k:'t4_laojun', n:'太上老君亲传',tier:'天外',cost:120,d:'法术伤害 +40% 且施法范围 +1（与太平残页叠乘）'},
-  {k:'t4_revive', n:'复活甲',    tier:'天外',cost:120,d:'非主将武将每章各免死一次——来自异界的黑科技'},
-  {k:'t4_asura',  n:'修罗契约',  tier:'天外',cost:120,d:'全军伤害 +15%，但所受伤害 +10%——与魔共舞'},
-];
+  // 普通 · 8 点
+  {k:'t_gold',  n:'富甲一方',tier:'普通',cost:8,d:'每次新开局军资 +500'},
+  {k:'t_supply',n:'兵精粮足',tier:'普通',cost:8,d:'每次新开局伤药×3、丹药×2'},
+  {k:'t_scout', n:'斥候先行',tier:'普通',cost:8,d:'敌军警戒范围 −1'},
+  {k:'t_qianli',n:'千里镜',  tier:'普通',cost:8,d:'敌军警戒范围再 −1（与斥候叠加）'},
+  {k:'t_mercy', n:'仁望天下',tier:'普通',cost:8,d:'劝降门槛再放宽 5%'},
+  {k:'t_muniu', n:'木牛流马',tier:'普通',cost:8,d:'击破赏金与章节军资 +15%'},
+  {k:'t_item',  n:'华佗再传',tier:'普通',cost:8,d:'道具恢复效果 +50%'},
+  {k:'t_barrel',n:'火器图谱',tier:'普通',cost:8,d:'我方引爆的火油桶伤害 45 → 65'},
+  // 高级 · 20 点
+  {k:'t_atk',   n:'虎贲之锐',tier:'高级',cost:20,d:'全军武力 +3'},
+  {k:'t_def',   n:'铁壁之坚',tier:'高级',cost:20,d:'全军守备 +3'},
+  {k:'t_forge', n:'天工开物',tier:'高级',cost:20,d:'锻造费用减半'},
+  {k:'t_rage',  n:'怒涛之势',tier:'高级',cost:20,d:'每章开战全军怒气 +30'},
+  {k:'t_spell', n:'太平残页',tier:'高级',cost:20,d:'全军法术伤害 +25%'},
+  {k:'t_dot',   n:'青囊遗风',tier:'高级',cost:20,d:'我方所受灼烧/中毒/烈焰伤害减半'},
+  {k:'t_forgeall',n:'玄铁重铸',tier:'高级',cost:20,d:'全军武器额外视为锻造 +1（武+2）'},
+  {k:'t_terr',  n:'八门金锁阵',tier:'高级',cost:20,d:'我方受地形守备加成效果 ×1.5'},
+  {k:'t_xuanyuan',n:'轩辕剑气',tier:'高级',cost:20,d:'全军暴击 +10%'},
+  // 终极 · 45 点（变态档）
+  {k:'t5_dmg',    n:'天命所归',tier:'终极',cost:45,d:'全军造成伤害 +25%（无差别增幅）'},
+  {k:'t4_bell',   n:'金钟罩',  tier:'终极',cost:45,d:'全军所受一切伤害 −18%'},
+  {k:'t_mov',     n:'风火急行',tier:'终极',cost:45,d:'全军移动 +2'},
+  {k:'t4_cloud',  n:'筋斗云',  tier:'终极',cost:45,d:'全军再 +2 移动（与风火叠加，十万八千里）'},
+  {k:'t5_stun',   n:'鬼神莫测',tier:'终极',cost:45,d:'每章开战，全体敌军眩晕 1 回合（白送先手）'},
+  {k:'t5_regen',  n:'长生诀',  tier:'终极',cost:45,d:'我方每回合自动回复 8% 兵力'},
+  {k:'t5_range',  n:'万箭归一',tier:'终极',cost:45,d:'全军攻击范围 +1（近战亦可隔格击敌）'},
+  {k:'t4_laojun', n:'太上老君亲传',tier:'终极',cost:45,d:'法术伤害 +40% 且施法范围 +1（与太平残页叠乘）'},
+  {k:'t4_revive', n:'复活甲',  tier:'终极',cost:45,d:'全军武将每章各免死一次'},
+  {k:'t_lamp',    n:'七星续命灯',tier:'终极',cost:45,d:'主将每章额外免死一次'},
+  {k:'t4_asura',  n:'修罗契约',tier:'终极',cost:45,d:'全军伤害 +30%，但所受伤害 +12%——与魔共舞'},
+  {k:'t4_smuggle',n:'时空走私',tier:'终极',cost:45,d:'每次新开局随机一件神兵凭空入库'},
+  {k:'t_bean',    n:'撒豆成兵',tier:'终极',cost:45,d:'每章开战凭空召出两名豆兵助战（随章节成长）'},
+]
 let TAL=new Set();
 let KILLS={}; // 战功缓存（图鉴累计击破，跨周目）
 const TITLES=[
@@ -8582,11 +8588,11 @@ function talBudget(c){return achPoints(c)+diffBonus();}
 function enforceTalents(){
   let budget;
   try{budget=talBudget(loadCodex());}catch(e){return [];}
-  let spent=0;
+  let spent=0,cnt=0;
   const keep=new Set(), dropped=[];
   for(const t of TALENTS){
     if(!TAL.has(t.k))continue;
-    if(spent+t.cost<=budget){spent+=t.cost;keep.add(t.k);}
+    if(spent+t.cost<=budget&&cnt<TALENT_SLOTS){spent+=t.cost;cnt++;keep.add(t.k);}
     else dropped.push(t.n);
   }
   TAL=keep;
@@ -8654,13 +8660,14 @@ function renderTalent(){
   const bonus=diffBonus();
   const earned=base+bonus;
   const spent=talSpent(c);
-  let html=`<div class="snote">成就点 <b style="color:#ffd24a">${earned-spent}</b> ／ ${earned}　＝　成就与战功 ${base} ＋ <b style="color:#e8845a">高难赠点 ${bonus}</b>（当前难度 ${diffPct}%，每+10%送1点）<br>天赋远多于点数——取舍即流派；难度调低时超出预算的天赋将临时失效。</div>`;
-  const TIER_C={'凡品':'#c9b896','良品':'#9fc068','神品':'#8fc4e8','天外':'#e8845a'};
-  for(const tier of ['凡品','良品','神品','天外']){
-    html+=`<div style="font-family:var(--display);font-size:14px;letter-spacing:3px;color:${TIER_C[tier]};margin:12px 0 6px">${tier==='天外'?'天外乱入':tier} · ${TALENTS.find(t=>t.tier===tier).cost} 点</div>`;
+  const used=(c.talents||[]).length;
+  let html=`<div class="snote">成就点 <b style="color:#ffd24a">${earned-spent}</b> ／ ${earned}　＝　成就战功 ${base} ＋ <b style="color:#e8845a">高难赠点 ${bonus}</b>（难度 ${diffPct}%·每5%一点）<br>已装天赋 <b style="color:${used>=TALENT_SLOTS?'#e8845a':'#9fc068'}">${used} / ${TALENT_SLOTS}</b> 槽　·　满配约「2普通+3高级+5终极」，取舍即流派${__talFull?'<br><b style="color:#e8845a">天赋槽已满（10个），请先卸下再换</b>':''}</div>`;
+  const TIER_C={'普通':'#c9b896','高级':'#9fc068','终极':'#e8845a'};
+  for(const tier of ['普通','高级','终极']){
+    html+=`<div style="font-family:var(--display);font-size:14px;letter-spacing:3px;color:${TIER_C[tier]};margin:12px 0 6px">${tier} · ${TALENTS.find(t=>t.tier===tier).cost} 点</div>`;
     html+=TALENTS.filter(t=>t.tier===tier).map(t=>{
       const on=(c.talents||[]).includes(t.k);
-      const afford=on||(earned-spent)>=t.cost;
+      const afford=on||((earned-spent)>=t.cost&&used<TALENT_SLOTS);
       return `<div class="slot" style="${on?`border-color:${TIER_C[tier]};box-shadow:0 0 10px rgba(201,162,39,.2)`:''}">
         <div class="sinfo"><b style="color:${TIER_C[tier]}">${t.n}</b>${on?' <span style="color:#ffd24a">已装备</span>':''}　${t.d}</div>
         <div class="sbtns"><button data-tal="${t.k}" ${afford?'':'disabled'}>${on?'卸 下':'装 备'}</button></div>
@@ -8668,7 +8675,9 @@ function renderTalent(){
     }).join('');
   }
   document.getElementById('talentBody').innerHTML=html;
+  __talFull=false;
 }
+let __talFull=false;
 document.getElementById('talentBtn').onclick=()=>{
   initAudio();sfx.select();
   renderTalent();
@@ -8709,7 +8718,8 @@ document.getElementById('talentBody').addEventListener('click',e=>{
     if(i>=0)c.talents.splice(i,1);
     else{
       const t=TALENTS.find(x=>x.k===k);
-      if(talBudget(c)-talSpent(c)>=t.cost)c.talents.push(k);
+      if((c.talents||[]).length>=TALENT_SLOTS){__talFull=true;}
+      else if(talBudget(c)-talSpent(c)>=t.cost)c.talents.push(k);
     }
   });
   loadTalents();
