@@ -799,7 +799,7 @@ let CHAPTERS=[
     U({name:'袁军伏兵',g:'伏',cls:'贼骑',kind:'cav',   side:'E',x:12,y:10,hp:95,atk:28,def:10,mov:6,mounted:true,awakeR:3,crit:.15}),
     U({name:'投石车',  g:'石',cls:'投石',kind:'catapult',side:'E',x:13,y:1,hp:70,atk:36,def:6,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
     U({name:'颜良',  g:'良',cls:'猛将',kind:'chief',side:'E',x:13,y:2,hp:135,atk:30,def:15,mov:5,awakeR:5,crit:.15,drop:'shangyao'}),
-    U({name:'文丑',  g:'丑',cls:'猛将',kind:'cav',side:'E',x:14,y:1,hp:160,atk:32,def:16,mov:6,mounted:true,boss:true,awakeR:4,crit:.16,drop:'tiejia'}),
+    U({name:'文丑',  g:'丑',cls:'猛将',kind:'cav',side:'E',x:14,y:1,hp:160,atk:32,def:16,mov:6,mounted:true,boss:true,awakeR:4,crit:.16,drop:'shuanggu'}),
   ];},
  },
  {
@@ -906,7 +906,7 @@ let CHAPTERS=[
   shop:['qinggang','hongying','tietai','yudi','tieji','pijia','shangyao','lingzhi','danyao'],
   treasures:[
     {x:5,y:2,item:'shangyao'},{x:13,y:3,gold:300},
-    {x:2,y:9,item:'danyao'},{x:18,y:2,gold:400},
+    {x:2,y:9,item:'danyao'},{x:18,y:2,gold:400},{x:7,y:3,item:'qingnang'},
   ],
   reinforce:[
     {turn:3,line:'虎豹骑追兵自西面掩杀而至——快护百姓过桥！',units(){return [
@@ -1113,7 +1113,7 @@ let CHAPTERS=[
   shop:['bawang','tieji','tietai','baiyu','bintie','shangyao','lingzhi','danyao','hudan'],
   treasures:[
     {x:2,y:2,item:'lingzhi'},{x:6,y:9,gold:400},
-    {x:15,y:2,item:'shangyao'},{x:17,y:8,gold:500},{x:14,y:10,item:'danyao'},
+    {x:15,y:2,item:'shangyao'},{x:17,y:8,gold:500},{x:14,y:10,item:'danyao'},{x:21,y:8,item:'tengjia'},
   ],
   enemies(){return [
     U({name:'蜀郡枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'shu',x:13,y:4,hp:118,atk:28,def:15,mov:5,awakeR:6}),
@@ -1214,7 +1214,7 @@ let CHAPTERS=[
   shop:['bawang','baiyu','bintie','bazhen','shangyao','lingzhi','danyao','hudan'],
   treasures:[
     {x:2,y:1,item:'lingzhi'},{x:14,y:1,gold:500},
-    {x:8,y:7,item:'danyao'},{x:12,y:9,gold:600},
+    {x:8,y:7,item:'danyao'},{x:12,y:9,gold:600},{x:5,y:8,item:'suozi'},
   ],
   enemies(){return [
     U({name:'曹军精锐',g:'精',cls:'枪兵',kind:'spear',side:'E',fac:'cao',x:10,y:3,hp:125,atk:29,def:16,mov:5,awakeR:6}),
@@ -1384,7 +1384,7 @@ let CHAPTERS=[
         ['诸葛亮','伯约。良禽择木而栖，贤臣择主而事——汉室之志，可愿同担？'],
         ['姜维','维……早闻丞相大名！今蒙不弃，愿效犬马之劳！'],
        ]}}),
-    U({name:'马遵',g:'遵',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:22,y:3,hp:220,atk:36,def:21,mov:5,boss:true,awakeR:4,crit:.16,drop:'bingshu'}),
+    U({name:'马遵',g:'遵',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:22,y:3,hp:220,atk:36,def:21,mov:5,boss:true,awakeR:4,crit:.16,drop:'qilinjian'}),
   ];},
  },
 ];
@@ -1432,6 +1432,27 @@ const ITEMS={
     fxDesc:'剑气侵蚀：命中附中毒 2 回合',price:3200,lore:'与青釭并世，剑气森寒'},
   shuangji: {n:'恶来双戟',slot:'wp',wtype:'halberd',atk:10,legend:true,owner:'典韦',ownerAtk:6,fx:'splash',
     fxDesc:'分裂攻击：双戟横扫，溅射相邻敌军四成伤害',price:3000,lore:'古之恶来，提戟八十斤'},
+  // 神兵·второ批（穿透/连击/吸血）
+  qixing:   {n:'七星宝刀',slot:'wp',wtype:'sword',atk:9,legend:true,owner:'曹操',ownerAtk:5,fx:'pierce',
+    fxDesc:'穿透攻击：无视目标五成守备',price:3000,lore:'七星错落，曾欲刺董'},
+  shuanggu: {n:'双股剑',slot:'wp',wtype:'sword',atk:8,legend:true,owner:'刘备',ownerAtk:5,fx:'double',
+    fxDesc:'雌雄连击：每次攻击追加一段五成伤害',price:3000,lore:'雌雄一对，桃园起兵'},
+  qilinjian:{n:'麒麟剑',slot:'wp',wtype:'sword',atk:10,legend:true,owner:'姜维',ownerAtk:6,fx:'drain',
+    fxDesc:'汲魂：恢复造成伤害三成的兵力',price:3200,lore:'承丞相遗志，剑指中原'},
+  // 名甲（不认主，人人可用，但功效各异）
+  shoumian: {n:'兽面吞头铠',slot:'ar',atype:'heavy',def:10,legend:true,fx:'thorns',
+    fxDesc:'兽面反噬：受近战攻击时反弹两成伤害',price:3000,lore:'吕布之甲，兽面狰狞'},
+  suozi:    {n:'锁子黄金甲',slot:'ar',atype:'light',def:6,legend:true,fx:'immune',
+    fxDesc:'金锁护体：免疫中毒与灼烧',price:2800,lore:'黄金锁子，毒火不侵'},
+  tengjia:  {n:'藤甲',slot:'ar',atype:'light',def:8,legend:true,fx:'rattan',
+    fxDesc:'刀枪不入——但畏火：火攻伤害大增',price:2400,lore:'南中油浸之藤，遇火即燃'},
+  // 名宝
+  chitu:    {n:'赤兔马',slot:'ac',mov:2,legend:true,owner:'关羽',ownerBonus:{mov:1,atk:3},
+    fxDesc:'人中吕布，马中赤兔；关羽乘之，如虎添翼',price:3500,lore:'日行千里，渡水登山如履平地'},
+  yuxi:     {n:'传国玉玺',slot:'ac',legend:true,fx:'aura',
+    fxDesc:'王气环绕：自身与相邻友军武力 +3',price:3500,lore:'受命于天，既寿永昌'},
+  qingnang: {n:'青囊书',slot:'ac',legend:true,fx:'regen',
+    fxDesc:'华佗医典：每回合自动恢复 12 兵力',price:3000,lore:'外科圣手毕生所学'},
   // 消耗品
   shangyao: {n:'伤药',use:'hp60',price:100},
   lingzhi:  {n:'灵芝',use:'hpfull',price:350},
@@ -1509,6 +1530,10 @@ const STATUS_INFO={
 };
 function addStatus(u,k,t){
   if(!u.alive)return;
+  if((k==='poison'||k==='burn')&&gearFx(u,'immune')){
+    addFloat(u.px,u.py-40,'金锁护体','#ffd24a');
+    return;
+  }
   u.status=u.status||[];
   const ex=u.status.find(s=>s.k===k);
   if(ex)ex.t=Math.max(ex.t,t);
@@ -1519,13 +1544,19 @@ function hasStatus(u,k){return !!(u.status&&u.status.find(s=>s.k===k&&s.t>0));}
 /* 回合开始结算：灼烧/中毒掉血、燃烧地块烧灼、状态递减。返回是否有单位倒下 */
 async function tickStatus(side){
   for(const u of units.filter(x=>x.alive&&x.side===side)){
+    // 青囊书：回春
+    if(gearFx(u,'regen')&&u.hp<u.maxhp){
+      const hl=Math.min(12,u.maxhp-u.hp);
+      u.hp+=hl;addHealFx(u.x,u.y);addFloat(u.px,u.py-26,'+'+hl,'#b8e986');
+    }
+    const rattan=gearFx(u,'rattan'); // 藤甲畏火
     let dmg=0,tags=[];
     for(const st of (u.status||[])){
       const inf=STATUS_INFO[st.k];
-      if(inf.dmg>0){dmg+=inf.dmg;tags.push(inf.n);}
+      if(inf.dmg>0){dmg+=st.k==='burn'&&rattan?inf.dmg*2:inf.dmg;tags.push(inf.n);}
     }
     const ft=fireAt(u.x,u.y);
-    if(ft){dmg+=12;tags.push('烈焰');addFire(u.x,u.y);}
+    if(ft){dmg+=rattan?24:12;tags.push('烈焰');addFire(u.x,u.y);}
     if(dmg>0){
       log(`${u.name} 受${tags.join('/')}之苦，损失 <b>${dmg}</b> 兵力`,u.side==='P'?'hit':'good');
       await doDamage(u,dmg,'#e8884a');
@@ -1548,6 +1579,7 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
     if(it&&it[stat])v+=it[stat];
     if(sl==='wp'&&stat==='atk'&&k&&forge[k])v+=forge[k]*2;
     if(sl==='wp'&&stat==='atk'&&it&&it.legend&&it.owner===u.name)v+=it.ownerAtk||0; // 神兵认主
+    if(it&&it.legend&&it.owner===u.name&&it.ownerBonus&&it.ownerBonus[stat])v+=it.ownerBonus[stat]; // 名宝认主
   }
   if(u.side==='P'&&!u.npc&&warOrder){
     const w=WAR_ORDERS[warOrder];
@@ -1610,10 +1642,18 @@ function moveCost(u,ch){
 const key=(x,y)=>x+','+y;
 const manh=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 /* 攻击范围形状：diamond=菱形(曼哈顿) square=九宫格(含斜角) cross=十字直线 */
-/* 神兵觉醒效果：仅当命定之主亲自持有时生效 */
+/* 神兵觉醒效果：武器需命定之主亲自持有；名甲名宝人人可用 */
 function legendFx(u){
   const k=u&&u.equip&&u.equip.wp, it=k&&ITEMS[k];
   return (it&&it.legend&&it.owner===u.name)?it.fx:null;
+}
+function gearFx(u,fx){
+  if(!u||!u.equip)return false;
+  for(const sl of ['ar','ac']){
+    const k=u.equip[sl], it=k&&ITEMS[k];
+    if(it&&it.legend&&it.fx===fx&&(!it.owner||it.owner===u.name))return true;
+  }
+  return false;
 }
 function shapeOk(u,dx,dy){
   const ax=Math.abs(dx),ay=Math.abs(dy);
@@ -2025,9 +2065,15 @@ function pincerAlly(a,d){
   const u=unitAt(px,py);
   return (u&&u.alive&&u.side===a.side&&u!==a&&!u.npc)?u:null;
 }
+function auraBonus(u){
+  if(gearFx(u,'aura'))return 3;
+  return units.some(o=>o.alive&&o!==u&&o.side===u.side&&gearFx(o,'aura')
+    &&Math.max(Math.abs(o.x-u.x),Math.abs(o.y-u.y))<=1)?3:0;
+}
 function dmgRange(a,d){
-  const atk=S(a,'atk')+bondStat(a,'atk')+(hasStatus(a,'rally')?6:0);
-  const def=S(d,'def')+bondStat(d,'def');
+  const atk=S(a,'atk')+bondStat(a,'atk')+(hasStatus(a,'rally')?6:0)+auraBonus(a);
+  let def=S(d,'def')+bondStat(d,'def');
+  if(legendFx(a)==='pierce')def*=.5; // 七星宝刀：穿透
   let base=atk*advMult(a,d)-def*(1+terrDef(d.x,d.y));
   if(pincerAlly(a,d))base*=1.3;
   if(curWeather()==='rain'&&a.rngMax>=2)base*=.85; // 雨天弓弦松弛
@@ -2043,6 +2089,7 @@ function rollDmg(a,d){
 function stratDmg(a,d,sk){
   let v=S(a,'int')*1.3-S(d,'def')*.3;
   if(sk==='fire'&&curWeather()==='rain')v*=.5; // 霖雨浇熄火攻
+  if((sk==='fire'||sk==='firestorm')&&gearFx(d,'rattan'))v*=1.8; // 藤甲遇火即燃
   return Math.max(1,Math.round(v));
 }
 
@@ -2605,9 +2652,31 @@ async function doAttack(a,d){
   const dead=await doDamage(d,dmg,crit?'#f6d35e':'#ffd9c4');
   if(a.side==='P'){gainExp(a,dmg*.5+(dead?50:25));addRage(a,dead?50:25);addStat(a,dmg,dead);}
   if(checkEnd())return;
-  // 神兵觉醒：倚天淬毒 / 蛇矛双戟分裂
+  // 神兵觉醒：倚天淬毒 / 蛇矛双戟分裂 / 双股连击 / 麒麟吸血
   const lfx=legendFx(a);
   if(lfx==='venom'&&!dead&&d.alive)addStatus(d,'poison',2);
+  if(lfx==='drain'&&dmg>0&&a.alive&&a.hp<a.maxhp){
+    const hl=Math.min(Math.round(dmg*.3),a.maxhp-a.hp);
+    if(hl>0){a.hp+=hl;addHealFx(a.x,a.y);addFloat(a.px,a.py-26,'+'+hl,'#b8e986');log(`麒麟剑汲魂，${a.name} 恢复 <b>${hl}</b> 兵力`,a.side==='P'?'good':'hit');}
+  }
+  if(lfx==='double'&&!dead&&d.alive){
+    await sleep(160);
+    await animLunge(a,d);
+    const dd2=Math.max(1,Math.round(rollDmg(a,d).dmg*.5));
+    sfx.hit();
+    log(`双股剑雌雄连击，再取 <b>${dd2}</b> 伤害！`,a.side==='P'?'good':'hit');
+    const dead2=await doDamage(d,dd2,'#ffd9c4');
+    if(a.side==='P'){gainExp(a,dd2*.3+(dead2?30:0));addStat(a,dd2,dead2);}
+    if(checkEnd())return;
+  }
+  // 兽面吞头铠：近战反噬
+  if(!dead&&d.alive&&gearFx(d,'thorns')&&Math.max(Math.abs(a.x-d.x),Math.abs(a.y-d.y))<=1&&a.alive){
+    const ref=Math.max(1,Math.round(dmg*.2));
+    addFloat(a.px,a.py-30,'反噬 '+ref,'#e87a6a');
+    log(`兽面吞头铠反噬，${a.name} 受 <b>${ref}</b> 伤！`,d.side==='P'?'good':'hit');
+    const adead=await doDamage(a,ref,'#e87a6a');
+    if(adead||ended)return;
+  }
   if(lfx==='splash'){
     const around=units.filter(x=>x.alive&&x.side===d.side&&x!==d&&Math.max(Math.abs(x.x-d.x),Math.abs(x.y-d.y))<=1);
     for(const sp of around){
@@ -5706,7 +5775,7 @@ const CAMP_CAOCAO={
       U({name:'黄巾伏兵',g:'伏',cls:'贼兵',kind:'brig',side:'E',x:13,y:8,hp:90,atk:26,def:10,mov:5,awakeR:3}),
       U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',x:14,y:5,hp:70,atk:36,def:6,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
       U({name:'波才',g:'波',cls:'贼将',kind:'chief',side:'E',x:13,y:4,hp:125,atk:29,def:14,mov:5,awakeR:5,crit:.15,drop:'shangyao'}),
-      U({name:'张梁',g:'梁',cls:'贼首',kind:'chief',side:'E',x:15,y:4,hp:155,atk:31,def:17,mov:5,boss:true,awakeR:4,crit:.15,drop:'bazhen'}),
+      U({name:'张梁',g:'梁',cls:'贼首',kind:'chief',side:'E',x:15,y:4,hp:155,atk:31,def:17,mov:5,boss:true,awakeR:4,crit:.15,drop:'qixing'}),
     ];}},
    {title:'第二章 · 汜水关之战',boss:'华雄',map:CC_CH2,deploy:5,
     spawns:[[2,5],[2,4],[2,6],[3,4],[3,6],[1,5],[3,5]],
@@ -5740,7 +5809,7 @@ const CAMP_CAOCAO={
     winPre:'虎牢关破 · 飞将折戟',winSub:t=>`第 ${t} 回合击退吕布，威震天下。<br>青州黄巾复起——回师平乱！`,
     nextBtn:'回 师 青 州',reward:{shangyao:2,danyao:1},goldReward:800,
     shop:['qinggang','hongying','tietai','yudi','tieji','bintie','shangyao','lingzhi','danyao'],
-    treasures:[{x:2,y:4,item:'lingzhi'},{x:12,y:1,gold:400},{x:9,y:2,item:'danyao'},{x:12,y:9,gold:500}],
+    treasures:[{x:2,y:4,item:'lingzhi'},{x:12,y:1,gold:400},{x:9,y:2,item:'danyao'},{x:12,y:9,gold:500},{x:9,y:6,item:'yuxi'}],
     enemies(){return [
       U({name:'并州铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:8,y:3,hp:110,atk:30,def:12,mov:7,mounted:true,crit:.15,awakeR:6}),
       U({name:'并州铁骑',g:'骑',cls:'铁骑',kind:'cav',side:'E',fac:'dong',x:10,y:7,hp:110,atk:30,def:12,mov:7,mounted:true,crit:.15,awakeR:6}),
@@ -5752,7 +5821,7 @@ const CAMP_CAOCAO={
       U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'dong',x:13,y:5,hp:80,atk:40,def:7,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
       U({name:'张辽',g:'辽',cls:'猛将',kind:'cav',side:'E',fac:'dong',x:14,y:4,hp:140,atk:31,def:15,mov:7,mounted:true,awakeR:5,crit:.18,drop:'dilu'}),
       U({name:'高顺',g:'顺',cls:'陷阵',kind:'spear',side:'E',fac:'dong',x:14,y:6,hp:150,atk:28,def:20,mov:4,awakeR:5,crit:.12,drop:'bintie'}),
-      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:15,y:5,hp:200,atk:36,def:19,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'longdan'}),
+      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:15,y:5,hp:200,atk:36,def:19,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'chitu'}),
     ];}},
    {title:'第四章 · 青州平乱',boss:'管亥',map:[
       "..f..tt......f....",".h...tt..g.....f..","......f.....t.....","rrrrrrrrrrrrrrrrrr",
@@ -5884,7 +5953,7 @@ const CAMP_CAOCAO={
           ['曹操','文远！吕布大势已去——以卿之忠义，何不与孤共定天下？'],
           ['张辽','……温侯既败，辽不殉私主。曹公以国士待我，辽，愿效死力！'],
          ]}}),
-      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:12,y:6,hp:240,atk:38,def:21,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'longdan'}),
+      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:12,y:6,hp:240,atk:38,def:21,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'shoumian'}),
     ];}},
    {title:'第八章 · 粮道护卫战',boss:'韩猛',map:CC_LIANGDAO,deploy:8,weather:'snow',barrels:[[17,6]],
     win:{type:'protect',tiles:[[22,6],[23,6]],need:2,desc:'护送至少 <em>2</em> 辆粮车抵达东侧大营（或击破 <em>韩猛</em>）'},
