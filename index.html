@@ -605,6 +605,14 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <div id="prepBag"></div>
     <h3 class="sec">军市 · 以金易物</h3>
     <div id="prepShop"></div>
+    <h3 class="sec">难度调整 <span class="pgold">打不过？降一档不丢人；嫌简单？拉满 800%（高难有犒军与金币加成）</span></h3>
+    <div style="display:flex;gap:10px;align-items:center;margin:4px 0 8px">
+      <button class="depBtn" data-dadj="-50" style="width:auto;padding:5px 14px">− 50%</button>
+      <button class="depBtn" data-dadj="-10" style="width:auto;padding:5px 14px">− 10%</button>
+      <b id="prepDiffVal" style="font-family:var(--display);letter-spacing:2px;color:var(--gold);min-width:110px;text-align:center">虎将 100%</b>
+      <button class="depBtn" data-dadj="10" style="width:auto;padding:5px 14px">＋ 10%</button>
+      <button class="depBtn" data-dadj="50" style="width:auto;padding:5px 14px">＋ 50%</button>
+    </div>
     <h3 class="sec">军情快报 · 战前一令</h3>
     <div class="phead">出阵前可颁布一道军令（耗军资，仅本场战斗生效）——再点一次可撤回退款。</div>
     <div id="prepOrders"></div>
@@ -620,6 +628,12 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <h2>军 务</h2>
     <div class="snote">战局每回合自动保存（继续按钮可恢复）；此处可手动存档至槽位长期保留，或读取旧档。</div>
     <div id="slotList"></div>
+    <div style="font-family:var(--display);font-size:14px;letter-spacing:3px;color:var(--gold);margin:12px 0 6px">存档码 · 跨设备迁移</div>
+    <textarea id="portCode" style="width:100%;height:60px;background:#1d1812;color:var(--paper);border:1px solid rgba(201,162,39,.35);border-radius:3px;font-size:11px;padding:6px;resize:vertical" placeholder="「导出」生成存档码复制保存；在新设备粘贴后点「导入」即可恢复全部进度（含图鉴/天赋/槽位）"></textarea>
+    <div class="srow2" style="margin-top:8px">
+      <button id="portExport">导 出 存 档 码</button>
+      <button id="portImport">导 入 存 档 码</button>
+    </div>
     <div class="srow2">
       <button id="backHome">返 回 主 页</button>
       <button id="closeMenu">继 续 作 战</button>
@@ -1597,6 +1611,10 @@ let fireTiles=[]; // 燃烧地块：火计/油桶留下，停留其上每回合�
 let bondExp={}; // 羁绊熟练：并肩作战回合数，C→B(8)→A(18) 加成递增
 let warOrder=null; // 战前军情：备战时颁布，仅本场战斗生效
 let maxChap=0; // 战役最远进度（战记选关解锁上限）
+let fallenFlag=false; // 本章是否有我方武将阵亡（三星战功·无伤）
+let retryN=0; // 本章败北重试次数（越挫越勇：每败一次全军伤害+5%/受伤-4%，至多5层）
+function retryMul(){return 1+Math.min(retryN,5)*.05;}
+function retryGuard(){return 1-Math.min(retryN,5)*.04;}
 const WAR_ORDERS={
   drums:  {n:'擂鼓助威',cost:300,desc:'全军武力 +3',atk:3},
   march:  {n:'轻装疾行',cost:300,desc:'全军移动 +1',mov:1},
@@ -2200,6 +2218,8 @@ function dmgRange(a,d){
   let def=S(d,'def')+bondStat(d,'def');
   if(legendFx(a)==='pierce')def*=.5; // 七星宝刀：穿透
   let base=atk*advMult(a,d)-def*(1+terrDef(d.x,d.y));
+  if(a.side==='P'&&!a.npc&&retryN>0)base*=retryMul();   // 越挫越勇：增伤
+  if(d.side==='P'&&!d.npc&&retryN>0)base*=retryGuard(); // 越挫越勇：减伤
   if(pincerAlly(a,d))base*=1.3;
   if(curWeather()==='rain'&&a.rngMax>=2)base*=.85; // 雨天弓弦松弛
   return [Math.max(1,Math.round(base*.9)),Math.max(1,Math.round(base*1.1))];
@@ -2645,6 +2665,7 @@ async function doDamage(target,dmg,color='#ffd9c4'){
   addRage(target,30);
   addFloat(target.px,target.py-26,String(dmg),color);
   if(target.hp<=0){
+    if(target.side==='P'&&!target.npc&&!target.temp)fallenFlag=true;
     log(`<b>${target.name}</b> 被击破！`, target.side==='E'?'good':'hit');
     if(target.side==='E'){
       const g=target.boss?300:(LAST_WORDS[target.name]?120:50);
@@ -3008,6 +3029,23 @@ function finish(win,loseMsg){
           `<br><span style="color:#ffd24a">本章 MVP　${mvp.name}　击破 ${mvp.kills||0} 将 · 伤害 ${mvp.dmgSum||0}</span>`+
           `<br><span style="font-size:11.5px;color:rgba(232,220,192,.55)">${party.map(u=>`${u.name} ${u.kills||0}破·${u.dmgSum||0}伤`).join('　')}</span>`;
       }
+      // 三星战功：速胜 / 无人阵亡 / 宝物全收（外传不计）
+      if(!isExtra){
+        const par=ch.par||((ch.win&&ch.win.turns)?ch.win.turns+1:(ch.map[0].length>22?14:12));
+        let bits=0;
+        if(turn<=par)bits|=1;
+        if(!fallenFlag)bits|=2;
+        if(treasures.length===0)bits|=4;
+        const labels=[[1,`速胜（≤${par}回合）`],[2,'无人阵亡'],[4,'宝物全收']];
+        const starStr=labels.map(([b,n])=>`<span style="color:${bits&b?'#ffd24a':'rgba(232,220,192,.3)'}">${bits&b?'★':'☆'}${n}</span>`).join('　');
+        ov.querySelector('.sub').innerHTML+=`<br><span style="font-size:12.5px">战功　${starStr}　<span style="color:rgba(232,220,192,.5)">每★1成就点</span></span>`;
+        codexMark(c=>{
+          const cc=campCodex(c);
+          cc.stars=cc.stars||{};
+          cc.stars[chap]=(cc.stars[chap]||0)|bits;
+        });
+      }
+      retryN=0;
       // 图鉴：记录出战武将成长
       codexMark(c=>{
         const g=campCodex(c).gen;
@@ -3064,6 +3102,7 @@ function finish(win,loseMsg){
         };
       }
     }else{
+      retryN++;
       ov.querySelector('.pre').textContent='兵败 · 群雄叹息';
       ov.querySelector('.big').innerHTML='败<span class="red">北</span>';
       ov.querySelector('.sub').innerHTML=
@@ -5310,6 +5349,8 @@ function startChapter(i){
   if(warOrder)log(`军情已布【${WAR_ORDERS[warOrder].n}】：${WAR_ORDERS[warOrder].desc}（本战生效）`,'good');
   if(barrels.length)log('战场上散落着<b>火油桶</b>——攻击引爆，3×3 烈焰敌我不分，亦会殃及相邻油桶！','sys');
   if(talentOn('t_rage')){party.forEach(u=>addRage(u,30));log('天赋【怒涛之势】发动：全军怒气 +30','good');}
+  fallenFlag=false;
+  if(retryN>0)log(`【越挫越勇】第 ${retryN} 次重整旗鼓：全军伤害 +${Math.min(retryN,5)*5}%、受伤 −${Math.min(retryN,5)*4}%`,'good');
   if(diffPct>=150&&!ch.extra){
     const n=diffPct>=500?3:diffPct>=300?2:1;
     bag.shangyao=(bag.shangyao||0)+n;
@@ -5364,6 +5405,7 @@ function openPrep(i){
   }
   for(const u of roster){if(cnt>=cap)break;if(!u.dep){u.dep=true;cnt++;}}
   document.getElementById('prepTitle').textContent='备 战 · '+CHAPTERS[i].title;
+  document.getElementById('prepDiffVal').textContent=`${diffName()} ${diffPct}%`;
   renderPrep(true);
   document.getElementById('prep').classList.remove('hidden');
   const jl=document.getElementById('prepJoin');
@@ -5558,6 +5600,11 @@ document.getElementById('prepRoster').addEventListener('change',e=>{
   sfx.coin();
   renderPrep(false);
 });
+document.querySelectorAll('button[data-dadj]').forEach(b=>b.onclick=()=>{
+  setDiff(diffPct+(+b.dataset.dadj));
+  document.getElementById('prepDiffVal').textContent=`${diffName()} ${diffPct}%`;
+  if(AC)sfx.select();
+});
 document.getElementById('prepGo').onclick=()=>{
   sfx.select();
   document.getElementById('prep').classList.add('hidden');
@@ -5650,7 +5697,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,bondExp,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,
+      chap,diffPct,turn,gold,bag,forge,bondExp,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,retryN,fallenFlag,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -5691,6 +5738,7 @@ function resumeBattle(d){
   renderBase();
   gold=d.gold;bag={...d.bag};forge={...(d.forge||{})};
   bondExp={...(d.bondExp||{})};dao=d.dao||0;warOrder=d.warOrder||null;
+  retryN=d.retryN||0;fallenFlag=!!d.fallenFlag;
   treasures=(d.treasures||[]).map(t=>({...t}));
   barrels=(d.barrels||[]).map(b=>({...b}));
   fireTiles=(d.fireTiles||[]).map(f=>({...f}));
@@ -6674,6 +6722,37 @@ function renderSlots(){
   host.innerHTML=html;
   host._autos=autos;
 }
+/* 存档码：打包全部 localStorage 进度为 base64 文本 */
+const PORT_KEYS=['zhaoyun_save','zhaoyun_battle','sanguo_codex','sanguo_slot_1','sanguo_slot_2','sanguo_slot_3','sanguo_auto_1','sanguo_auto_2','sanguo_auto_3','sanguo_auto_ptr','sanguo_speed'];
+document.getElementById('portExport').onclick=()=>{
+  if(AC)sfx.select();
+  const data={_v:SAVE_VER};
+  for(const k of PORT_KEYS){
+    try{const v=localStorage.getItem(k);if(v!=null)data[k]=v;}catch(e){}
+  }
+  const code='SG'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const ta=document.getElementById('portCode');
+  ta.value=code;
+  ta.select();
+  try{navigator.clipboard.writeText(code);}catch(e){}
+  log('存档码已生成并尝试复制到剪贴板——请妥善保存','sys');
+};
+document.getElementById('portImport').onclick=()=>{
+  if(AC)sfx.select();
+  const code=document.getElementById('portCode').value.trim();
+  if(!code.startsWith('SG')){alert('存档码格式不对（应以 SG 开头）');return;}
+  try{
+    const data=JSON.parse(decodeURIComponent(escape(atob(code.slice(2)))));
+    if(data._v!==SAVE_VER&&!confirm('存档码版本与当前不一致，仍要导入吗？'))return;
+    for(const k of PORT_KEYS){
+      if(data[k]!=null)localStorage.setItem(k,data[k]);
+    }
+    alert('导入成功！页面即将刷新载入进度。');
+    location.reload();
+  }catch(e){
+    alert('存档码解析失败，请检查是否完整粘贴。');
+  }
+};
 const sysMenuEl=document.getElementById('sysMenu');
 function openSysMenu(fromTitle){
   renderSlots();
@@ -6793,9 +6872,18 @@ let TAL=new Set();
 function loadTalents(){
   try{TAL=new Set((loadCodex().talents||[]));}catch(e){TAL=new Set();}
 }
+function starCount(c){
+  let n=0;
+  for(const k of ['zhaoyun','caocao']){
+    const st=campCodex(c,k).stars||{};
+    for(const i in st){let b=st[i];while(b){n+=b&1;b>>=1;}}
+  }
+  return n;
+}
 function achPoints(c){
   let p=0;
   for(const a of ACHV){try{if(a.ok(c))p+=a.pts||10;}catch(e){}}
+  p+=starCount(c); // 三星战功：每星 1 点
   return p;
 }
 function talSpent(c){
@@ -6904,7 +6992,9 @@ function renderChlog(){
     if(activeCamp.key==='zhaoyun'&&i===13)html+='<div class="chsec">—— 神 纪 · 倒 转 的 时 光 ——</div>';
     const unlocked=i<=mc;
     const st=i<mc?'✓ 已克':(i===cur&&mine?'▶ 当前':(unlocked?'可出阵':'未抵达'));
-    html+=`<button class="chrow" data-ch="${i}" ${unlocked?'':'disabled'}><span>${c.title}</span><span class="chst">${st}</span></button>`;
+    const bits=(campCodex(loadCodex(),activeCamp.key).stars||{})[i]||0;
+    const stars=[1,2,4].map(b=>bits&b?'★':'☆').join('');
+    html+=`<button class="chrow" data-ch="${i}" ${unlocked?'':'disabled'}><span>${c.title}</span><span class="chst"><span style="color:#ffd24a">${i<mc?stars:''}</span>　${st}</span></button>`;
   });
   document.getElementById('chlogBody').innerHTML=html;
 }
