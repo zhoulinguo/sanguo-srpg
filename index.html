@@ -483,8 +483,11 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 .srow2 button{
   flex:1;font-family:var(--display);font-size:17px;letter-spacing:4px;
   padding:10px 0;cursor:pointer;color:#f4e9d0;border-radius:4px;
+  background:linear-gradient(170deg,#3d3526,#241f15); /* 缺省深底：修复白底白字的"空白按钮" */
   border:1px solid rgba(244,233,208,.25);
 }
+.srow2 button:hover{border-color:rgba(201,162,39,.55)}
+.srow2 button:disabled{opacity:.5;cursor:default}
 #backHome{background:linear-gradient(170deg,#7e2b21,#5c1e16)}
 #backHome:hover{box-shadow:0 4px 14px rgba(176,58,46,.4)}
 #closeMenu{background:linear-gradient(170deg,#3d3526,#241f15)}
@@ -651,6 +654,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <div class="phead" id="forgeMsg" style="display:none"></div>
     <div id="prepForge"></div>
     <div style="display:flex;gap:10px;align-items:center">
+      <button id="prepBack" style="flex:0 0 auto;background:linear-gradient(170deg,#7e2b21,#5c1e16);border:1px solid rgba(244,233,208,.25);border-radius:4px;color:#f4e9d0;font-family:var(--display);font-size:16px;letter-spacing:3px;padding:12px 22px;cursor:pointer">返 回 主 页</button>
       <button id="prepGo" style="flex:1">出 阵</button>
       <button id="casinoBtn" style="flex:0 0 auto;background:linear-gradient(170deg,#5a3a6b,#3a2447);border:1px solid rgba(201,140,220,.4);border-radius:4px;color:#e8d0f0;font-family:var(--display);font-size:16px;letter-spacing:3px;padding:12px 22px;cursor:pointer">赌 坊</button>
     </div>
@@ -1622,6 +1626,7 @@ const ATYPE_LABEL={light:'轻甲',heavy:'重甲'};
 /* 职业可用装备：武器按系别、防具按轻重，宝物不限 */
 const CLASS_EQUIP={
   '主公':{wp:['sword','spear'],   ar:['light','heavy']},
+  '仁君':{wp:['sword','spear'],   ar:['light','heavy']},
   '骑兵':{wp:['spear','halberd'], ar:['light','heavy']},
   '弓骑':{wp:['bow'],             ar:['light']},
   '枪兵':{wp:['spear'],           ar:['light','heavy']},
@@ -2127,10 +2132,11 @@ function applyPromo(u){
   u.hp=u.maxhp;
   return true;
 }
-const CLS_SHORT={'主公':'主','骑兵':'骑','弓骑':'弓','枪兵':'枪','先锋':'先','军师':'谋','贼兵':'贼','弓手':'弓','贼骑':'骑','贼将':'将','贼首':'首','虎卫':'卫','妖术':'妖','投石':'石','猛将':'猛','铁骑':'骑','飞将':'飞','陷阵':'陷','百姓':'民','辎重':'粮','军医':'医','督军':'督','盾卫':'盾','弩车':'弩','爆灵':'爆','缚灵':'缚','掠夺':'掠','影者':'影'};
+const CLS_SHORT={'主公':'主','仁君':'仁','骑兵':'骑','弓骑':'弓','枪兵':'枪','先锋':'先','军师':'谋','贼兵':'贼','弓手':'弓','贼骑':'骑','贼将':'将','贼首':'首','虎卫':'卫','妖术':'妖','投石':'石','猛将':'猛','铁骑':'骑','飞将':'飞','陷阵':'陷','百姓':'民','辎重':'粮','军医':'医','督军':'督','盾卫':'盾','弩车':'弩','爆灵':'爆','缚灵':'缚','掠夺':'掠','影者':'影'};
 function clsTrait(u){
   switch(u.cls){
     case '主公':return '全军主帅 · 铁骑克步卒';
+    case '仁君':return '仁德之君 · 治愈相济（非主帅，阵亡不致败北）';
     case '骑兵':case '贼骑':return '铁骑冲锋 · 克制步卒';
     case '弓骑':return '骑射自如 · 射程 1~2';
     case '枪兵':return '枪阵如林 · 克制骑兵';
@@ -2163,7 +2169,7 @@ function clsTrait(u){
 let roster=[], rosterSnap=null, chap=0;
 let PLAYER_BASE=[
   {name:'赵云',  g:'云',cls:'骑兵',kind:'cav',  side:'P',x:0,y:0,lv:3,hp:125,atk:32,def:16,mov:6,mounted:true,leader:true,crit:.16},
-  {name:'刘备',  g:'备',cls:'主公',kind:'lord', side:'P',x:0,y:0,lv:2,hp:115,mp:40,int:28,atk:28,def:14,mov:5,mounted:true,strats:['heal']},
+  {name:'刘备',  g:'备',cls:'仁君',kind:'lord', side:'P',x:0,y:0,lv:2,hp:115,mp:40,int:28,atk:28,def:14,mov:5,mounted:true,strats:['heal']},
   {name:'关羽',  g:'羽',cls:'骑兵',kind:'cav',  side:'P',x:0,y:0,lv:2,hp:120,atk:33,def:16,mov:6,mounted:true,crit:.15},
   {name:'张飞',  g:'飞',cls:'虎卫',kind:'guard',side:'P',x:0,y:0,lv:2,hp:140,atk:35,def:17,mov:5,rngShape:'square',crit:.2},
   {name:'诸葛亮',g:'亮',cls:'军师',kind:'adv',  side:'P',x:0,y:0,lv:2,hp:85,mp:65,int:40,atk:16,def:10,mov:5,strats:['heal','fire'],crit:.05,joinCh:2},
@@ -6300,6 +6306,13 @@ document.getElementById('prepGo').onclick=()=>{
   document.getElementById('prep').classList.add('hidden');
   startChapter(prepChap);
 };
+document.getElementById('prepBack').onclick=()=>{
+  if(AC)sfx.select();
+  saveGame(prepChap); // 名册/军资/锻造等当场入档，进度不丢
+  document.getElementById('prep').classList.add('hidden');
+  document.getElementById('casino').classList.add('hidden');
+  goHome();
+};
 /* ===================== 醉仙赌坊 ===================== */
 const DIE_FACE=['','\u2680','\u2681','\u2682','\u2683','\u2684','\u2685'];
 let casGame='dice', casStake=100, casBet='big', casFocus=false, casBusy=false;
@@ -6627,6 +6640,7 @@ function battlePayload(){
 }
 function saveBattle(){
   if(ended)return;
+  if(!units.length)return; // 空战场（备战中返回主页）不写战斗档
   if(CHAPTERS[chap]&&CHAPTERS[chap].extra)return; // 外传不留战斗档
 
   try{localStorage.setItem(BKEY,JSON.stringify(battlePayload()));}catch(e){}
