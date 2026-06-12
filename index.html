@@ -1671,7 +1671,11 @@ let bag={}, gold=500;
 let forge={}; // 锻造层级（按武器种类，全军共享）。无上限：+9 后成功率恒为 15%，+6 起失败掉级
 const FORGE_MAX=99; // 实际无上限（保留常量兼容旧引用）
 const FORGE_RATE=[1,.95,.85,.7,.55,.45,.35,.25,.15]; // +9 之后恒取末位 15%
-function forgeRate(lv){return Math.min(.97,FORGE_RATE[Math.min(lv,FORGE_RATE.length-1)]+(fort.smith||0)*.03);} // 军府·工坊加成
+function forgeRate(lv){
+  const r=FORGE_RATE[Math.min(lv,FORGE_RATE.length-1)];
+  if(r>=1)return 1; // 首锻必成，不受封顶影响
+  return Math.min(.97,r+(fort.smith||0)*.03); // 军府·工坊加成
+}
 function forgeBonus(lv){let b=0;for(let i=1;i<=(lv||0);i++)b+=i<=3?2:i<=6?3:i<=9?4:5;return b;} // +10 起每级 +5
 function forgeCost(k){
   const lv=forge[k]||0;
@@ -2295,9 +2299,10 @@ function reachable(u){
     for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
       const nx=x+dx,ny=y+dy;
       if(!inMap(nx,ny))continue;
+      const ghost=typeof rbHas==='function'&&rbHas(u,'ghost'); // 奇门遁甲：穿阵
       const occ=unitAt(nx,ny);
-      if(occ&&occ.side!==u.side)continue;
-      const c=moveCost(u,tch(nx,ny));
+      if(occ&&occ.side!==u.side&&!ghost)continue;
+      const c=ghost?(tch(nx,ny)==='w'?Infinity:1):moveCost(u,tch(nx,ny));
       if(!isFinite(c))continue;
       const nd=d+c;
       if(nd>S(u,'mov'))continue;
@@ -2465,6 +2470,10 @@ function dmgRange(a,d){
   if(a.side==='P'&&!a.npc&&talentOn('t4_asura'))base*=1.15; // 修罗契约：增伤
   if(rbHas(a,'dmgUp'))base*=1.15;   // 转生·天子剑气
   if(rbHas(d,'tankDown'))base*=.85; // 转生·坚壁如山/百战余生
+  if(rbHas(a,'lastStand')&&a.hp<a.maxhp*.5)base*=1.3;  // 背水死战：增伤
+  if(rbHas(d,'lastStand')&&d.hp<d.maxhp*.5)base*=.85;  // 背水死战：减伤
+  if(units.some(o=>o.alive&&o.side!==a.side&&rbHas(o,'menace')
+    &&Math.max(Math.abs(o.x-a.x),Math.abs(o.y-a.y))<=1))base-=5; // 威压领域
   if(d.side==='P'&&!d.npc&&talentOn('t4_asura'))base*=1.1;  // 修罗契约：代价
   if(d.side==='P'&&!d.npc&&talentOn('t4_bell'))base*=.9;    // 金钟罩
   if(shieldBlocks(a,d))base*=.4; // 盾卫正面：减伤六成
@@ -2609,49 +2618,49 @@ const RB_KIND={
   lord:[
     {rb:1,fx:'rageArmy',n:'王者威仪',d:'每章开战全军怒气 +30'},
     {rb:3,fx:'dmgUp',  n:'天子剑气',d:'造成伤害 +15%'},
-    {rb:7,fx:'golden', n:'真龙不灭',d:'每章免死一次'},
+    {rb:7,fx:'ultHalf', n:'号令如山',d:'必杀只需 50 怒气即可发动'},
     {rb:9,fx:'extra',  n:'君临天下',d:'每回合首次行动后可再动一次'},
   ],
   cav:[
     {rb:1,fx:'rageFull',n:'烈火骑魂',d:'每章开战怒气全满'},
     {rb:3,fx:'movP2',  n:'风驰电掣',d:'移动 +2'},
-    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:7,fx:'canto',  n:'驰骋如风',d:'行动结束后还可再移动一次（打了就跑）'},
     {rb:9,fx:'extra',  n:'神驹分影',d:'每回合首次行动后可再动一次'},
   ],
   hcav:[
     {rb:1,fx:'reach',  n:'鹰眼',    d:'攻击距离 +1'},
     {rb:3,fx:'critX2', n:'灭世重瞳',d:'暴击伤害 1.5 → 2 倍'},
-    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:7,fx:'anyCounter',n:'无界游射',d:'任何距离被攻击都能反击（含贴脸）'},
     {rb:9,fx:'extra',  n:'连珠神射',d:'每回合首次行动后可再动一次'},
   ],
   spear:[
     {rb:1,fx:'tankDown',n:'坚壁如山',d:'所受伤害 −15%'},
     {rb:3,fx:'splash', n:'横扫千军',d:'攻击溅射相邻敌军四成伤害'},
-    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:7,fx:'vantage',n:'先发制人',d:'受击时先行反击——对手先吃你一枪再出手'},
     {rb:9,fx:'extra',  n:'枪出双影',d:'每回合首次行动后可再动一次'},
   ],
   adv:[
     {rb:1,fx:'srng1',  n:'玄思入微',d:'法术范围 +1'},
     {rb:3,fx:'spell30',n:'天机洞明',d:'法术伤害 +30%'},
-    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:7,fx:'ghost',  n:'奇门遁甲',d:'移动无视地形与敌阵阻挡（穿阵如入无人之境）'},
     {rb:9,fx:'extra',  n:'周天再演',d:'每回合首次行动后可再动一次'},
   ],
   guard:[
     {rb:1,fx:'rageFull',n:'怒火燎原',d:'每章开战怒气全满'},
     {rb:3,fx:'splash', n:'横扫千军',d:'攻击溅射相邻敌军四成伤害'},
-    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:7,fx:'menace', n:'威压领域',d:'相邻敌军武力 −5（站着就是压制）'},
     {rb:9,fx:'extra',  n:'战神附体',d:'每回合首次行动后可再动一次'},
   ],
   vanguard:[
     {rb:1,fx:'rageFull',n:'先登锐气',d:'每章开战怒气全满'},
     {rb:3,fx:'critX2', n:'灭世重瞳',d:'暴击伤害 1.5 → 2 倍'},
-    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:7,fx:'gale',   n:'阵斩余势',d:'击杀敌人后可再行动一次（每回合一次）'},
     {rb:9,fx:'extra',  n:'影分身',  d:'每回合首次行动后可再动一次'},
   ],
   chief:[
     {rb:1,fx:'tankDown',n:'百战余生',d:'所受伤害 −15%'},
     {rb:3,fx:'vamp',   n:'嗜血',    d:'攻击吸血 25%'},
-    {rb:7,fx:'golden', n:'不灭金身',d:'每章免死一次'},
+    {rb:7,fx:'lastStand',n:'背水死战',d:'兵力低于五成时：伤害 +30%、受伤 −15%'},
     {rb:9,fx:'extra',  n:'死地再战',d:'每回合首次行动后可再动一次'},
   ],
 };
@@ -3000,14 +3009,6 @@ async function doDamage(target,dmg,color='#ffd9c4'){
     await bossPhase(target);
   }
   if(target.hp<=0&&target.side==='P'&&!target.npc&&!target.temp){
-    if(rbHas(target,'golden')&&!target.goldenUsed){
-      target.goldenUsed=true;
-      target.hp=1;
-      sfx.heal();addHealFx(target.x,target.y);
-      addFloat(target.px,target.py-36,'不灭金身！','#ffd24a','huge');
-      log(`<b>${target.name}</b> 金身一闪——免死，以 1 兵力撑住！`,'good');
-      return false;
-    }
     if(target.leader&&talentOn('t_lamp')&&!lampUsed){
       lampUsed=true;
       target.hp=1;
@@ -3229,6 +3230,18 @@ async function doAttack(a,d){
     sfx.select();
     await say(duel,2500);
   }
+  // 先发制人：枪兵神力——对手出手前先吃一记反击
+  if(rbHas(d,'vantage')&&d.alive&&(shapeOk(d,a.x-d.x,a.y-d.y)||rbHas(d,'anyCounter'))){
+    addFloat(d.px,d.py-34,'先发制人！','#8fc4e8');
+    await animLunge(d,a);
+    const v=rollDmg(d,a);
+    const vd=Math.max(1,Math.round(v.dmg*.85));
+    sfx.hit();
+    log(`<b>${d.name}</b> 枪势如电，先发制人——${a.name} 受 <b>${vd}</b> 伤！`,d.side==='P'?'good':'hit');
+    const vdead=await doDamage(a,vd);
+    if(d.side==='P'){gainExp(d,vd*.5+(vdead?35:0));addRage(d,25);addStat(d,vd,vdead);}
+    if(vdead||ended||!a.alive){checkEnd();return;}
+  }
   const pin=pincerAlly(a,d);
   if(pin)addFloat(d.px,d.py-50,'夹 击','#ff9a3c');
   await animLunge(a,d);
@@ -3243,6 +3256,7 @@ async function doAttack(a,d){
   else sfx.hit();
   log(`${a.name} 攻击 ${d.name}，造成 <b>${dmg}</b> 伤害${crit?'（暴击！）':''}${pin?`（与 ${pin.name} 夹击！）`:''}`, a.side==='P'?'good':'hit');
   const dead=await doDamage(d,dmg,crit?'#f6d35e':'#ffd9c4');
+  if(dead&&a.side==='P'&&rbHas(a,'gale'))a.pendingGale=true; // 阵斩余势
   if(a.side==='P'){gainExp(a,dmg*.5+(dead?50:25));addRage(a,dead?50:25);addStat(a,dmg,dead);}
   if(checkEnd())return;
   // 连弩车：穿透射击，弹道沿线单位皆受七成伤害（敌我不分）
@@ -3333,7 +3347,7 @@ async function doAttack(a,d){
     if(checkEnd())return;
   }
   if(!dead&&d.alive){
-    if(shapeOk(d,a.x-d.x,a.y-d.y)){
+    if(shapeOk(d,a.x-d.x,a.y-d.y)||rbHas(d,'anyCounter')){
       await sleep(180);
       await animLunge(d,a);
       const c=rollDmg(d,a);
@@ -3720,6 +3734,12 @@ async function doRecruit(u,t){
 }
 function showMenu(u){
   state='menu';
+  if(u.cantoMode){ // 驰骋如风：只能走位收尾
+    menuEl.innerHTML=`<button data-act="wait">驻 马<i class="udesc">驰骋结束，收势驻马</i></button><button data-act="cancel">取 消</button>`;
+    menuEl.style.display='flex';
+    placeMenu(u);
+    return;
+  }
   const enemies=alive(u.side==='P'?'E':'P');
   const canAtk=enemies.some(e=>shapeOk(u,e.x-u.x,e.y-u.y))
     ||barrels.some(b=>!unitAt(b.x,b.y)&&shapeOk(u,b.x-u.x,b.y-u.y));
@@ -3738,8 +3758,9 @@ function showMenu(u){
   }
   const ult=ultOf(u);
   if(ult){
-    const ok=u.rage>=100&&ultTargets(u).length>0;
-    html+=`<button data-act="ult" ${ok?'':'disabled'} class="ultBtn">必杀·${ult.label} <span class="mp">${u.rage}/100</span><i class="udesc">${ult.desc}</i></button>`;
+    const need=rbHas(u,'ultHalf')?50:100;
+    const ok=u.rage>=need&&ultTargets(u).length>0;
+    html+=`<button data-act="ult" ${ok?'':'disabled'} class="ultBtn">必杀·${ult.label} <span class="mp">${u.rage}/${need}</span><i class="udesc">${ult.desc}</i></button>`;
   }
   const hasItem=Object.keys(bag).some(k=>bag[k]>0&&ITEMS[k].use);
   html+=`<button data-act="item" ${hasItem?'':'disabled'}>道 具</button>`;
@@ -3949,13 +3970,30 @@ function checkTreasure(u){
 async function finishAction(){
   if(selected&&selected.side==='P'&&selected.alive)checkTreasure(selected);
   if(selected){
-    selected.acted=true;
-    if(rbHas(selected,'extra')&&!selected.extraUsed&&selected.alive){ // 双动神力：再动！
-      selected.extraUsed=true;
-      selected.acted=false;
-      addFloat(selected.px,selected.py-34,'时空缭乱·再动！','#8fc4e8',true);
-      log(`<b>${selected.name}</b> 扭转时光——本回合可再行动一次！`,'good');
+    const u9=selected;
+    u9.acted=true;
+    const wasCanto=u9.cantoMode;
+    u9.cantoMode=false;
+    if(u9.alive&&!wasCanto){
+      if(rbHas(u9,'extra')&&!u9.extraUsed){ // 双动神力：完整再动
+        u9.extraUsed=true;
+        u9.acted=false;
+        addFloat(u9.px,u9.py-34,'再 动 ！','#8fc4e8',true);
+        log(`<b>${u9.name}</b> 扭转时光——本回合可再行动一次！`,'good');
+      }else if(u9.pendingGale&&rbHas(u9,'gale')&&!u9.galeUsed){ // 阵斩余势
+        u9.galeUsed=true;
+        u9.pendingGale=false;
+        u9.acted=false;
+        addFloat(u9.px,u9.py-34,'阵斩余势·再动！','#ffb066',true);
+        log(`<b>${u9.name}</b> 斩将夺势——可再行动一次！`,'good');
+      }else if(rbHas(u9,'canto')&&!u9.cantoUsed){ // 驰骋如风：仅可再移动
+        u9.cantoUsed=true;
+        u9.cantoMode=true;
+        u9.acted=false;
+        addFloat(u9.px,u9.py-30,'驰骋·再移动','#8fc4e8');
+      }
     }
+    u9.pendingGale=false;
   }
   if(checkEnd())return;
   if(dangerOn)calcDanger();
@@ -4166,7 +4204,7 @@ cv.addEventListener('click',async e=>{
 /* 合击：收集所有未行动且本回合能攻击到目标的武将 */
 function gatherStrikers(t){
   const out=[];
-  for(const u of alive('P').filter(x=>!x.acted&&!x.npc)){
+  for(const u of alive('P').filter(x=>!x.acted&&!x.npc&&!x.cantoMode)){
     const r=reachable(u);
     const lands=landTiles(u,r.dist);
     let best=null;
@@ -4526,7 +4564,7 @@ async function enemyPhase(){
   fireTiles=fireTiles.filter(f=>f.t>0);
   for(const p of units.filter(u=>u.side==='P'&&u.alive)){
     p.guard=false;
-    p.extraUsed=false;
+    p.extraUsed=false;p.cantoUsed=false;p.cantoMode=false;p.galeUsed=false;p.pendingGale=false;
     if(hasStatus(p,'stun')){
       p.acted=true; // 眩晕：本回合无法行动
       addFloat(p.px,p.py-30,'眩 晕','#ffd24a');
@@ -5949,7 +5987,7 @@ function startChapter(i){
   lampUsed=false;
   party.forEach((u,idx)=>{
     u.alive=true;u.fade=1;u.flash=0;u.acted=false;u.rage=0;u.kills=0;u.dmgSum=0;u.revUsed=false;u.status=[];u.guard=false;
-    u.goldenUsed=false;u.extraUsed=false;
+    u.goldenUsed=false;u.extraUsed=false;u.cantoUsed=false;u.cantoMode=false;u.galeUsed=false;u.pendingGale=false;
     if(rbHas(u,'rageFull'))u.rage=100; // 烈火骑魂等
     u.hp=u.maxhp;u.mp=u.maxmp;
     u.x=ch.spawns[idx][0];u.y=ch.spawns[idx][1];
@@ -6144,7 +6182,7 @@ function renderPrep(animate){
     else if(u.promoted&&!u.awakened&&aw)promoTag+=` <span style="color:rgba(232,220,192,.6)">Lv${AWAKE_LV} 可觉醒</span>`;
     const rb=u.rb||0;
     if(u.lv>=LV_MAX&&rb<RB_MAX){
-      promoTag+=` <button class="depBtn on" data-rb="${ri}" style="width:auto;padding:3px 10px;color:#ff6a9a;border-color:#ff6a9a" title="回到 Lv1：保留转职/觉醒，属性保留六成，成长+25%/转、经验+15%/转；第1/3/7/9转觉醒兵种专属神力（7转免死金身、9转回合双动）">转 生 ✦ 第${rb+1}转</button>`;
+      promoTag+=` <button class="depBtn on" data-rb="${ri}" style="width:auto;padding:3px 10px;color:#ff6a9a;border-color:#ff6a9a" title="回到 Lv1：保留转职/觉醒，属性保留六成，成长+25%/转、经验+15%/转；第1/3/7/9转觉醒兵种专属神力（7转改变作战方式、9转回合双动）">转 生 ✦ 第${rb+1}转</button>`;
     }else if(u.lv>=LV_MAX){
       promoTag+=` <span style="color:#ff6a9a">九转功成 · 仙凡有别</span>`;
     }
