@@ -278,22 +278,35 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 }
 #prep.hidden{display:none}
 #prep .pinner{
-  width:min(920px,94vw);max-height:90vh;overflow:auto;
+  width:min(920px,94vw);height:90vh;
+  display:flex;flex-direction:column;
   background:linear-gradient(170deg,#262017,#171310);
   border:1px solid rgba(201,162,39,.5);border-radius:6px;
-  padding:24px 30px 26px;
+  padding:18px 26px 16px;
   box-shadow:0 20px 60px rgba(0,0,0,.7);
+  animation:popIn .45s ease both;
 }
-#prep .pinner{animation:popIn .45s ease both}
 @keyframes popIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
-#prep h2{
-  font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:26px;
-  display:flex;justify-content:space-between;align-items:baseline;
-  position:sticky;top:0;z-index:5; /* 滚动时金币常驻可见 */
-  background:linear-gradient(180deg,#262017 75%,rgba(38,32,23,0));
-  padding:4px 2px 10px;margin:-4px -2px 2px;
+#prep .prepHead{display:flex;justify-content:space-between;align-items:baseline;flex:0 0 auto}
+#prep .prepBody{flex:1 1 auto;overflow-y:auto;min-height:0;padding-right:4px}
+#prep h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:26px}
+#prep h2 .pgold,#prep .prepHead .pgold{font-family:var(--body);font-size:15px;color:#e8c655;letter-spacing:2px}
+/* Tab 页签 */
+#prep .prepTabs{display:flex;gap:6px;flex:0 0 auto;margin:10px 0 8px;flex-wrap:wrap}
+#prep .prepTab{
+  flex:1 1 auto;min-width:90px;font-family:var(--display);font-size:15px;letter-spacing:3px;
+  padding:9px 6px;cursor:pointer;color:var(--paper-dim);
+  background:rgba(232,220,192,.05);border:1px solid rgba(201,162,39,.25);
+  border-radius:5px 5px 0 0;transition:all .12s;
 }
-#prep h2 .pgold{font-family:var(--body);font-size:15px;color:#e8c655;letter-spacing:2px}
+#prep .prepTab:hover{border-color:rgba(201,162,39,.55)}
+#prep .prepTab.on{color:var(--gold);border-color:var(--gold);background:rgba(201,162,39,.14)}
+#prep .prepPane[hidden]{display:none}
+/* 固定底栏 */
+#prep .prepFoot{display:flex;gap:10px;align-items:center;flex:0 0 auto;padding-top:12px;border-top:1px solid rgba(201,162,39,.2);margin-top:6px}
+#prep #prepGo{flex:1}
+#prep #prepBack{flex:0 0 auto;background:linear-gradient(170deg,#7e2b21,#5c1e16);border:1px solid rgba(244,233,208,.25);border-radius:4px;color:#f4e9d0;font-family:var(--display);font-size:16px;letter-spacing:3px;padding:12px 22px;cursor:pointer}
+#prep #casinoBtn{flex:0 0 auto;background:linear-gradient(170deg,#5a3a6b,#3a2447);border:1px solid rgba(201,140,220,.4);border-radius:4px;color:#e8d0f0;font-family:var(--display);font-size:16px;letter-spacing:3px;padding:12px 22px;cursor:pointer}
 #prep .phead{font-size:12.5px;color:var(--paper);opacity:.88;margin-bottom:10px;letter-spacing:1px;line-height:1.8}
 #prep h3.sec{
   font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:5px;color:var(--gold);
@@ -637,33 +650,55 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 
 <div id="prep" class="hidden">
   <div class="pinner">
-    <h2><span id="prepTitle">备 战</span><span class="pgold" id="prepGold">军资 500 金</span></h2>
-    <div class="phead">为武将装备 武器 / 防具 / 宝物（加成实时生效）；<b style="color:var(--gold)">武器分剑/枪/弓/戟/扇笛五系、重甲限重装职业</b>，下拉框只列出该武将可用之物；军市以金易物。</div>
+    <div class="prepHead">
+      <h2><span id="prepTitle">备 战</span></h2>
+      <span class="pgold" id="prepGold">军资 500 金</span>
+    </div>
+    <div class="prepTabs">
+      <button class="prepTab on" data-tab="roster">出战配置</button>
+      <button class="prepTab" data-tab="market">军市辎重</button>
+      <button class="prepTab" data-tab="develop">军府锻造</button>
+      <button class="prepTab" data-tab="strat">军情商贸</button>
+    </div>
     <div class="phead" id="prepJoin" style="display:none;color:#ffd24a"></div>
-    <h3 class="sec">武将装备 <span class="pgold" id="prepDep"></span></h3>
-    <div id="prepRoster"></div>
-    <h3 class="sec">辎重</h3>
-    <div id="prepBag"></div>
-    <h3 class="sec">军市 · 以金易物</h3>
-    <div id="prepShop"></div>
-    <h3 class="sec">军情快报 · 战前一令</h3>
-    <div class="phead">出阵前可颁布一道军令（耗军资，仅本场战斗生效）——再点一次可撤回退款。</div>
-    <div id="prepOrders"></div>
-    <h3 class="sec">军府营造 · 富国强兵</h3>
-    <div class="phead">五座设施逐级升造，加成全军生效、随存档与周目继承——金币的长线归宿。</div>
-    <div id="prepFort"></div>
-    <h3 class="sec">商队贸易 · 低买高卖</h3>
-    <div class="phead">行情每章浮动 ±40%（<span style="color:#9fc068">绿=低价宜囤</span>　<span style="color:#e8845a">红=高价宜抛</span>）；货舱运力 20。</div>
-    <div id="prepTrade"></div>
-    <h3 class="sec">锻造坊 · 淬火砺刃</h3>
-    <div class="phead">按武器种类强化、全军同名共享，<b style="color:var(--gold)">无上限</b>：+1~3 每级武+2，+4~6 每级+3，+7~9 每级+4，+10 起每级 <b style="color:var(--gold)">+5</b>。
-    <b style="color:#e8845a">成功率逐级递减至 15%（+9 后恒定），+6 起失败掉一级</b>；「转锻」可把锻造层级继承给新武器（100金/级）。</div>
-    <div class="phead" id="forgeMsg" style="display:none"></div>
-    <div id="prepForge"></div>
-    <div style="display:flex;gap:10px;align-items:center">
-      <button id="prepBack" style="flex:0 0 auto;background:linear-gradient(170deg,#7e2b21,#5c1e16);border:1px solid rgba(244,233,208,.25);border-radius:4px;color:#f4e9d0;font-family:var(--display);font-size:16px;letter-spacing:3px;padding:12px 22px;cursor:pointer">返 回 主 页</button>
-      <button id="prepGo" style="flex:1">出 阵</button>
-      <button id="casinoBtn" style="flex:0 0 auto;background:linear-gradient(170deg,#5a3a6b,#3a2447);border:1px solid rgba(201,140,220,.4);border-radius:4px;color:#e8d0f0;font-family:var(--display);font-size:16px;letter-spacing:3px;padding:12px 22px;cursor:pointer">赌 坊</button>
+    <div class="prepBody">
+      <section class="prepPane" data-pane="roster">
+        <h3 class="sec">武将装备 <span class="pgold" id="prepDep"></span></h3>
+        <div class="phead">为武将装备 武器 / 防具 / 宝物（加成实时生效）；<b style="color:var(--gold)">武器分剑/枪/弓/戟/扇笛五系、重甲限重装职业</b>，下拉框只列出该武将可用之物。Lv15 转职、Lv30 觉醒、满级可转生。</div>
+        <div id="prepRoster"></div>
+      </section>
+      <section class="prepPane" data-pane="market" hidden>
+        <h3 class="sec">军市 · 以金易物</h3>
+        <div id="prepShop"></div>
+        <h3 class="sec">辎重</h3>
+        <div id="prepBag"></div>
+      </section>
+      <section class="prepPane" data-pane="develop" hidden>
+        <h3 class="sec">军府营造 · 富国强兵</h3>
+        <div class="phead">五座设施逐级升造，加成全军生效、随存档与周目继承——金币的长线归宿。</div>
+        <div id="prepFort"></div>
+        <h3 class="sec">锻造坊 · 淬火砺刃</h3>
+        <div class="phead">按武器种类强化、全军同名共享，<b style="color:var(--gold)">无上限</b>：+1~3 每级武+2，+4~6 每级+3，+7~9 每级+4，+10 起每级 <b style="color:var(--gold)">+5</b>。
+        <b style="color:#e8845a">成功率逐级递减至 15%（+9 后恒定），+6 起失败掉一级</b>；「转锻」可把锻造层级继承给新武器（100金/级）。</div>
+        <div class="phead" id="forgeMsg" style="display:none"></div>
+        <div id="prepForge"></div>
+      </section>
+      <section class="prepPane" data-pane="strat" hidden>
+        <h3 class="sec">军师献策 · 战前军议</h3>
+        <div class="phead">军师可献一计改变战场初始格局（耗军资或需智力），仅本战生效——再点取消退款。</div>
+        <div id="prepStrat"></div>
+        <h3 class="sec">军情快报 · 战前一令</h3>
+        <div class="phead">出阵前可颁布一道军令（耗军资，仅本场战斗生效）——再点一次可撤回退款。</div>
+        <div id="prepOrders"></div>
+        <h3 class="sec">商队贸易 · 低买高卖</h3>
+        <div class="phead">行情每章浮动 ±40%（<span style="color:#9fc068">绿=低价宜囤</span>　<span style="color:#e8845a">红=高价宜抛</span>）；货舱运力 20。</div>
+        <div id="prepTrade"></div>
+      </section>
+    </div>
+    <div class="prepFoot">
+      <button id="prepBack">返 回</button>
+      <button id="casinoBtn">赌 坊</button>
+      <button id="prepGo">出 阵</button>
     </div>
   </div>
 </div>
@@ -1711,6 +1746,19 @@ function barrelAt(x,y){return barrels.find(b=>b.x===x&&b.y===y);}
 let fireTiles=[]; // 燃烧地块：火计/油桶留下，停留其上每回合受伤，持续数回合
 let bondExp={}; // 羁绊熟练：并肩作战回合数，C→B(8)→A(18) 加成递增
 let warOrder=null; // 战前军情：备战时颁布，仅本场战斗生效
+let warPlan=null; // 谋士献策：战前军议选定的计策（仅本战生效）
+const WAR_PLANS={
+  fire:  {n:'火攻',cost:300,need:0, desc:'敌方阵地预置 3 个火油桶（开局即可引爆）'},
+  lijian:{n:'离间',cost:0,  need:32,desc:'敌方一名猛将首回合按兵不动（需军师智力≥32）'},
+  duanliang:{n:'断粮',cost:500,need:0,desc:'敌军自第 4 回合起每回合损失 5% 兵力'},
+  zhayang:{n:'诈降',cost:0, need:0, desc:'一名我方武将伪装潜入敌阵，第 3 回合于敌后反水（前 3 回合不可控）'},
+  kongcheng:{n:'空城',cost:0,need:36,desc:'敌军初始警戒范围 −3，便于从容布阵（需军师智力≥36）'},
+};
+function bestIntel(){ // 我方在册军师的最高智力（含装备/转生加成）
+  let v=0;
+  for(const u of roster){if(u.cls==='军师'||u.cls==='仁君'||u.kind==='adv'||u.kind==='lord')v=Math.max(v,S(u,'int'));}
+  return v;
+}
 let chains={}; // 奇遇事件链进度（id → 已完成步数；-1 表示链已断）
 let cargo={}; // 商队货舱（低买高卖，运力上限 20）
 let fort={camp:0,drill:0,smith:0,clinic:0,stable:0}; // 军府营造：金币长线沉淀，跨周目随存档继承
@@ -3500,7 +3548,7 @@ function checkEnd(){
 }
 function finish(win,loseMsg){
   ended=true;state='over';
-  warOrder=null; // 军情仅本战生效
+  warOrder=null;warPlan=null;window.__duanliang=false; // 军情/献策仅本战生效
   hideMenu();
   clearBattle(); // 战斗结束清除战斗存档（章节存档另存）
   const ch=CHAPTERS[chap];
@@ -4053,8 +4101,15 @@ cv.addEventListener('mousemove',e=>{
       }
     }
   }else if(state==='targeting')showForecast('选择目标……');
+  // 选中我方武将时，悬停敌人即时显示伤害预览（侧栏+头顶浮层）
+  if((state==='idle'||state==='menu')&&selected&&selected.side==='P'&&u&&u.side==='E'&&u.alive){
+    if(atkSet&&atkSet.has(key(u.x,u.y))||shapeOk(selected,u.x-selected.x,u.y-selected.y)){
+      hoverTarget=u;
+      forecastAttack(selected,u);
+    }
+  }
 });
-cv.addEventListener('mouseleave',()=>{mouse.x=mouse.y=-1;});
+cv.addEventListener('mouseleave',()=>{mouse.x=mouse.y=-1;hoverTarget=null;});
 cv.addEventListener('contextmenu',e=>{e.preventDefault();cancelStep();});
 window.addEventListener('keydown',e=>{if(e.key==='Escape')cancelStep();});
 /* ---- 触屏支持：长按=取消，攻击需两次点击确认 ---- */
@@ -4394,9 +4449,25 @@ async function enemyPhase(){
   }
   await tickStatus('E'); // 敌方状态结算（灼烧/中毒/燃烧地块）
   if(ended)return;
+  // 谋士献策·断粮：第 4 回合起敌军每回合损失 5% 兵力
+  if(window.__duanliang&&turn>=4){
+    log('军师【断粮】之计奏效——敌军粮尽，士气低落！','good');
+    for(const e of units.filter(u=>u.alive&&u.side==='E')){
+      const dd=Math.max(1,Math.round(e.maxhp*.05));
+      await doDamage(e,dd,'#9fc46a');
+      if(ended)return;
+    }
+  }
   for(const e of units.filter(u=>u.side==='E')){
     if(ended)return;
     if(!e.alive)continue;
+    if(e.stunTurns>0){ // 离间：按兵不动
+      e.stunTurns--;
+      addFloat(e.px,e.py-30,'按兵不动','#cf9ae4');
+      log(`${e.name} 受离间之计，按兵不动`,'good');
+      await sleep(240);
+      continue;
+    }
     if(hasStatus(e,'stun')){
       addFloat(e.px,e.py-30,'眩 晕','#ffd24a');
       log(`${e.name} 眩晕中，无法行动`,'good');
@@ -4572,7 +4643,15 @@ async function enemyPhase(){
   for(const p of units.filter(u=>u.side==='P'&&u.alive)){
     p.guard=false;
     p.extraUsed=false;p.cantoUsed=false;p.cantoMode=false;p.galeUsed=false;p.pendingGale=false;
-    if(hasStatus(p,'stun')){
+    // 诈降伏兵：潜伏期满则反水可控
+    if(p.moleTurns>0){
+      p.moleTurns--;
+      if(p.moleTurns<=0){
+        addFloat(p.px,p.py-34,'反 水 ！','#ffd24a','huge');
+        log(`<b>${p.name}</b> 诈降之计发动——于敌阵深处倒戈一击！`,'good');
+        p.acted=false;
+      }else{p.acted=true;}
+    }else if(hasStatus(p,'stun')){
       p.acted=true; // 眩晕：本回合无法行动
       addFloat(p.px,p.py-30,'眩 晕','#ffd24a');
       p.status.find(s2=>s2.k==='stun').t--;
@@ -5838,6 +5917,39 @@ function drawFx(dt){
 }
 
 /* 天气视觉层：雨丝 / 飘雪 / 流雾 */
+/* 伤害预览浮层：选中我方+悬停/瞄准敌人时，目标头顶显示 伤害·暴击·剩余 */
+function drawDmgPreview(){
+  const a=selected, d=hoverTarget;
+  if(!a||a.side!=='P'||!d||!d.alive||d.side!=='E')return;
+  if(state!=='idle'&&state!=='menu'&&state!=='targeting')return;
+  let line1,line2;
+  if(state==='targeting'&&targeting&&(targeting.kind==='ult'||targeting.kind==='item'))return;
+  const isStrat=state==='targeting'&&targeting&&targeting.kind==='strat';
+  if(isStrat){
+    const sk=targeting.strat, sinfo=STRAT[sk];
+    if(sinfo.kind!=='dmg')return;
+    const dd=stratDmg(a,d,sk);
+    line1=`${sinfo.name} ${dd}`;
+    line2=`${d.hp}→${Math.max(0,d.hp-dd)}`;
+  }else{
+    const [lo,hi]=dmgRange(a,d);
+    line1=`${lo}~${hi}　暴${Math.round(critOf(a)*100)}%`;
+    line2=`${d.hp}→${Math.max(0,d.hp-hi)}~${Math.max(0,d.hp-lo)}`;
+  }
+  const px=d.px, py=d.py-30;
+  ctx.save();
+  ctx.font='bold 12px "Noto Sans SC",sans-serif';
+  ctx.textAlign='center';
+  const w=Math.max(ctx.measureText(line1).width,ctx.measureText(line2).width)+16;
+  ctx.fillStyle='rgba(13,10,7,.88)';
+  ctx.strokeStyle='rgba(232,180,90,.7)';ctx.lineWidth=1;
+  if(ctx.roundRect){ctx.beginPath();ctx.roundRect(px-w/2,py-26,w,30,4);ctx.fill();ctx.stroke();}
+  else{ctx.fillRect(px-w/2,py-26,w,30);ctx.strokeRect(px-w/2,py-26,w,30);}
+  ctx.fillStyle='#ffd24a';ctx.fillText(line1,px,py-15);
+  ctx.fillStyle=(d.hp-dmgRange(a,d)[0]<=0)?'#ff7a5a':'#e8dcc0';
+  ctx.fillText(line2,px,py-2);
+  ctx.restore();
+}
 function drawWeather(t){
   const w=curWeather();
   if(!w||!units.length)return;
@@ -5968,6 +6080,7 @@ function loop(t){
   }
   drawUnits(t);
   if(state==='idle'||state==='targeting')drawCursor(t);
+  drawDmgPreview();
   drawFx(dt);
   drawWeather(t);
   if(flashT>0){ // 暴击/首领退场红闪
@@ -6040,6 +6153,16 @@ function startChapter(i){
       }
     });
   }
+  // 谋士献策·离间：敌方一名非boss猛将首回合不动
+  if(warPlan==='lijian'){
+    const tgt=foes.filter(e=>!e.boss&&(e.cls==='猛将'||e.kind==='chief'||e.kind==='cav')).sort((a,b)=>b.atk-a.atk)[0];
+    if(tgt){tgt.stunTurns=1;}
+  }
+  // 诈降：抽一名出战武将（非主帅）作伏兵，潜入敌阵深处，前3回合不可控
+  let molePlanned=null;
+  if(warPlan==='zhayang'){
+    molePlanned=party.find(u=>!u.leader&&!rbHas(u,'x'))||party[1];
+  }
   const npcs=ch.npcs?ch.npcs():[]; // 护送对象（百姓/粮车），自动赶路
   escapedN=0;
   units=[...party,...npcs,...foes];
@@ -6049,7 +6172,25 @@ function startChapter(i){
   treasures=(ch.treasures||[]).map(t=>({...t}));
   barrels=(ch.barrels||[]).map(([x,y])=>({x,y}));
   fireTiles=[];
+  // 谋士献策·火攻：敌阵预置油桶
+  if(warPlan==='fire'){
+    const bx0=Math.floor(COLS*.62);
+    let bn2=0;
+    for(let bx=bx0;bx<COLS&&bn2<3;bx++)for(let by=2;by<ROWS-2&&bn2<3;by+=3){
+      if(tch(bx,by)!=='w'&&tch(bx,by)!=='m'&&!unitAt(bx,by)&&!barrelAt(bx,by)){barrels.push({x:bx,y:by});bn2++;}
+    }
+  }
+  // 谋士献策·诈降：把伏兵传送到敌阵深处，标记潜伏回合
+  if(warPlan==='zhayang'&&molePlanned){
+    let spot=null;
+    for(let bx=COLS-3;bx>=Math.floor(COLS*.6)&&!spot;bx--)for(let by=1;by<ROWS-1;by++){
+      if(tch(bx,by)!=='w'&&tch(bx,by)!=='m'&&!unitAt(bx,by)){spot=[bx,by];break;}
+    }
+    if(spot){molePlanned.x=spot[0];molePlanned.y=spot[1];molePlanned.px=(spot[0]+.5)*TILE;molePlanned.py=(spot[1]+.5)*TILE;molePlanned.moleTurns=3;molePlanned.acted=true;}
+  }
+  if(warPlan==='duanliang')window.__duanliang=true; else window.__duanliang=false;
   if(ch.weather==='fog')foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-2);}); // 大雾：警戒收窄
+  if(warPlan==='kongcheng')foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-3);}); // 空城计
   if(warOrder&&WAR_ORDERS[warOrder].awake)foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)+WAR_ORDERS[warOrder].awake);}); // 虚张声势
   if(talentOn('t_scout'))foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-1);}); // 天赋·斥候先行
   if(talentOn('t_qianli'))foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-1);}); // 天赋·千里镜
@@ -6064,6 +6205,7 @@ function startChapter(i){
   for(const [t,c] of ch.intro)log(t,c);
   if(ch.weather)log(`【${WEATHER_INFO[ch.weather].n}】${WEATHER_INFO[ch.weather].desc}`,'sys');
   if(warOrder)log(`军情已布【${WAR_ORDERS[warOrder].n}】：${WAR_ORDERS[warOrder].desc}（本战生效）`,'good');
+  if(warPlan)log(`军师献策【${WAR_PLANS[warPlan].n}】：${WAR_PLANS[warPlan].desc}`,'good');
   if(barrels.length)log('战场上散落着<b>火油桶</b>——攻击引爆，3×3 烈焰敌我不分，亦会殃及相邻油桶！','sys');
   if(talentOn('t_rage')){party.forEach(u=>addRage(u,30));log('天赋【怒涛之势】发动：全军怒气 +30','good');}
   if(party.some(u=>rbHas(u,'rageArmy'))){party.forEach(u=>addRage(u,30));log('转生神力【王者威仪】：全军怒气 +30','good');}
@@ -6131,6 +6273,7 @@ function openPrep(i){
   prepChap=i;
   shenXin=3;
   tradeShift={};
+  warPlan=null;
   ensureRoster();
   const joined=syncJoins(i);
   // 整理出战名单：主帅必出战，超员的从后往前裁，缺员的按名册顺序补
@@ -6142,8 +6285,12 @@ function openPrep(i){
   }
   for(const u of roster){if(cnt>=cap)break;if(!u.dep){u.dep=true;cnt++;}}
   document.getElementById('prepTitle').textContent='备 战 · '+CHAPTERS[i].title;
+  // 每次打开回到「出战配置」页
+  document.querySelectorAll('.prepTab').forEach(x=>x.classList.toggle('on',x.dataset.tab==='roster'));
+  document.querySelectorAll('.prepPane').forEach(p=>p.hidden=(p.dataset.pane!=='roster'));
   renderPrep(true);
   document.getElementById('prep').classList.remove('hidden');
+  document.querySelector('.prepBody').scrollTop=0;
   const jl=document.getElementById('prepJoin');
   jl.style.display=joined.length?'':'none';
   if(joined.length)jl.innerHTML=`新武将入伙：<b>${joined.join('、')}</b>！已自动补足等级，可在下方编入出战名单。`;
@@ -6220,6 +6367,19 @@ function renderPrep(animate){
     </div>`;
   }).join('')+'</div>';
   // 军情快报
+  // 军师献策
+  const intel=bestIntel();
+  document.getElementById('prepStrat').innerHTML='<div class="shopgrid">'+Object.entries(WAR_PLANS).map(([k,p])=>{
+    const on=warPlan===k;
+    const okIntel=intel>=p.need;
+    const okGold=gold>=p.cost;
+    const usable=on||(okIntel&&okGold);
+    return `<div class="shopcard" style="${on?'border-color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,.3)':''}">
+      <div class="sname">${p.n}${on?' <span style="color:#ffd24a">已定</span>':''}</div>
+      <div class="sdesc">${p.desc}${p.need?`<br><span style="color:${okIntel?'#9fc068':'#e8845a'}">需军师智力 ≥ ${p.need}（当前 ${intel}）</span>`:''}</div>
+      <div class="srow"><span class="price">${p.cost?p.cost+' 金':'无需军资'}</span><button data-plan="${k}" ${usable?'':'disabled'}>${on?'取 消':'定 策'}</button></div>
+    </div>`;
+  }).join('')+'</div>';
   document.getElementById('prepOrders').innerHTML='<div class="shopgrid">'+Object.entries(WAR_ORDERS).map(([k,w])=>{
     const on=warOrder===k;
     return `<div class="shopcard" style="${on?'border-color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,.3)':''}">
@@ -6284,6 +6444,22 @@ function renderPrep(animate){
     :'<span class="chip" style="opacity:.5">暂无可锻造的武器</span>';
   document.getElementById('prepGold').textContent=`军资 ${gold} 金`;
 }
+document.getElementById('prepStrat').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-plan]');
+  if(!btn||btn.disabled)return;
+  const k=btn.dataset.plan, p=WAR_PLANS[k];
+  if(warPlan===k){ // 取消退款
+    if(p.cost)gold+=p.cost;
+    warPlan=null;
+  }else{
+    if(bestIntel()<p.need||gold<p.cost)return;
+    if(warPlan&&WAR_PLANS[warPlan].cost)gold+=WAR_PLANS[warPlan].cost; // 换策先退旧
+    if(p.cost)gold-=p.cost;
+    warPlan=k;
+  }
+  sfx.coin();
+  renderPrep(false);
+});
 document.getElementById('prepOrders').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-order]');
   if(!btn||btn.disabled)return;
@@ -6476,6 +6652,13 @@ document.getElementById('prepRoster').addEventListener('change',e=>{
   else u.equip[slot]=null;
   sfx.coin();
   renderPrep(false);
+});
+document.querySelectorAll('.prepTab').forEach(t=>t.onclick=()=>{
+  if(AC)sfx.select();
+  const k=t.dataset.tab;
+  document.querySelectorAll('.prepTab').forEach(x=>x.classList.toggle('on',x===t));
+  document.querySelectorAll('.prepPane').forEach(p=>p.hidden=(p.dataset.pane!==k));
+  document.querySelector('.prepBody').scrollTop=0;
 });
 document.getElementById('prepGo').onclick=()=>{
   sfx.select();
