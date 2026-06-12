@@ -541,6 +541,13 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     padding:9px 14px;font-size:13px;letter-spacing:2px;border-radius:24px;
     box-shadow:0 6px 18px rgba(0,0,0,.55);
   }
+  #nextUnit{ /* 拇指右上：快速切换未行动武将 */
+    position:fixed;right:10px;bottom:58px;z-index:50;width:auto !important;
+    margin:0 !important;padding:9px 14px !important;font-size:13px !important;
+    letter-spacing:2px !important;border-radius:24px !important;
+    background:linear-gradient(170deg,#3d5a8a,#243a5c) !important;color:#dce8f4 !important;
+    box-shadow:0 6px 18px rgba(0,0,0,.55) !important;
+  }
   #menu{min-width:150px}
   #menu button{font-size:19px;padding:11px 16px}
   #talk{min-width:0;width:92vw;padding:10px 14px;bottom:88px}
@@ -6789,7 +6796,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,bondExp,chains,cargo,fort,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,retryN,fallenFlag,lampUsed,
+      chap,diffPct,turn,gold,bag,forge,bondExp,chains,cargo,fort,dao,warOrder,runTurns,ngPlus,maxChap,escapedN,barrels,fireTiles,retryN,fallenFlag,lampUsed,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -6799,7 +6806,7 @@ function battlePayload(){
         name:u.name,g:u.g,cls:u.cls,kind:u.kind,side:u.side,fac:u.fac,
         x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
         int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
-        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,awakened:u.awakened,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,tonics:u.tonics||0,rb:u.rb||0,goldenUsed:!!u.goldenUsed,extraUsed:!!u.extraUsed,
+        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,awakened:u.awakened,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,tonics:u.tonics||0,rb:u.rb||0,goldenUsed:!!u.goldenUsed,extraUsed:!!u.extraUsed,cantoUsed:!!u.cantoUsed,cantoMode:!!u.cantoMode,galeUsed:!!u.galeUsed,
         awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,revUsed:!!u.revUsed,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
         equip:u.equip,drop:u.drop,recruit:u.recruit||null,phase2:u.phase2||null,phased:!!u.phased,
@@ -6827,6 +6834,10 @@ function resumeBattle(d){
   chap=d.chap;
   setDiff(d.diffPct??100);
   runTurns=d.runTurns||0;ngPlus=d.ngPlus||0;escapedN=d.escapedN||0;
+  // 最远进度：取战斗档、章节档与当前值的最大者，防止回访低章节时进度倒退
+  let svMax=0;
+  try{const sv=loadGame();if(sv&&sv.camp===activeCamp.key)svMax=sv.maxChap??sv.chap??0;}catch(e){}
+  maxChap=Math.max(maxChap,d.maxChap||0,svMax,d.chap||0);
   MAP=CHAPTERS[chap].map;
   setMapSize(MAP);
   renderBase();
