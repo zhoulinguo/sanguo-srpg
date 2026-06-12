@@ -1029,9 +1029,9 @@ let CHAPTERS=[
     b:{t:'轻装疾进，命部曲断后掩护',dao:-1,fx:()=>{gold+=300;return '折卖辎重，军资 +300';}}},
   win:{type:'protect',tiles:[[20,6],[21,6]],need:2,desc:'护送至少 <em>2</em> 名百姓过桥抵达东岸（或击破 <em>曹纯</em>）'},
   npcs(){return [
-    U({name:'百姓',g:'民',cls:'百姓',kind:'brig',side:'P',npc:true,x:4,y:5,hp:60,atk:0,def:8,mov:4,rngMin:0,rngMax:0}),
-    U({name:'百姓',g:'民',cls:'百姓',kind:'brig',side:'P',npc:true,x:4,y:6,hp:60,atk:0,def:8,mov:4,rngMin:0,rngMax:0}),
-    U({name:'百姓',g:'民',cls:'百姓',kind:'brig',side:'P',npc:true,x:4,y:7,hp:60,atk:0,def:8,mov:4,rngMin:0,rngMax:0}),
+    U({name:'百姓',g:'民',cls:'百姓',kind:'brig',side:'P',npc:true,x:4,y:5,hp:70,atk:0,def:8,mov:3,rngMin:0,rngMax:0}),
+    U({name:'百姓',g:'民',cls:'百姓',kind:'brig',side:'P',npc:true,x:4,y:6,hp:70,atk:0,def:8,mov:3,rngMin:0,rngMax:0}),
+    U({name:'百姓',g:'民',cls:'百姓',kind:'brig',side:'P',npc:true,x:4,y:7,hp:70,atk:0,def:8,mov:3,rngMin:0,rngMax:0}),
   ];},
   spawns:[[2,6],[1,6],[2,5],[2,7],[3,6],[1,5],[1,7]],
   intro:[
@@ -3927,24 +3927,53 @@ async function endPlayerPhase(){
   await sleep(1100);
   await enemyPhase();
 }
-/* 护送战：百姓/粮车沿可走路径自动向最近出口移动，抵达即脱险 */
+/* 护送战：百姓/粮车自动赶路——但惜命：避开敌军威胁区、紧跟我方护卫（3 格内），
+   军队不开路就在后面候着。抵达出口即脱险 */
+function npcThreatSet(){
+  const set=new Set();
+  for(const e of alive('E')){
+    if(!e.awake)continue;
+    const r=reachable(e);
+    for(const k of r.dist.keys()){
+      const [tx,ty]=k.split(',').map(Number);
+      const occ=unitAt(tx,ty);
+      if(occ&&occ!==e)continue;
+      set.add(k);
+      for(const [dx,dy] of offsetsFor(e)){
+        if(inMap(tx+dx,ty+dy))set.add(key(tx+dx,ty+dy));
+      }
+    }
+  }
+  return set;
+}
 async function moveNpcs(){
   const w=CHAPTERS[chap]&&CHAPTERS[chap].win;
   if(!w||w.type!=='protect')return;
+  const threat=npcThreatSet();
+  const guards=alive('P').filter(u=>!u.npc);
+  const allyDist=(x,y)=>guards.length?Math.min(...guards.map(g=>Math.abs(g.x-x)+Math.abs(g.y-y))):0;
+  const exitDist=(x,y)=>Math.min(...w.tiles.map(([ex,ey])=>Math.abs(x-ex)+Math.abs(y-ey)));
   for(const n of units.filter(u=>u.npc&&u.alive)){
     const r=reachable(n);
     const lands=landTiles(n,r.dist);
-    let best=null,bd=1e9;
+    lands.add(key(n.x,n.y)); // 原地等待也是选项
+    const score=(tx,ty)=>{
+      let v=exitDist(tx,ty);                       // 想回家
+      if(threat.has(key(tx,ty)))v+=40;             // 但更怕死
+      v+=Math.max(0,allyDist(tx,ty)-3)*7;          // 紧跟护卫，离队受罚
+      return v;
+    };
+    let best=[n.x,n.y],bs=score(n.x,n.y)-0.5;      // 同分倾向原地不动
     for(const k of lands){
       const [tx,ty]=k.split(',').map(Number);
-      for(const [ex,ey] of w.tiles){
-        const dd=Math.abs(tx-ex)+Math.abs(ty-ey);
-        if(dd<bd){bd=dd;best=[tx,ty];}
-      }
+      const v=score(tx,ty);
+      if(v<bs){bs=v;best=[tx,ty];}
     }
-    if(best&&(best[0]!==n.x||best[1]!==n.y)){
+    if(best[0]!==n.x||best[1]!==n.y){
       const path=buildPath(r.parent,key(n.x,n.y),key(best[0],best[1]));
       await animMove(n,path);
+    }else if(threat.has(key(n.x,n.y))){
+      addFloat(n.px,n.py-26,'瑟瑟发抖','#c9b896');
     }
     if(w.tiles.some(p=>p[0]===n.x&&p[1]===n.y)){
       n.alive=false;n.escaped=true;n.fade=0;escapedN++;
@@ -4027,6 +4056,7 @@ async function enemyPhase(){
             +(p.cls==='军师'?14:0)+(p.leader?(escMode?60:10):0)
             +terrDef(tx,ty)*40
             -(r.dist.get(k)||0)*.5;
+          if(p.npc)score-=45; // 百姓/粮车降权：先打挡路的兵
           const counter=shapeOk(p,tx-p.x,ty-p.y);
           if(counter&&est<p.hp)score-=10;
           if(!best||score>best.score)best={score,k,target:p,act:'atk'};
@@ -6747,9 +6777,9 @@ const CAMP_CAOCAO={
    {title:'第八章 · 粮道护卫战',boss:'韩猛',map:CC_LIANGDAO,deploy:8,weather:'snow',barrels:[[17,6]],
     win:{type:'protect',tiles:[[22,6],[23,6]],need:2,desc:'护送至少 <em>2</em> 辆粮车抵达东侧大营（或击破 <em>韩猛</em>）'},
     npcs(){return [
-      U({name:'粮车',g:'粮',cls:'辎重',kind:'brig',side:'P',npc:true,x:4,y:6,hp:70,atk:0,def:10,mov:4,rngMin:0,rngMax:0}),
-      U({name:'粮车',g:'粮',cls:'辎重',kind:'brig',side:'P',npc:true,x:5,y:6,hp:70,atk:0,def:10,mov:4,rngMin:0,rngMax:0}),
-      U({name:'粮车',g:'粮',cls:'辎重',kind:'brig',side:'P',npc:true,x:6,y:6,hp:70,atk:0,def:10,mov:4,rngMin:0,rngMax:0}),
+      U({name:'粮车',g:'粮',cls:'辎重',kind:'brig',side:'P',npc:true,x:4,y:6,hp:80,atk:0,def:10,mov:3,rngMin:0,rngMax:0}),
+      U({name:'粮车',g:'粮',cls:'辎重',kind:'brig',side:'P',npc:true,x:5,y:6,hp:80,atk:0,def:10,mov:3,rngMin:0,rngMax:0}),
+      U({name:'粮车',g:'粮',cls:'辎重',kind:'brig',side:'P',npc:true,x:6,y:6,hp:80,atk:0,def:10,mov:3,rngMin:0,rngMax:0}),
     ];},
     spawns:[[1,6],[1,5],[1,7],[2,5],[2,7],[0,6],[2,4],[2,8]],
     intro:[
@@ -6947,7 +6977,7 @@ function godChapter(spec,i){
         if(godWalk(map,x,y)&&!spawns.some(p=>p[0]===x&&p[1]===y)){nspot=[x,y];break outer;}
       }
       fixed.add(nspot.join(','));
-      npcs=()=>[U({name:spec.npcName,g:'圣',cls:'百姓',kind:'brig',side:'P',npc:true,x:nspot[0],y:nspot[1],hp:90,atk:0,def:12,mov:4,rngMin:0,rngMax:0})];
+      npcs=()=>[U({name:spec.npcName,g:'圣',cls:'百姓',kind:'brig',side:'P',npc:true,x:nspot[0],y:nspot[1],hp:100,atk:0,def:12,mov:3,rngMin:0,rngMax:0})];
     }
   }
   const hp=130+d*7, atk=28+Math.round(d), df=13+Math.round(d*.5);
