@@ -1949,6 +1949,7 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
     if(stat==='mov'&&TAL.has('t4_cloud'))v+=2; // 筋斗云
   }
   if(u.side==='P'&&!u.npc&&stat==='mov'&&rbHas(u,'movP2'))v+=2; // 转生·风驰电掣
+  if(u.side==='P'&&!u.npc&&(stat==='def'||stat==='mov'))v+=formStat(u,stat); // 阵型守/移加成（atk 在 dmgRange 单独计）
   if(stat==='mov'&&curWeather()==='snow')v=Math.max(2,v-1);
   if(stat==='mov'&&hasStatus(u,'slow'))v=Math.max(1,v-2);
   if(stat==='mov')v=Math.max(1,v);
@@ -1992,7 +1993,9 @@ const TERR={
  'g':{name:'丘陵',def:.20},
  'z':{name:'沼泽',def:0},
 };
-function tch(x,y){return MAP[y][x];}
+let tileOverride={}; // 可破坏地形：x,y → 新字符（不污染章节原图，随存档保存）
+function tch(x,y){return tileOverride[x+','+y]||(MAP[y]&&MAP[y][x]);}
+function setTile(x,y,c){tileOverride[x+','+y]=c;renderBase();}
 function terrDef(x,y){return TERR[tch(x,y)].def;}
 function inMap(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS;}
 function moveCost(u,ch){
@@ -2029,12 +2032,12 @@ function shapeOk(u,dx,dy){
   if(u.rngShape==='square')d=Math.max(ax,ay);
   else if(u.rngShape==='cross'){if(ax>0&&ay>0)return false;d=ax+ay;}
   else d=ax+ay;
-  const rmax=u.rngMax+extraReach(u);
+  const rmax=u.rngMax+extraReach(u)+(u.side==='P'&&formStat(u,'rng')?1:0);
   return d>=u.rngMin&&d<=rmax;
 }
 function offsetsFor(u){
   const out=[];
-  const rm=u.rngMax+extraReach(u);
+  const rm=u.rngMax+extraReach(u)+(u.side==='P'&&formStat(u,'rng')?1:0);
   for(let dx=-rm;dx<=rm;dx++)for(let dy=-rm;dy<=rm;dy++){
     if(dx===0&&dy===0)continue;
     if(shapeOk(u,dx,dy))out.push([dx,dy]);
@@ -2459,6 +2462,76 @@ function bondActive(u){
   return out;
 }
 function bondStat(u,k){let s=0;for(const b of bondActive(u))s+=b[k]||0;return s;}
+/* ===================== 兵法·阵型 =====================
+   我方出战武将的相对站位达成特定几何时，自动激活阵型，全员获加成 */
+let formCache=null, formKey='';
+function relSet(group){ // 归一化相对坐标集合（最小x/y平移到0）
+  const xs=group.map(u=>u.x),ys=group.map(u=>u.y);
+  const mx=Math.min(...xs),my=Math.min(...ys);
+  return new Set(group.map(u=>(u.x-mx)+','+(u.y-my)));
+}
+function isLine(group){ // 同行或同列连续
+  const xs=group.map(u=>u.x),ys=group.map(u=>u.y);
+  if(new Set(ys).size===1){const a=[...xs].sort((p,q)=>p-q);return a.every((v,i)=>i===0||v===a[i-1]+1);}
+  if(new Set(xs).size===1){const a=[...ys].sort((p,q)=>p-q);return a.every((v,i)=>i===0||v===a[i-1]+1);}
+  return false;
+}
+/* 返回当前我方激活的阵型对象（武将→加成），每移动后重算 */
+function computeFormations(){
+  const P=units.filter(u=>u.alive&&u.side==='P'&&!u.npc&&!u.temp);
+  const buff=new Map(); // unit -> {names:[],atk,def,mov,rng}
+  const add=(u,o)=>{const b=buff.get(u)||{names:[],atk:0,def:0,mov:0,rng:0};b.names.push(o.name);b.atk+=o.atk||0;b.def+=o.def||0;b.mov+=o.mov||0;b.rng+=o.rng||0;buff.set(u,b);};
+  const adj=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y))<=1;
+  // 八卦阵：诸葛亮居中，四正/四隅有≥4人环绕
+  const liang=P.find(u=>u.name==='诸葛亮');
+  if(liang){
+    const around=P.filter(u=>u!==liang&&adj(u,liang));
+    if(around.length>=4){
+      add(liang,{name:'八卦阵',atk:0,def:0});
+      add(liang,{name:'八卦阵·中军',rng:0}); // 标记位，法术加成在 stratDmg 单独处理
+      liang._bagua=true;
+      around.forEach(u=>add(u,{name:'八卦阵',def:2}));
+    }else liang._bagua=false;
+  }
+  // 三人组合：枚举相邻三人簇
+  for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++)for(let k=j+1;k<P.length;k++){
+    const g=[P[i],P[j],P[k]];
+    // 必须互相邻近（任意两点≤2格，避免横跨全图误判）
+    if(!g.every(a=>g.some(b=>b!==a&&Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y))<=2)))continue;
+    if(isLine(g)){
+      // 鹤翼（横排）/长蛇（纵列）
+      const ys=new Set(g.map(u=>u.y));
+      if(ys.size===1)g.forEach(u=>add(u,{name:'鹤翼阵',rng:1,atk:2}));
+      else g.forEach(u=>add(u,{name:'长蛇阵',mov:2}));
+    }else{
+      // 锋矢阵：直角三角（一前二后箭头）
+      const rs=relSet(g);
+      const arrow=[ '0,0|1,1|1,-1', '0,0|1,1|-1,1', '0,0|-1,-1|1,-1', '0,0|-1,-1|-1,1',
+                    '1,0|0,1|0,-1', '0,1|1,0|-1,0' ];
+      // 简化：任意三人构成 L/箭头（两点对齐一轴、第三点居前）即视为锋矢
+      const xs2=g.map(u=>u.x),ys2=g.map(u=>u.y);
+      if((new Set(xs2).size===2||new Set(ys2).size===2)){
+        const front=g.reduce((a,b)=>{const ca=g.filter(o=>Math.max(Math.abs(o.x-a.x),Math.abs(o.y-a.y))<=1).length;const cb=g.filter(o=>Math.max(Math.abs(o.x-b.x),Math.abs(o.y-b.y))<=1).length;return ca>=cb?a:b;});
+        g.forEach(u=>add(u,u===front?{name:'锋矢阵',atk:5}:{name:'锋矢阵',def:3}));
+      }
+    }
+  }
+  // 鱼鳞阵：四人菱形（中心+上下左右其一，或紧凑2x2）
+  for(let i=0;i<P.length;i++){
+    const c=P[i];
+    const near=P.filter(u=>u!==c&&Math.abs(u.x-c.x)+Math.abs(u.y-c.y)===1);
+    if(near.length>=3){[c,...near.slice(0,3)].forEach(u=>add(u,{name:'鱼鳞阵',def:4,mov:-1}));}
+  }
+  return buff;
+}
+function formOf(u){
+  if(formKey!==formStamp()){formCache=computeFormations();formKey=formStamp();}
+  return formCache.get(u)||null;
+}
+function formStamp(){ // 站位指纹，变了才重算
+  return units.filter(u=>u.alive&&u.side==='P').map(u=>u.x+','+u.y).join(';');
+}
+function formStat(u,k){const f=formOf(u);return f?(f[k]||0):0;}
 /* 羁绊熟练：每个我方回合结束时，相邻的羁绊组合 +1，升档时触发支援对话 */
 async function tickBonds(){
   for(const b of BONDS){
@@ -2515,8 +2588,8 @@ function shieldBlocks(a,d){
   return ((a.x-d.x)*fdx+(a.y-d.y)*fdy)>0;
 }
 function dmgRange(a,d){
-  const atk=S(a,'atk')+bondStat(a,'atk')+(hasStatus(a,'rally')?6:0)+auraBonus(a)+warlordAura(a);
-  let def=S(d,'def')+bondStat(d,'def');
+  const atk=S(a,'atk')+bondStat(a,'atk')+(hasStatus(a,'rally')?6:0)+auraBonus(a)+warlordAura(a)+(a.side==='P'?formStat(a,'atk'):0);
+  let def=S(d,'def')+bondStat(d,'def')+(d.side==='P'?formStat(d,'def'):0);
   if(legendFx(a)==='pierce')def*=.5; // 七星宝刀：穿透
   const tmul=(d.side==='P'&&!d.npc&&talentOn('t_terr'))?1.5:1; // 八门金锁阵
   let base=atk*advMult(a,d)-def*(1+terrDef(d.x,d.y)*tmul);
@@ -2534,6 +2607,7 @@ function dmgRange(a,d){
   if(shieldBlocks(a,d))base*=.4; // 盾卫正面：减伤六成
   if(pincerAlly(a,d))base*=1.3;
   if(curWeather()==='rain'&&a.rngMax>=2)base*=.85; // 雨天弓弦松弛
+  {const f=d.side==='P'?formOf(d):null;if(f&&f.names.includes('长蛇阵'))base*=1.2;} // 长蛇阵：受击+20%（机动换防御）
   return [Math.max(1,Math.round(base*.9)),Math.max(1,Math.round(base*1.1))];
 }
 function rollDmg(a,d){
@@ -2552,6 +2626,7 @@ function stratDmg(a,d,sk){
     if(talentOn('t4_laojun'))v*=1.4; // 太上老君亲传
   }
   if(rbHas(a,'spell30'))v*=1.3;      // 转生·天机洞明
+  if(a._bagua)v*=1.3;                // 八卦阵·中军：法术+30%
   return Math.max(1,Math.round(v));
 }
 
@@ -3312,6 +3387,15 @@ async function doAttack(a,d){
   log(`${a.name} 攻击 ${d.name}，造成 <b>${dmg}</b> 伤害${crit?'（暴击！）':''}${pin?`（与 ${pin.name} 夹击！）`:''}`, a.side==='P'?'good':'hit');
   const dead=await doDamage(d,dmg,crit?'#f6d35e':'#ffd9c4');
   if(dead&&a.side==='P'&&rbHas(a,'gale'))a.pendingGale=true; // 阵斩余势
+  // 攻城武器毁桥：命中桥上之敌，桥塌→落水重创
+  if((a.kind==='catapult'||a.pierceLine)&&tch(d.x,d.y)==='b'){
+    setTile(d.x,d.y,'w');
+    log(`<b>${a.name}</b> 轰塌了桥梁！${d.alive?d.name+' 跌入水中——':'断敌归路！'}`,a.side==='P'?'good':'hit');
+    if(d.alive){
+      const wd=Math.max(12,Math.round(d.maxhp*.2));
+      await doDamage(d,wd,'#8fc4e8');
+    }
+  }
   if(a.side==='P'){gainExp(a,dmg*.5+(dead?50:25));addRage(a,dead?50:25);addStat(a,dmg,dead);}
   if(checkEnd())return;
   // 连弩车：穿透射击，弹道沿线单位皆受七成伤害（敌我不分）
@@ -3731,6 +3815,7 @@ function showUnitCard(u){
       ${u.side==='E'&&u.alive&&phase==='P'?`<div class="trait" style="color:#e8a0a0">${(predictEnemy(u)||{}).label||''}</div>`:''}
       <div class="trait">${clsTrait(u)}</div>
       ${(()=>{const bs=bondActive(u);return bs.length?`<div class="trait" style="color:#ffb066">羁绊 ${bs.map(b=>`【${b.n}·${b.rank}】武+${b.atk} 守+${b.def}`).join('　')}</div>`:'';})()}
+      ${(()=>{const f=u.side==='P'?formOf(u):null;return f?`<div class="trait" style="color:#8fc4e8">阵型 ${[...new Set(f.names)].map(n=>`【${n}】`).join('')}${f.atk?` 武+${f.atk}`:''}${f.def?` 守+${f.def}`:''}${f.mov?` 移${f.mov>0?'+':''}${f.mov}`:''}${f.rng?' 范围+1':''}</div>`:'';})()}
       ${u.side==='E'&&u.recruit?`<div class="trait" style="color:#ffd24a">可劝降：兵力打至 ${Math.round(u.recruit.hpr*100)}% 以下，由${u.recruit.by||'主帅'}相邻出面${recruitReady(u)?'——条件已达成！':''}</div>`:''}
       ${u.side==='P'?`<div class="trait" style="color:#9db4d8">装备：${['wp','ar','ac'].map(s2=>u.equip&&u.equip[s2]?`${ITEMS[u.equip[s2]].n}（${itemDesc(u.equip[s2])}）`:null).filter(Boolean).join('　')||'无'}</div>`:''}
       ${u.side==='P'&&ultOf(u)?`<div class="trait" style="color:#ffb066">必杀【${ultOf(u).label}】${ultOf(u).desc}（怒气 ${u.rage}/100）</div>`:''}
@@ -4638,6 +4723,9 @@ async function enemyPhase(){
   }
   await tickStatus('P'); // 我方状态结算
   if(ended)return;
+  for(const f of fireTiles){
+    if(f.t<=1&&tch(f.x,f.y)==='f'){setTile(f.x,f.y,'.');log('林木尽焚，化为焦土。','sys');} // 火墙烧林
+  }
   fireTiles.forEach(f=>f.t--);
   fireTiles=fireTiles.filter(f=>f.t>0);
   for(const p of units.filter(u=>u.side==='P'&&u.alive)){
@@ -6170,6 +6258,7 @@ function startChapter(i){
   seenDuels=new Set();
   reinforced=new Set();
   treasures=(ch.treasures||[]).map(t=>({...t}));
+  tileOverride={};
   barrels=(ch.barrels||[]).map(([x,y])=>({x,y}));
   fireTiles=[];
   // 谋士献策·火攻：敌阵预置油桶
@@ -6979,7 +7068,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,bondExp,chains,cargo,fort,dao,warOrder,runTurns,ngPlus,maxChap,escapedN,barrels,fireTiles,retryN,fallenFlag,lampUsed,
+      chap,diffPct,turn,gold,bag,forge,bondExp,chains,cargo,fort,dao,warOrder,warPlan,runTurns,ngPlus,maxChap,escapedN,barrels,fireTiles,tileOverride,retryN,fallenFlag,lampUsed,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -7023,6 +7112,7 @@ function resumeBattle(d){
   maxChap=Math.max(maxChap,d.maxChap||0,svMax,d.chap||0);
   MAP=CHAPTERS[chap].map;
   setMapSize(MAP);
+  tileOverride={...(d.tileOverride||{})};
   renderBase();
   gold=d.gold;bag={...d.bag};forge={...(d.forge||{})};
   bondExp={...(d.bondExp||{})};dao=d.dao||0;warOrder=d.warOrder||null;
@@ -7032,6 +7122,7 @@ function resumeBattle(d){
   treasures=(d.treasures||[]).map(t=>({...t}));
   barrels=(d.barrels||[]).map(b=>({...b}));
   fireTiles=(d.fireTiles||[]).map(f=>({...f}));
+  warPlan=d.warPlan||null;window.__duanliang=(warPlan==='duanliang');
   seenDuels=new Set(d.duels||[]);
   reinforced=new Set(d.reinforced||[]);
   rosterSnap=d.snap;
