@@ -605,14 +605,6 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <div id="prepBag"></div>
     <h3 class="sec">军市 · 以金易物</h3>
     <div id="prepShop"></div>
-    <h3 class="sec">难度调整 <span class="pgold">打不过？降一档不丢人；嫌简单？拉满 800%（高难有犒军与金币加成）</span></h3>
-    <div style="display:flex;gap:10px;align-items:center;margin:4px 0 8px">
-      <button class="depBtn" data-dadj="-50" style="width:auto;padding:5px 14px">− 50%</button>
-      <button class="depBtn" data-dadj="-10" style="width:auto;padding:5px 14px">− 10%</button>
-      <b id="prepDiffVal" style="font-family:var(--display);letter-spacing:2px;color:var(--gold);min-width:110px;text-align:center">虎将 100%</b>
-      <button class="depBtn" data-dadj="10" style="width:auto;padding:5px 14px">＋ 10%</button>
-      <button class="depBtn" data-dadj="50" style="width:auto;padding:5px 14px">＋ 50%</button>
-    </div>
     <h3 class="sec">军情快报 · 战前一令</h3>
     <div class="phead">出阵前可颁布一道军令（耗军资，仅本场战斗生效）——再点一次可撤回退款。</div>
     <div id="prepOrders"></div>
@@ -5405,7 +5397,6 @@ function openPrep(i){
   }
   for(const u of roster){if(cnt>=cap)break;if(!u.dep){u.dep=true;cnt++;}}
   document.getElementById('prepTitle').textContent='备 战 · '+CHAPTERS[i].title;
-  document.getElementById('prepDiffVal').textContent=`${diffName()} ${diffPct}%`;
   renderPrep(true);
   document.getElementById('prep').classList.remove('hidden');
   const jl=document.getElementById('prepJoin');
@@ -5599,11 +5590,6 @@ document.getElementById('prepRoster').addEventListener('change',e=>{
   else u.equip[slot]=null;
   sfx.coin();
   renderPrep(false);
-});
-document.querySelectorAll('button[data-dadj]').forEach(b=>b.onclick=()=>{
-  setDiff(diffPct+(+b.dataset.dadj));
-  document.getElementById('prepDiffVal').textContent=`${diffName()} ${diffPct}%`;
-  if(AC)sfx.select();
 });
 document.getElementById('prepGo').onclick=()=>{
   sfx.select();
