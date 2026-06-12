@@ -408,21 +408,30 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 #sysBtn:disabled{opacity:.4;cursor:default}
 #fastBtn.on{color:#ffd24a;border-color:rgba(255,210,74,.6)}
 #dangerBtn.on{color:#e87a6a;border-color:rgba(212,121,106,.65)}
-#sysMenu,#codex,#choice,#chlog,#talent,#casino,#duel{
+#sysMenu,#codex,#choice,#chlog,#talent,#casino,#duel,#help{
   position:fixed;inset:0;z-index:82;display:flex;align-items:center;justify-content:center;
   background:rgba(13,10,7,.82);
 }
-#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden,#talent.hidden,#casino.hidden,#duel.hidden{display:none}
-#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner,#talent .sinner,#casino .sinner,#duel .sinner{
+#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden,#talent.hidden,#casino.hidden,#duel.hidden,#help.hidden{display:none}
+#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner,#talent .sinner,#casino .sinner,#duel .sinner,#help .sinner{
   width:min(540px,92vw);
   background:linear-gradient(170deg,#262017,#171310);
   border:1px solid rgba(201,162,39,.5);border-radius:6px;
   padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.7);
   animation:popIn .3s ease both;
 }
-#sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2,#casino h2,#duel h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
-#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote,#casino .snote,#duel .snote{font-size:12.5px;color:var(--paper);opacity:.85;margin-bottom:12px;letter-spacing:1px;line-height:1.8}
+#sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2,#casino h2,#duel h2,#help h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
+#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote,#casino .snote,#duel .snote,#help .snote{font-size:12.5px;color:var(--paper);opacity:.85;margin-bottom:12px;letter-spacing:1px;line-height:1.8}
 #codex .sinner{width:min(680px,94vw);max-height:88vh;overflow-y:auto}
+#help .hsec{margin:8px 0 4px;border:1px solid rgba(201,162,39,.25);border-radius:5px;overflow:hidden}
+#help .hsec>summary{cursor:pointer;padding:9px 14px;font-family:var(--display);font-size:15px;letter-spacing:3px;color:var(--gold);background:rgba(201,162,39,.08);list-style:none}
+#help .hsec>summary::-webkit-details-marker{display:none}
+#help .hsec>summary::before{content:'▸ ';color:var(--paper-dim)}
+#help .hsec[open]>summary::before{content:'▾ '}
+#help .hsec .hbody{padding:8px 14px 12px;font-size:13px;line-height:1.95;color:var(--paper)}
+#help .hbody b{color:#ffd24a;font-weight:400}
+#help .hbody em{color:#9fc068;font-style:normal}
+#help .hbody .k{color:#8fc4e8}
 #chlog .sinner{width:min(620px,94vw);max-height:88vh;overflow-y:auto}
 #casino .sinner{width:min(620px,94vw);max-height:90vh;overflow-y:auto}
 .casRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
@@ -787,6 +796,14 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   </div>
 </div>
 
+<div id="help" class="hidden">
+  <div class="sinner" style="width:min(720px,95vw);max-height:90vh;overflow-y:auto">
+    <h2>帮 助 中 心</h2>
+    <div class="snote">点标题展开/收起各节；战斗中亦可随时翻阅。</div>
+    <div id="helpBody"></div>
+    <div class="srow2"><button id="closeHelp">返 回</button></div>
+  </div>
+</div>
 <div id="codex" class="hidden">
   <div class="sinner">
     <h2>图 鉴 · 战 功 录</h2>
@@ -815,7 +832,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
         <i class="dsHint">敌军强度 80%—800%　高难有犒军补给与金币加成（150%+ 起效，越难越厚）</i>
       </div>
     </div>
-    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button><button id="loadBtn">读 档</button><button id="codexBtn">图 鉴</button><button id="chlogBtn">战 记</button><button id="talentBtn">天 赋</button><button id="extraBtn" style="display:none">外 传</button></div>
+    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button><button id="loadBtn">读 档</button><button id="codexBtn">图 鉴</button><button id="chlogBtn">战 记</button><button id="talentBtn">天 赋</button><button id="helpBtn">帮 助</button><button id="extraBtn" style="display:none">外 传</button></div>
   </div>
 </div>
 
@@ -3951,6 +3968,7 @@ function finish(win,loseMsg){
       }
     }else{
       retryN++;
+      if(!isExtra)saveGame(chap); // 章节存档落到当前关：关页面后点「继续」也回本关备战，不退回初始关
       ov.querySelector('.pre').textContent='兵败 · 群雄叹息';
       ov.querySelector('.big').innerHTML='败<span class="red">北</span>';
       ov.querySelector('.sub').innerHTML=
@@ -8678,6 +8696,36 @@ function renderTalent(){
   __talFull=false;
 }
 let __talFull=false;
+/* ===================== 帮助中心 ===================== */
+const HELP_SECTIONS=[
+ ['基础操作','<b>左键</b>选中我方武将→蓝格内点击移动→弹出行动菜单。<span class="k">右键/Esc/长按</span>取消。点敌将看其攻击范围与<b>预计行动</b>；选中我方后悬停敌人，目标头顶直显<b>伤害区间·暴击·剩余血</b>。「<b>下一武将</b>」按钮（快捷键 <span class="k">N</span>）跳到下一个未行动者并居中。「危险区」显示全体敌军威胁范围。'],
+ ['兵种克制 / 地形','<em>骑兵克步兵、步兵克弓兵、弓兵克骑兵</em>（克制方伤害更高）。森林/丘陵/山地/营寨提供<b>守备加成</b>，水面阻断、桥梁浅滩可渡。弓手/投石隔格攻击、贴身无法反击；虎卫九宫格八方攻击；投石十字直射 2~3 格。'],
+ ['夹击 / 阵型 / 羁绊','<b>夹击</b>：敌人正对两侧各有我方时伤害 ×1.3。<b>阵型</b>：出战武将摆出特定几何自动激活——锋矢（箭头·前锋强）、鹤翼（横排·范围+1）、长蛇（纵列·移动+2）、鱼鳞（菱形·守+4）、八卦（诸葛亮居中·法术+30%）。<b>羁绊</b>：固定组合（桃园结义、五虎上将等）相邻获加成，并肩作战升级 C→B→A；B 级以上相邻触发<b>协战追击</b>。'],
+ ['劝降收将','部分敌方主将可<b>劝降</b>：先将其兵力打至<em>五成以下</em>（仁望天下天赋/仁德路线放宽门槛），再让<b>指定说客</b>（或主帅）移到其相邻格，行动菜单出现「劝降」，成功则永久入伙。严颜（张飞）、姜维（诸葛亮）、马超（刘备）、孟获、太史慈、张辽、张郃等皆可招揽。'],
+ ['怒气必杀 / 单挑','作战积累<b>怒气</b>，满 100 放<b>必杀</b>（主将可在备战切换多式必杀）。我方近战名将攻击敌方主将/猛将时<b>小概率</b>触发<b>单挑</b>：攻/守/破三姿态博弈（攻克破·破克守·守克攻），三合定胜负，阵斩则威震全军。'],
+ ['状态 / 环境','<b>灼烧/中毒</b>每回合掉血、<b>眩晕</b>跳过行动、<b>迟滞</b>减移动、<b>禁疗</b>禁治疗。火计/火油桶留下<b>燃烧地块</b>，森林会被烧成焦土、桥梁会被投石轰塌。<b>天气</b>：霖雨削火计远程、风雪减移动、大雾缩警戒。火油桶攻击即引爆 3×3 烈焰<em>敌我不分</em>、可连环殉爆。'],
+ ['养成：升级/转职/觉醒/转生','经验升级（越后越慢，上限 <b>Lv100</b>，升级回血+30）。<b>Lv15 转职</b>、<b>Lv30 觉醒</b>（备战界面操作，按兵种强化）。满级可<b>转生</b>：回 Lv1 保留转职/觉醒，属性留六成、成长+25%/转，至多九转；第 1/3/7/9 转觉醒<b>兵种专属神力</b>（骑兵驰骋如风、军师奇门遁甲、9 转回合双动等）。'],
+ ['装备/锻造/神兵','武器分剑枪弓戟扇笛五系、重甲限重装职业。<b>锻造</b>绑定<em>具体武将</em>（同型号他人不受影响），有成功率、+6 起失败掉级、换武器自动继承。<b>神兵</b>有且仅一把，命定之主持有觉醒特效（穿透/必暴/吸血/淬毒/分裂等）；单场用神兵斩 3 将则神兵<b>觉醒</b>加成翻倍。名甲名宝人人可用。'],
+ ['军务各分页','备战界面分页：<b>军市</b>买卖；<b>军府营造</b>（兵舍/校场/工坊/医馆/马厩，金币长线投资、随存档继承）；<b>商队贸易</b>低买高卖（留意涨价传闻，战后或应验）；<b>军师献策</b>战前一计（火攻/离间/断粮/诈降/空城）；<b>军情令</b>战前一令（擂鼓/疾行/死士等）。'],
+ ['难度/天赋/成就点','难度 <b>80%~800%</b>，主页与备战界面均可调（有生效范围提示，不丢进度）。高难有犒军与金币加成，<b>每 5% 难度送 1 成就点</b>。图鉴成就与三星战功给<b>成就点</b>，到主页「天赋」兑换（普通/高级/终极三档，最多同时装 <b>10 个</b>）；难度调低时超预算天赋本战临时失效。'],
+ ['关卡类型 / 神纪','胜利条件多样：击破主将、突围出口、坚守 N 回合、<b>守城</b>（勿被敌踏入）、<b>护送</b>（百姓/粮车走到出口）。坚守类有<b>友军增援</b>。赵云传通关后开启 <b>37 章「神纪」倒流模式</b>（张角成神篡史，逆战群雄至改写黎明）。'],
+ ['败北 / 越挫越勇 / 存档','主将阵亡即败北，但<b>不丢任何养成</b>——点「重整旗鼓」回本关备战重打，每败一次叠一层<b>越挫越勇</b>（全军伤害+5%、受伤−4%，至多5层）。每章自动存档+三份自动备份+三个手动槽；军务菜单可导出<b>存档码</b>跨设备迁移。'],
+];
+function renderHelp(){
+  document.getElementById('helpBody').innerHTML=HELP_SECTIONS.map(function(sec,i){
+    return '<details class="hsec"'+(i===0?' open':'')+'><summary>'+sec[0]+'</summary><div class="hbody">'+sec[1]+'</div></details>';
+  }).join('');
+}
+document.getElementById('helpBtn').onclick=function(){
+  if(typeof initAudio==='function')initAudio();
+  if(typeof AC!=='undefined'&&AC)sfx.select();
+  renderHelp();
+  document.getElementById('help').classList.remove('hidden');
+};
+document.getElementById('closeHelp').onclick=function(){
+  if(typeof AC!=='undefined'&&AC)sfx.select();
+  document.getElementById('help').classList.add('hidden');
+};
 document.getElementById('talentBtn').onclick=()=>{
   initAudio();sfx.select();
   renderTalent();
@@ -8802,6 +8850,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Escape')document.getElementById('codex').classList.add('hidden');
   if(e.key==='Escape')document.getElementById('chlog').classList.add('hidden');
   if(e.key==='Escape')document.getElementById('talent').classList.add('hidden');
+  if(e.key==='Escape')document.getElementById('help').classList.add('hidden');
 });
 loadTalents();
 requestAnimationFrame(loop);
