@@ -641,9 +641,9 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   <div class="inner">
     <div class="pre" id="campPre">—— 常山赵子龙 · 一身是胆 ——</div>
     <div class="big" id="campBig">赵云<span class="red">传</span></div>
-    <div class="sub" id="campSub">十三章战记：磐河 → 穰山 → 博望 → 携民渡江 → 长坂 → 截江 → 入川 → 定军山 → 汉水 → 箕谷 → 凤鸣山 → 天水<br>劝降敌将、护送百姓、转职强化、夹击羁绊；多周目继承评分，自动存档</div>
+    <div class="sub" id="campSub">五十章战记：十三章正史 ＋ 三十七章神纪倒流——张角成神篡史，逆战群雄改写黎明<br>守城/护送/突围多式战场，友军增援、神兵认主、劝降乱入名将；全程继承，自动存档</div>
     <div class="diffRow" id="campRow">
-      <button class="diffBtn active" data-camp="zhaoyun">赵 云 传<i>十三章 · 蜀汉线</i></button>
+      <button class="diffBtn active" data-camp="zhaoyun">赵 云 传<i>五十章 · 蜀汉线</i></button>
       <button class="diffBtn" data-camp="caocao">曹 操 传<i>九章 · 曹魏线</i></button>
     </div>
     <div class="heroRow" id="heroRow"></div>
@@ -764,6 +764,62 @@ const ZY_TIANSHUI=[
 "mm.....f.....t.........mmm",
 "mmm...g....f.....t....mmmm",
 "mmmmmm.....t.....mmmmmmmmm",
+];
+/* 神纪巨型战场（30×16 / 28×16 / 30×17） */
+const GOD_WUZHANG=[
+"mmmmmmm...t.....f......g.mmmmm",
+"mmmm...f.....g.......t....mmmm",
+"mm..t......f.....t..........mm",
+"m.......g.......f....g..ccc..m",
+"m..f.......t.........c.ccccc.m",
+"m......t.......g.....c..ccc..m",
+"m....f.....f.......g.........m",
+"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+"m.....g.......t.......f......m",
+"m..t......f........g.....t...m",
+"m.......f....g..........g....m",
+"m..g.........t....f..........m",
+"mm.....t...........g......t.mm",
+"mmm.......f....t.......f..mmmm",
+"mmmm....g..........g....mmmmmm",
+"mmmmmmm.....f...t.....mmmmmmmm",
+];
+const GOD_RIVER=[
+"wwwwwww....t....f...wwwwwwww",
+"wwwww..f.......g......wwwwww",
+"www......g.........t....wwww",
+"ww...t........f..........www",
+"w.......f...........g.....ww",
+"w...g.......t..............w",
+"w.......sswwwwwwss.........w",
+"rrrrrrbbwwwwwwwwwwbbrrrrrrrr",
+"w.......sswwwwwwss.........w",
+"w....t..........g..........w",
+"w..........f.........t....ww",
+"ww....g........t.........www",
+"www.......f..........g..wwww",
+"wwww....t.....f........wwwww",
+"wwwwww.....g......t..wwwwwww",
+"wwwwwwww....f....wwwwwwwwwww",
+];
+const GOD_JULU=[
+"mmmmmmmm....z.....t......mmmmm",
+"mmmm....t.....f......g....mmmm",
+"mm....z.....g.......z......mmm",
+"m.........f.....t........cc..m",
+"m....t..........z....cc.cccc.m",
+"m.......z...g.......cc..cccc.m",
+"m..f...........f....cc...cc..m",
+"m......t....z..............g.m",
+"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+"m.....z.......g.......z......m",
+"m..t......f........t.....f...m",
+"m.......g.....z..............m",
+"m....z.....t........g....t...m",
+"mm......f......z..........mmmm",
+"mmm.....z...g......f....mmmmmm",
+"mmmm.......t.....z....mmmmmmmm",
+"mmmmmmmm.....f....t..mmmmmmmmm",
 ];
 let CHAPTERS=[
  {
@@ -1353,8 +1409,8 @@ let CHAPTERS=[
    ['此乃最终之战——十二章战记，于此功成！','sys'],
   ],
   winPre:'天水大定 · 麒麟归汉',
-  winSub:t=>`第 ${t} 回合定天水，丞相收姜维，蜀汉后继有人！<br>赵云抚须笑曰：「吾乃常山赵子龙——后生可畏，可畏！」<br>——十二章战记完结，感谢游玩！`,
-  nextBtn:'从 头 再 战',
+  winSub:t=>`第 ${t} 回合定天水，丞相收姜维，蜀汉后继有人！<br>然而当夜，苍穹骤裂，紫雷贯地——四十年前的低语自九天传来：<br>「苍天已死，黄天当立……而黄天，<b>早已立于世间四十年</b>。」<br>大贤良师张角——他从未死去，他成神了。历史，是被改写过的。<br><b style="color:#ffd24a">【神纪】开启：沿时光之流逆行，打回成神之前，改写真正的过去！</b>`,
+  nextBtn:'踏 入 神 纪',
   reward:{shangyao:2,lingzhi:1},
   shop:['bawang','baiyu','bintie','bazhen','bingshu','shangyao','lingzhi','danyao'],
   treasures:[
@@ -2014,6 +2070,7 @@ const BONDS=[
   {n:'王佐之约',names:['曹操','荀彧'],atk:2,def:4},
   {n:'五子同袍',names:['张辽','张郃','乐进'],atk:3,def:3},
   {n:'卧龙凤雏',names:['诸葛亮','庞统'],atk:3,def:3,talk:[['庞统','卧龙凤雏，得一可安天下——'],['诸葛亮','今主公兼得，天下可图。']]},
+  {n:'五虎上将',names:['关羽','张飞','赵云','黄忠','马超'],atk:3,def:3,talk:[['马超','五虎聚首，天下何处去不得！'],['赵云','虎啸风生——并肩破敌！']]},
   {n:'鬼才知遇',names:['曹操','郭嘉'],atk:3,def:3},
 ];
 const bondKey=(a,b)=>[a,b].sort().join('|');
@@ -2279,6 +2336,15 @@ let LAST_WORDS={
   '庞统':'落凤坡……原来宿命在此……',
   '蜀郡都尉':'宝货……守不住了……',
   '司马懿':'诸葛村夫之外……竟还有此等强军……',
+  '马超':'西凉的风……再也吹不到了……','孟获':'蛮王服了……七次都服……','太史慈':'三尺剑……立功未竟……',
+  '张角':'黄天……黄天也要败了么……不——历史不容你们改写！',
+  '虚影·赵云':'你……才是真的……我不过是神的倒影……',
+  '神化·吕布':'连神力……也留不住奉先么……',
+  '魔王·曹操':'孤……竟被妖术所控……谢汝等斩孤心魔……',
+  '鬼谋·吕蒙':'白衣渡江……终究渡不过天意……',
+  '神火·陆逊':'七百里连营之火……熄了……',
+  '妖王·兀突骨':'藤甲……怕火……早知道了……',
+  '地公将军':'兄长……黄天之业……','人公将军':'再败一次……不甘……',
   '姜维':'维……尚未报丞相知遇之恩……',
 };
 let AMBUSH_LINES={
@@ -2386,6 +2452,9 @@ let ULTS={
   '严颜':  {label:'断头之志',desc:'自身+55，相邻友军+25',quote:'我州但有断头将军，无降将军！',type:'heal_self',selfAmt:55,allyAmt:25},
   '姜维':  {label:'麒麟胆',  desc:'单体 230% 伤害（必定暴击）',quote:'伯约之枪，承丞相之志！',type:'single',mult:2.3},
   '庞统':  {label:'连环计',  desc:'射程内至多三敌各受 140% 伤害',quote:'连环既设，万事俱备。',type:'triple',mult:1.4},
+  '马超':  {label:'西凉锦枪',desc:'单体 250% 伤害（必定暴击）',quote:'凉州铁骑，有进无退！',type:'single',mult:2.5},
+  '孟获':  {label:'蛮王怒',  desc:'九宫格内所有敌人受 150% 伤害',quote:'吼——！南人不可欺！',type:'aoe',mult:1.5},
+  '太史慈':{label:'北海神射',desc:'射程内至多三敌各受 135% 伤害',quote:'大丈夫当带三尺剑立不世之功！',type:'triple',mult:1.35},
 };
 /* 主将必杀池：备战时任选，随等级解锁 */
 const LEADER_ULTS={
@@ -3670,14 +3739,43 @@ async function enemyPhase(){
     await sleep(160);
   }
   if(ended)return;
+  const wHold=CHAPTERS[chap]&&CHAPTERS[chap].win;
+  if(wHold&&wHold.type==='hold'){
+    const intruder=units.find(u=>u.alive&&u.side==='E'&&wHold.tiles.some(p=>p[0]===u.x&&p[1]===u.y));
+    if(intruder){finish(false,`${intruder.name} 攻入城关，城防失守……`);return;}
+  }
   turn++;
   const w=CHAPTERS[chap]&&CHAPTERS[chap].win;
-  if(w&&w.type==='survive'&&turn>w.turns){
-    log('坚守期满，敌军锐气已挫——任务达成！','good');
+  if((w&&w.type==='survive'||w&&w.type==='hold')&&turn>w.turns){
+    log(w.type==='hold'?'城关稳如磐石，敌军粮尽而退——守城成功！':'坚守期满，敌军锐气已挫——任务达成！','good');
     finish(true);return;
   }
   if(w&&w.type==='timed'&&turn>w.turns){
     finish(false,'吴船扬帆而去，周善携阿斗遁入大江……');return;
+  }
+  // 友军增援（坚守类关卡的希望之光）
+  const chA=CHAPTERS[chap]&&CHAPTERS[chap].allies;
+  if(chA)for(const r of chA){
+    if(turn>=r.turn&&!reinforced.has('A'+r.turn)){
+      reinforced.add('A'+r.turn);
+      const ru=r.units();
+      for(const a2 of ru){
+        a2.side='P';a2.temp=true;a2.awake=true;a2.acted=false;
+        if(unitAt(a2.x,a2.y)){
+          for(const [sx,sy] of [[a2.x,a2.y-1],[a2.x,a2.y+1],[a2.x+1,a2.y],[a2.x-1,a2.y],[a2.x+1,a2.y+1],[a2.x-1,a2.y-1]]){
+            if(inMap(sx,sy)&&!unitAt(sx,sy)&&isFinite(moveCost(a2,tch(sx,sy)))){a2.x=sx;a2.y=sy;break;}
+          }
+        }
+        if(unitAt(a2.x,a2.y))continue;
+        a2.px=(a2.x+.5)*TILE;a2.py=(a2.y+.5)*TILE;
+        units.push(a2);
+      }
+      units.forEach((u2,i2)=>u2._i=i2);
+      sfx.victory();shakeT=.25;
+      banner('援 军 到 来');
+      if(r.line)log(r.line,'good');
+      await sleep(1100);
+    }
   }
   await tickStatus('P'); // 我方状态结算
   if(ended)return;
@@ -5057,16 +5155,19 @@ function loop(t){
   // 突围出口标记
   if(!ended&&units.length&&state!=='title'){
     const w=CHAPTERS[chap]&&CHAPTERS[chap].win;
-    if(w&&w.type==='escape'){
+    if(w&&(w.type==='escape'||w.type==='protect'||w.type==='hold')){
       const pu=(Math.sin(t/300)+1)/2;
+      const glyph=w.type==='escape'?'出':w.type==='protect'?'渡':'守';
+      const col=w.type==='hold'?[`rgba(220,120,80,${.16+pu*.18})`,`rgba(255,150,100,${.55+pu*.4})`,`rgba(255,200,150,${.75+pu*.25})`]
+                                :[`rgba(240,210,90,${.14+pu*.18})`,`rgba(255,222,120,${.55+pu*.4})`,`rgba(255,238,170,${.75+pu*.25})`];
       for(const [ex,ey] of w.tiles){
-        ctx.fillStyle=`rgba(240,210,90,${.14+pu*.18})`;
+        ctx.fillStyle=col[0];
         ctx.fillRect(ex*TILE+2,ey*TILE+2,TILE-4,TILE-4);
-        ctx.strokeStyle=`rgba(255,222,120,${.55+pu*.4})`;ctx.lineWidth=2;
+        ctx.strokeStyle=col[1];ctx.lineWidth=2;
         ctx.strokeRect(ex*TILE+3,ey*TILE+3,TILE-6,TILE-6);
-        ctx.fillStyle=`rgba(255,238,170,${.75+pu*.25})`;
+        ctx.fillStyle=col[2];
         ctx.font='400 19px "Ma Shan Zheng","STKaiti",serif';ctx.textAlign='center';
-        ctx.fillText('出',(ex+.5)*TILE,(ey+.5)*TILE+7);
+        ctx.fillText(glyph,(ex+.5)*TILE,(ey+.5)*TILE+7);
       }
     }
   }
@@ -5461,7 +5562,7 @@ function battlePayload(){
         name:u.name,g:u.g,cls:u.cls,kind:u.kind,side:u.side,fac:u.fac,
         x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
         int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
-        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,srng:u.srng,npc:u.npc,escaped:u.escaped,ultSel:u.ultSel,
+        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,
         awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
         equip:u.equip,drop:u.drop,recruit:u.recruit||null,
@@ -5506,7 +5607,7 @@ function resumeBattle(d){
     return u;
   });
   units.forEach((u,i)=>u._i=i);
-  roster=[...units.filter(u=>u.side==='P'&&!u.npc),...(d.bench||[]).map(deserRosterUnit)];
+  roster=[...units.filter(u=>u.side==='P'&&!u.npc&&!u.temp),...(d.bench||[]).map(deserRosterUnit)];
   ended=false;phase='P';state='idle';turn=d.turn;
   floaters=[];particles=[];shakeT=0;flashT=0;threat=null;
   dangerOn=false;dangerTiles=null;
@@ -5526,7 +5627,7 @@ const CAMP_ZHAOYUN={
   key:'zhaoyun',title:'常山赵子龙',seal:'赵云传',watermark:'蜀',
   pre:'—— 常山赵子龙 · 一身是胆 ——',
   big:'赵云<span class="red">传</span>',
-  sub:'十三章战记：磐河 → 穰山 → 博望 → 携民渡江 → 长坂 → 截江 → 入川 → 定军山 → 汉水 → 箕谷 → 凤鸣山 → 天水<br>劝降敌将、护送百姓、转职强化、夹击羁绊；等级、装备、金币全程继承，多周目评分',
+  sub:'五十章战记：十三章正史（磐河→天水）＋ 三十七章【神纪】——张角成神篡史，沿时光倒流逆战群雄，劝降乱入名将（马超/孟获/太史慈），直至巨鹿改写黎明<br>守城/护送/突围/坚守多式战场，友军增援、神兵收集，全程继承，多周目评分',
   color:'#2e7d4e',faction:'蜀军',leader:'赵云',
   chapters:CHAPTERS, playerBase:PLAYER_BASE, duels:DUELS, lastWords:LAST_WORDS, ults:ULTS,
   ambush:AMBUSH_LINES,
@@ -6092,6 +6193,242 @@ const CAMP_CAOCAO={
     ];},
   },
 };
+
+/* ===================== 神纪 · 倒转的时光（赵云传第 14~50 章，程序化生成） =====================
+   真相：张角从未战死，他在巨鹿成神，篡改了四十年历史。
+   全军沿时光之流逆行，从五丈原一路打回中平元年，在他成神之前——改写过去。 */
+const GOD_MAPS={
+  tianshui:ZY_TIANSHUI, ruchuan:ZY_RUCHUAN, rang:ZY_RANG, xiemin:ZY_XIEMIN,
+  ch1:CH1_MAP, ch2:CH2_MAP,
+  cc1:CC_CH1, cc2:CC_CH2, puyang:CC_PUYANG, xiapi:CC_XIAPI, liangdao:CC_LIANGDAO, guandu:CC_GUANDU,
+  wuzhang:GOD_WUZHANG, river:GOD_RIVER, julu:GOD_JULU,
+};
+function godWalk(map,x,y){const c=map[y]&&map[y][x];return !!c&&c!=='w'&&c!=='m';}
+function godSpawns(map){
+  const H0=map.length, out=[], mid=Math.floor(H0/2);
+  const order=[];
+  for(let r=0;r<H0;r++){const y=mid+(r%2?-1:1)*Math.ceil(r/2);if(y>=0&&y<H0&&!order.includes(y))order.push(y);}
+  for(let x=1;x<=8&&out.length<10;x++)for(const y of order){
+    if(out.length>=10)break;
+    if(godWalk(map,x,y)&&!out.some(p=>p[0]===x&&p[1]===y))out.push([x,y]);
+  }
+  return out;
+}
+const GOD_NUM=n=>{const N='一二三四五六七八九十';return n<=10?N[n-1]:n<20?'十'+N[n-11]:n===20?'二十':n<30?'二十'+N[n-21]:n===30?'三十':'三十'+N[n-31];};
+function godChapter(spec,i){
+  const d=i;
+  const map=GOD_MAPS[spec.m];
+  const W0=map[0].length,H0=map.length;
+  const spawns=godSpawns(map);
+  const fixed=new Set(spawns.map(p=>p.join(',')));
+  const cells=[];
+  for(let y=0;y<H0;y++)for(let x=Math.floor(W0*.42);x<W0;x++){if(godWalk(map,x,y))cells.push([x,y]);}
+  function pickCell(seed,minX,usedSet){
+    for(let k=0;k<90;k++){
+      const c=cells[Math.floor(hash(d*131+seed*17+k*97,seed*53+k*29+7)*cells.length)];
+      if(c[0]<(minX||0))continue;
+      const kk=c.join(',');
+      if(!usedSet.has(kk)){usedSet.add(kk);return c;}
+    }
+    for(const c of cells){const kk=c.join(',');if(!usedSet.has(kk)){usedSet.add(kk);return c;}}
+    return cells[0];
+  }
+  // 固定布点：宝物 / 油桶 / 守城与出口格
+  const treasures=[];
+  for(let ti=0;ti<3;ti++){
+    const c=pickCell(900+ti,0,fixed);
+    treasures.push(ti===0?{x:c[0],y:c[1],gold:400+d*25}:{x:c[0],y:c[1],item:['lingzhi','shangyao','danyao'][ti%3]});
+  }
+  const barrels=[];
+  for(let bi=0;bi<(spec.barrels||0);bi++){const c=pickCell(800+bi,0,fixed);barrels.push([c[0],c[1]]);}
+  let win=null,npcs=null;
+  if(spec.winT==='survive')win={type:'survive',turns:spec.turns||10,desc:`坚守 <em>${spec.turns||10} 回合</em>（或击破 <em>${spec.boss}</em>）`};
+  if(spec.winT==='hold'){
+    const ht=[spawns[0],spawns[1]];
+    win={type:'hold',tiles:ht,turns:spec.turns||10,desc:`死守「守」字城关 <em>${spec.turns||10} 回合</em>，勿被敌军踏入（或击破 <em>${spec.boss}</em>）`};
+  }
+  if(spec.winT==='escape'||spec.winT==='protect'){
+    const ex=[];
+    for(let y=0;y<H0&&ex.length<2;y++)if(godWalk(map,W0-2,y))ex.push([W0-2,y]);
+    if(spec.winT==='escape')win={type:'escape',tiles:ex,desc:`<em>赵云</em> 杀出东侧时光裂隙（或击破 <em>${spec.boss}</em>）`};
+    else{
+      win={type:'protect',tiles:ex,need:1,desc:`护送 <em>${spec.npcName}</em> 抵达东侧时光裂隙（或击破 <em>${spec.boss}</em>）`};
+      let nspot=null;
+      outer:for(let x=1;x<=9;x++)for(let y=0;y<H0;y++){
+        if(godWalk(map,x,y)&&!spawns.some(p=>p[0]===x&&p[1]===y)){nspot=[x,y];break outer;}
+      }
+      fixed.add(nspot.join(','));
+      npcs=()=>[U({name:spec.npcName,g:'圣',cls:'百姓',kind:'brig',side:'P',npc:true,x:nspot[0],y:nspot[1],hp:90,atk:0,def:12,mov:4,rngMin:0,rngMax:0})];
+    }
+  }
+  const hp=130+d*7, atk=28+Math.round(d), df=13+Math.round(d*.5);
+  const troop=spec.troop||'神化魔兵', tg=spec.tg||'魔';
+  function buildFoes(){
+    const used=new Set(fixed);
+    treasures.forEach(t2=>used.add(t2.x+','+t2.y));
+    barrels.forEach(b2=>used.add(b2.join(',')));
+    if(win&&win.type==='hold')win.tiles.forEach(p=>used.add(p.join(',')));
+    const mk=(kind,cls,c,extra)=>U(Object.assign({name:troop,g:tg,cls,kind,side:'E',fac:'god',x:c[0],y:c[1],hp,atk,def:df,mov:5,awakeR:6,crit:.12},extra));
+    const foes=[];
+    const n=11+Math.min(4,Math.floor(d/8));
+    const mix=['spear','spear','archer','archer','cav','cav','brig','spear','archer','cav','brig','cav','brig','archer','spear'];
+    for(let k2=0;k2<n;k2++){
+      const kind=mix[k2%mix.length];
+      const c=pickCell(k2,0,used);
+      if(kind==='archer')foes.push(mk('archer','弓手',c,{hp:Math.round(hp*.78),rngMin:2,rngMax:2}));
+      else if(kind==='cav')foes.push(mk('cav','铁骑',c,{hp:Math.round(hp*.95),atk:atk+2,mov:7,mounted:true,crit:.15}));
+      else if(kind==='brig')foes.push(mk('brig','贼兵',c,{awakeR:3}));
+      else foes.push(mk('spear','枪兵',c,{hp:Math.round(hp*1.05),def:df+2}));
+    }
+    if(d>=4)foes.push(mk('adv','军师',pickCell(70,0,used),{hp:Math.round(hp*.7),mp:90,int:34+d,atk:Math.round(atk*.55),mov:4,strats:d>=18?['fire','poison']:['fire'],crit:.05,drop:'danyao'}));
+    if(d>=8)foes.push(mk('catapult','投石',pickCell(71,0,used),{hp:Math.round(hp*.62),atk:atk+10,def:Math.round(df*.5),mov:3,rngMin:2,rngMax:3,rngShape:'cross',crit:.08}));
+    if(spec.recruit){
+      const c=pickCell(80,Math.floor(W0*.5),used);
+      foes.push(U(Object.assign({side:'E',fac:'god',x:c[0],y:c[1]},JSON.parse(JSON.stringify(spec.recruit)),{recruit:spec.recruit.recruit})));
+    }
+    const lc=pickCell(90,Math.floor(W0*.58),used);
+    foes.push(mk('chief','猛将',lc,{name:spec.lieut||troop+'统领',g:'统',hp:Math.round(hp*1.3),atk:atk+3,def:df+3,awakeR:5,crit:.15,drop:['shangyao','lingzhi','danyao','hudan'][d%4]}));
+    const bc=pickCell(91,Math.floor(W0*.7),used);
+    foes.push(U(Object.assign({name:spec.boss,g:spec.bg||'神',cls:spec.bcls||'猛将',kind:spec.bkind||'chief',side:'E',fac:'god',
+      x:bc[0],y:bc[1],hp:Math.round((200+d*13)*(spec.bossMul||1)),atk:34+Math.round(d*1.15),def:17+Math.round(d*.6),
+      mov:spec.bkind==='cav'?7:5,mounted:spec.bkind==='cav',rngShape:spec.bshape||'diamond',
+      strats:spec.bstrats||[],mp:spec.bstrats?99:0,int:spec.bstrats?40+d:10,
+      boss:true,awakeR:4,crit:.18,drop:spec.bdrop||null})));
+    return foes;
+  }
+  const ch={
+    title:`神纪${GOD_NUM(i+1)} · ${spec.t}`,
+    deploy:d<6?9:10,
+    boss:spec.boss,
+    map,spawns,treasures,
+    goldReward:700+d*35,
+    reward:d%3===2?{lingzhi:1,shangyao:1}:{shangyao:2},
+    shop:['bawang','baiyu','bintie','bazhen','bingshu','shangyao','lingzhi','danyao'],
+    intro:[
+      [spec.line,'sys'],
+      [`时光逆流至此。击破被神力扭曲的「${spec.boss}」，撕开下一道时光裂隙。`,'sys'],
+    ],
+    winPre:`神纪${GOD_NUM(i+1)} · 时流回溯`,
+    winSub:spec.ending
+      ?spec.ending
+      :t=>`第 ${t} 回合击破 ${spec.boss}，神力溃散，时光之流继续向过去奔涌……<br>${spec.next||'下一段被篡改的历史，已在裂隙彼端浮现。'}`,
+    nextBtn:spec.nextBtn||'逆 流 而 上',
+    enemies:buildFoes,
+  };
+  if(spec.weather)ch.weather=spec.weather;
+  if(barrels.length)ch.barrels=barrels;
+  if(win)ch.win=win;
+  if(npcs)ch.npcs=npcs;
+  if(spec.choice)ch.choice=spec.choice;
+  if(spec.allies)ch.allies=[{turn:spec.allies.turn||4,line:spec.allies.line||'蜀军援兵冲破时光裂隙赶到！',units(){
+    const a1=spawns[8]||spawns[5],a2=spawns[9]||spawns[6];
+    return [
+      U({name:'蜀汉援骑',g:'援',cls:'铁骑',kind:'cav',side:'P',x:a1[0],y:a1[1],hp:150+d*6,atk:30+d,def:15+Math.round(d*.4),mov:7,mounted:true,crit:.15}),
+      U({name:'蜀汉援枪',g:'援',cls:'枪兵',kind:'spear',side:'P',x:a2[0],y:a2[1],hp:165+d*6,atk:28+d,def:18+Math.round(d*.4),mov:5}),
+    ];
+  }}];
+  if(spec.reinforce)ch.reinforce=spec.reinforce(d,spawns,map);
+  return ch;
+}
+const GOD_SPECS=[
+ {t:'五丈原 · 异变之始',m:'wuzhang',boss:'神使·郭淮',troop:'魏军亡灵',tg:'灵',weather:'fog',
+  line:'秋风五丈原。本该病逝的丞相安然无恙，天上却裂开了紫色的口子——亡灵列阵，时光开始倒流。'},
+ {t:'渭水 · 仲达的低语',m:'guandu',boss:'天命·司马懿',bcls:'军师',bkind:'adv',bstrats:['fire','thunder'],bdrop:'bingshu',
+  line:'司马懿跪在紫雷之下聆听神谕。「天命」二字，原来是张角的声音。'},
+ {t:'街亭 · 第一道裂隙',m:'liangdao',boss:'神将·张郃',bkind:'cav',winT:'survive',turns:10,allies:{turn:5,line:'王平率无当飞军赶到——援军到了！'},
+  line:'马谡未曾失街亭——是神力让山崩了。坚守到援军抵达！'},
+ {t:'陈仓 · 千重壁',m:'puyang',boss:'铁壁·郝昭',barrels:3,
+  line:'郝昭的城墙被神力浇铸成铁。好在城下堆满了他没来得及搬走的火油。'},
+ {t:'南中 · 七擒之地',m:'ruchuan',boss:'妖巫·朵思',bcls:'军师',bkind:'adv',bstrats:['poison','fire'],weather:'fog',
+  recruit:{name:'孟获',g:'获',cls:'猛将',kind:'guard',hp:300,atk:40,def:22,mov:5,rngShape:'square',awakeR:5,crit:.15,
+    recruit:{hpr:.5,by:'诸葛亮',lines:[['诸葛亮','蛮王，七擒七纵之义，你可还记得？'],['孟获','丞相！！是你……俺记得！俺这条命是丞相的——杀回去！']]}},
+  line:'泸水毒雾里，孟获被妖巫驱使。他眼里还残存着「七擒七纵」的记忆——劝降他！'},
+ {t:'泸水 · 藤甲焚天',m:'ruchuan',boss:'妖王·兀突骨',bossMul:1.15,barrels:4,
+  line:'三万藤甲神兵刀枪不入。但藤甲……怕火。带上你的军师。'},
+ {t:'白帝 · 托孤之殿',m:'xiemin',boss:'鬼雄·陆逊',winT:'hold',turns:10,allies:{turn:6},weather:'rain',
+  line:'白帝城中先主病榻犹在。死守宫门，一步不让！'},
+ {t:'夷陵 · 燃烧的连营',m:'rang',boss:'神火·陆逊',barrels:5,weather:'rain',
+  line:'七百里连营之火被神力点燃，烧了四十年。冒雨突进，扑灭火源！'},
+ {t:'猇亭 · 断后之战',m:'ch2',boss:'锐锋·朱然',winT:'escape',
+  line:'时光裂隙在东方闪烁。且战且退，杀出重围！'},
+ {t:'麦城 · 拯救武圣',m:'xiapi',boss:'鬼谋·吕蒙',winT:'protect',npcName:'重伤的关羽',weather:'rain',
+  line:'这一次，麦城不会陷落。护送重伤的武圣抵达裂隙——改写他的结局！'},
+ {t:'樊城 · 水淹七军',m:'river',boss:'神威·庞德',bkind:'cav',weather:'rain',
+  line:'大水滔天，庞德抬棺死战。神力让洪水永不退去。'},
+ {t:'定军 · 重回之山',m:'rang',boss:'冥将·夏侯渊',bkind:'cav',
+  line:'夏侯渊从黄忠刀下被神力拽了回来。让老将军再斩他一次。'},
+ {t:'汉水 · 空营的回响',m:'cc2',boss:'神断·徐晃',
+  line:'空营计的擂鼓声在时光里回荡。徐公明，再会了。'},
+ {t:'合肥 · 八百鬼骑',m:'liangdao',boss:'鬼神·张辽',bkind:'cav',bossMul:1.2,winT:'survive',turns:9,allies:{turn:5},
+  line:'八百鬼骑踏雾而来，逍遥津的杀气穿透了时光。顶住张文远的冲锋！'},
+ {t:'濡须 · 雾锁长江',m:'river',boss:'神武·甘宁',bkind:'cav',weather:'fog',
+  line:'百骑劫营的铃声在大雾里忽远忽近。锦帆贼，神挡杀神。'},
+ {t:'潼关 · 锦马超',m:'guandu',boss:'枭目·韩遂',
+  recruit:{name:'马超',g:'超',cls:'骑兵',kind:'cav',hp:280,atk:42,def:18,mov:7,mounted:true,awakeR:5,crit:.18,
+    recruit:{hpr:.5,by:'刘备',lines:[['刘备','孟起！神力蒙蔽了你的眼——看看我是谁！'],['马超','玄德公……超的主公只有一个！愿随主公，再反这个朝纲！']]}},
+  line:'渭水之畔，锦马超被神力驱使割须弃袍地追杀着谁。唤醒他——五虎上将当聚首！'},
+ {t:'渭南 · 离间之计',m:'cc1',boss:'天机·贾诩',bcls:'军师',bkind:'adv',bstrats:['fire','poison'],bdrop:'bingshu',
+  line:'一封涂改的书信改变过历史。贾文和的笔，如今蘸着神的墨。'},
+ {t:'赤壁 · 神火燎原',m:'river',boss:'神都督·周瑜',bcls:'军师',bkind:'adv',bstrats:['fire','firestorm'],bossMul:1.2,barrels:6,
+  line:'三江口的东风永不停歇，火船烧了四十年。美周郎的火，今夜由你来熄。'},
+ {t:'乌林 · 败走的丞相',m:'xiemin',boss:'魔王·曹操',bossMul:1.25,weather:'rain',
+  line:'华容道上，被神力吞噬的曹操回过了头。斩断神丝，放他的魂魄归去。'},
+ {t:'长坂 · 梦魇重演',m:'ch1',boss:'虚影·赵云',bkind:'cav',bossMul:1.3,bshape:'square',
+  line:'坡上单骑救主的身影——是你自己。张角造出了你的影子。证明谁才是真正的常山赵子龙！'},
+ {t:'江夏 · 北海遗风',m:'cc2',boss:'锦帆·苏飞',
+  recruit:{name:'太史慈',g:'慈',cls:'弓骑',kind:'hcav',hp:250,atk:38,def:16,mov:6,rngMin:1,rngMax:2,mounted:true,awakeR:5,crit:.16,
+    recruit:{hpr:.5,by:'赵云',lines:[['赵云','子义！北海救孔融的义士，岂能为神驱使！'],['太史慈','常山赵子龙……好，凭你这杆枪，慈信你！']]}},
+  line:'神弓手太史慈被锁在江夏的雾里。同为义士，子龙——去会会他。'},
+ {t:'官渡 · 河北亡灵',m:'guandu',boss:'鬼雄·袁绍',barrels:2,
+  line:'七十万河北军魂从未离开官渡。本初公在土山上，等一场迟到四十年的决战。'},
+ {t:'白马 · 颜良再起',m:'ch1',boss:'冥骑·颜良',bkind:'cav',
+  line:'白马坡的刀光闪过之前，颜良睁开了眼。这一次没有关羽——只有你们。'},
+ {t:'延津 · 文丑索命',m:'liangdao',boss:'冥骑·文丑',bkind:'cav',weather:'snow',
+  line:'延津渡口，文丑的骂声冻在风雪里。河北双璧，今日齐斩。'},
+ {t:'下邳 · 飞将的怨念',m:'xiapi',boss:'神化·吕布',bkind:'cav',bossMul:1.35,bshape:'square',weather:'rain',
+  line:'白门楼的绳索勒不住神化的飞将。方天画戟指处，时光都在颤抖。'},
+ {t:'宛城 · 毒士的棋局',m:'puyang',boss:'弈神·贾诩',bcls:'军师',bkind:'adv',bstrats:['poison','thunder'],weather:'fog',
+  line:'贾诩在时光里又下了一盘棋。这一次，看穿他的每一步。'},
+ {t:'兖州 · 蝗灾妖云',m:'cc1',boss:'妖帅·李傕',
+  line:'遮天蝗云是神的瘟疫。在颗粒无收之前，斩落妖帅。'},
+ {t:'长安 · 焚天之火',m:'puyang',boss:'魔将·郭汜',barrels:5,
+  line:'长安在烧。四十年前点的火，今天由你来灭。'},
+ {t:'郿坞 · 魔主肥宴',m:'cc1',boss:'魔主·董卓',bossMul:1.3,winT:'hold',turns:9,allies:{turn:5,line:'吕布倒戈一击——「大丈夫生居天地间，岂能郁郁久居人下！」'},
+  line:'郿坞金山银海，董卓在神力中越长越肥。守住营门，等一个会倒戈的人。'},
+ {t:'洛阳 · 燃烧的帝都',m:'xiemin',boss:'神使·华雄',winT:'escape',barrels:3,
+  line:'洛阳大火映红了时光。带着汉室最后的体面，杀出东门。'},
+ {t:'虎牢 · 三英的幻影',m:'cc2',boss:'神化·吕布',bkind:'cav',bossMul:1.45,bshape:'square',
+  line:'虎牢关前，神化吕布手中画戟已能劈开山岳。没有三英——你们就是新的传说。'},
+ {t:'汜水 · 关前血路',m:'cc2',boss:'鬼将·胡轸',
+  line:'汜水关的水是红的，四十年没变过。踏过去。'},
+ {t:'界桥 · 先登强弩',m:'rang',boss:'神射·麴义',weather:'snow',
+  line:'八百先登死士的强弩在雪里上弦。低头，冲锋！'},
+ {t:'广宗 · 黄天之城',m:'julu',boss:'地公将军',bossMul:1.2,winT:'hold',turns:11,allies:{turn:6,line:'皇甫嵩的汉军残部赶到——历史还在抵抗！'},
+  line:'广宗城头黄旗蔽日。张宝以地公之名筑起神域。守住，别让黄天落地！'},
+ {t:'曲阳 · 人公祭坛',m:'julu',boss:'人公将军',bossMul:1.2,winT:'survive',turns:10,allies:{turn:5},
+  line:'张梁在曲阳血祭十万生魂。撑住——祭坛完成之前他无法全力出手。'},
+ {t:'巨鹿外围 · 神坛之下',m:'julu',boss:'大贤良师之影',bcls:'妖术',bkind:'adv',bstrats:['bolt','thunder','firestorm'],bossMul:1.3,weather:'fog',
+  line:'神坛已遥遥在望。张角的影子先于本体而来——它有本体八成的力量。'},
+ {t:'巨鹿 · 改写黎明',m:'julu',boss:'黄天·张角',bcls:'妖术',bkind:'adv',bstrats:['bolt','thunder','firestorm','poison'],bossMul:1.8,bdrop:'bingshu',weather:'fog',barrels:4,
+  reinforce:(d,spawns,map)=>[
+    {turn:4,line:'张角振臂——黄巾神兵自虚空涌出！',units(){return [
+      U({name:'黄巾神兵',g:'神',cls:'贼兵',kind:'brig',side:'E',fac:'god',x:map[0].length-2,y:8,hp:160+d*5,atk:30+d,def:14,mov:5,crit:.12}),
+      U({name:'黄巾神兵',g:'神',cls:'贼兵',kind:'brig',side:'E',fac:'god',x:map[0].length-3,y:8,hp:160+d*5,atk:30+d,def:14,mov:5,crit:.12}),
+    ];}},
+    {turn:8,line:'「苍天已死！」神兵再临！',units(){return [
+      U({name:'黄巾神骑',g:'神',cls:'铁骑',kind:'cav',side:'E',fac:'god',x:map[0].length-2,y:8,hp:170+d*5,atk:32+d,def:14,mov:7,mounted:true,crit:.15}),
+      U({name:'黄巾神骑',g:'神',cls:'铁骑',kind:'cav',side:'E',fac:'god',x:map[0].length-3,y:8,hp:170+d*5,atk:32+d,def:14,mov:7,mounted:true,crit:.15}),
+    ];}},
+  ],
+  choice:{q:'神坛轰然崩塌，凡人张角跪伏于黎明之中，向你伸出手——',
+    a:{t:'伸手拉他起来：「回去做个医者吧」',dao:2,fx:()=>{bag.lingzhi=(bag.lingzhi||0)+2;return '他留下了两株灵芝与《太平要术》的灰烬';}},
+    b:{t:'枪尖抵喉：「黄天，到此为止」',dao:-2,fx:()=>{gold+=800;return '缴获太平道四十年积蓄 +800 金';}}},
+  line:'中平元年的黎明。巨鹿神坛之上，张角正在成神——在仪式完成之前击碎神坛，改写一切的源头！',
+  ending:t=>`第 ${t} 回合，神坛崩碎，黄天陨落——历史回到了它本来的模样。<br>巨鹿的晨光里，张角只是个咳血的落第书生。瘟疫依旧、苛政依旧，但人间的事，将由人间自己解决。<br>「吾乃常山赵子龙。」枪尖挑起的，是真实的黎明。<br><b style="color:#ffd24a">——神纪五十章 · 全战记完结，感谢游玩！</b>`,
+  nextBtn:'功 成 身 退'},
+];
+CHAPTERS.push(...GOD_SPECS.map(godChapter));
+
 let activeCamp=CAMP_ZHAOYUN;
 function selectCampaign(camp){
   activeCamp=camp;
