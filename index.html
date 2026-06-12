@@ -2485,7 +2485,7 @@ function bondActive(u){
 function bondStat(u,k){let s=0;for(const b of bondActive(u))s+=b[k]||0;return s;}
 /* ===================== 兵法·阵型 =====================
    我方出战武将的相对站位达成特定几何时，自动激活阵型，全员获加成 */
-let formCache=null, formKey='';
+let formCache=new Map(), formKey=null;
 function relSet(group){ // 归一化相对坐标集合（最小x/y平移到0）
   const xs=group.map(u=>u.x),ys=group.map(u=>u.y);
   const mx=Math.min(...xs),my=Math.min(...ys);
@@ -2546,8 +2546,9 @@ function computeFormations(){
   return buff;
 }
 function formOf(u){
-  if(formKey!==formStamp()){formCache=computeFormations();formKey=formStamp();}
-  return formCache.get(u)||null;
+  const st=formStamp();
+  if(formKey!==st){formCache=computeFormations()||new Map();formKey=st;}
+  return (formCache&&formCache.get(u))||null;
 }
 function formStamp(){ // 站位指纹，变了才重算
   return units.filter(u=>u.alive&&u.side==='P').map(u=>u.x+','+u.y).join(';');
