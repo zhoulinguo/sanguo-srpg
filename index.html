@@ -2264,6 +2264,12 @@ let PLAYER_BASE=[
   {name:'诸葛亮',g:'亮',cls:'军师',kind:'adv',  side:'P',x:0,y:0,lv:2,hp:85,mp:65,int:40,atk:16,def:10,mov:5,strats:['heal','fire'],crit:.05,joinCh:2},
   {name:'魏延',  g:'延',cls:'先锋',kind:'vanguard',side:'P',x:0,y:0,lv:1,hp:110,atk:30,def:14,mov:5,crit:.18,joinCh:5},
   {name:'黄忠',  g:'忠',cls:'弓骑',kind:'hcav', side:'P',x:0,y:0,lv:2,hp:105,atk:30,def:12,mov:6,rngMin:1,rngMax:2,mounted:true,crit:.16,joinCh:7},
+  {name:'关平',  g:'平',cls:'枪兵',kind:'spear',side:'P',x:0,y:0,lv:1,hp:118,atk:29,def:17,mov:5,joinCh:4},
+  {name:'廖化',  g:'化',cls:'弓手',kind:'archer',side:'P',x:0,y:0,lv:1,hp:92,atk:27,def:11,mov:5,rngMin:2,rngMax:2,crit:.12,joinCh:6},
+  {name:'邓芝',  g:'芝',cls:'军师',kind:'adv',  side:'P',x:0,y:0,lv:1,hp:80,mp:55,int:34,atk:14,def:10,mov:5,strats:['heal','bolt'],crit:.05,joinCh:8},
+  {name:'马岱',  g:'岱',cls:'骑兵',kind:'cav',  side:'P',x:0,y:0,lv:1,hp:115,atk:31,def:14,mov:6,mounted:true,crit:.15,joinCh:9},
+  {name:'周仓',  g:'仓',cls:'虎卫',kind:'guard',side:'P',x:0,y:0,lv:1,hp:132,atk:32,def:16,mov:5,rngShape:'square',crit:.16,joinCh:10},
+  {name:'蒲元',  g:'蒲',cls:'投石',kind:'catapult',side:'P',x:0,y:0,lv:1,hp:88,atk:34,def:8,mov:4,rngMin:2,rngMax:3,rngShape:'cross',crit:.05,joinCh:11},
 ];
 /* 名册序列化：完整字段，支持劝降而来的编外武将 */
 const ROSTER_FIELDS=['name','g','cls','kind','fac','lv','exp','maxhp','maxmp','int','atk','def','mov','rngMin','rngMax','rngShape','crit','mounted','leader','dep','promoted','awakened','srng','ultSel','tonics','rb'];
@@ -2327,6 +2333,27 @@ function levelUpTo(u,lv){
   u.hp=u.maxhp;u.mp=u.maxmp;
   checkLearn(u,true);
 }
+/* 武将登场独白：剧情入伙时在备战界面以台词卡呈现，避免突兀 */
+const JOIN_LINES={
+  '诸葛亮':'亮久居隆中，今蒙将军不弃——愿效犬马，鞠躬尽瘁。',
+  '魏延':'某乃义阳魏延！愿提此长刀，为将军踏平不臣！',
+  '黄忠':'老夫黄汉升，宝刀未老，箭无虚发——这把老骨头，交给将军了！',
+  '庞统':'凤雏庞士元在此。卧龙凤雏得一可安天下，今二人俱归，何愁大业不成？',
+  '曹仁':'子孝愿为主公镇守中军，纵千军万马，不教越雷池一步！',
+  '荀彧':'彧愿为主公谋画王业——奉天子以令不臣，此乃霸道根基。',
+  '乐进':'末将乐文谦，每战先登，愿为主公拔旗斩将！',
+  '许褚':'俺许仲康，谯县一虎！主公但有差遣，赴汤蹈火！',
+  '郭嘉':'奉孝来迟。十胜十败之论已备——主公此战，必胜。',
+  '关平':'孩儿关平，愿随父亲与诸位叔父，共讨国贼！',
+  '廖化':'某廖化，虽是小卒出身，箭法却不输人——请将军一观！',
+  '邓芝':'邓伯苗见过将军。出使折冲、行军筹算，芝皆可效力。',
+  '马岱':'西凉马岱，随兄长归汉久矣，今愿为将军前驱！',
+  '周仓':'周仓力大，杀敌的活儿，尽管交给俺！',
+  '蒲元':'草民蒲元，善锻善器。这架霹雳投石，请将军笑纳！',
+  '李典':'李曼成愿为主公掌弓弩——箭雨所至，寸草不生。',
+  '于禁':'于文则治军严整，愿为主公镇守阵脚，纹丝不乱。',
+  '史涣':'史涣督造攻城利器，愿以霹雳之威，为主公破城拔寨！',
+};
 /* 剧情入伙：进入第 i 章备战时，把 joinCh<=i 且未在册的武将编入，返回新入伙名单 */
 function syncJoins(i){
   const joined=[];
@@ -3380,7 +3407,7 @@ function duelTarget(u){ // 近战猛将类，相邻敌方主将/猛将
   return alive('E').find(e=>Math.max(Math.abs(e.x-u.x),Math.abs(e.y-u.y))<=1
     &&(e.boss||e.cls==='猛将'||e.kind==='chief'));
 }
-let duelState=null;
+let duelState=null, duelDone=false; // duelDone：本关已触发过自动单挑
 function duelHpBar(){
   const {a,d}=duelState;
   document.getElementById('duelHp').innerHTML=
@@ -3462,6 +3489,15 @@ document.querySelectorAll('#duel button[data-pose]').forEach(b=>b.onclick=()=>{
   duelPick(b.dataset.pose);
 });
 async function doAttack(a,d){
+  // 阵前单挑：玩家武将攻击敌方名将时，双方皆名将级则小概率自动触发攻守破对决（每对每关一次）
+  if(a.side==='P'&&!duelDone){
+    const meleeOk=DUEL_MELEE.includes(a.kind)&&(d.boss||d.cls==='猛将'||d.kind==='chief');
+    if(meleeOk&&Math.max(Math.abs(a.x-d.x),Math.abs(a.y-d.y))<=1&&Math.random()<0.12){
+      duelDone=true;
+      await startDuel(a,d);
+      return;
+    }
+  }
   // 历史单挑事件：固定场景，每章一次，仅玩家主动发起，触发后替代本次普通攻击
   const dk=a.name+'|'+d.name, dk2=d.name+'|'+a.name;
   const ev=DUEL_EVENTS[dk]||DUEL_EVENTS[dk2];
@@ -4054,8 +4090,6 @@ function showMenu(u){
   html+=`<button data-act="item" ${hasItem?'':'disabled'}>道 具</button>`;
   html+=`<button data-act="guard">戒 备<i class="udesc">敌军进入射程时自动反击一次（八成伤害）</i></button>`;
   // 单挑：近战猛将类相邻敌方主将/猛将时可叫阵
-  const duelT=duelTarget(u);
-  if(duelT)html+=`<button data-act="duel" data-ti="${units.indexOf(duelT)}" class="ultBtn">单 挑 ${duelT.name}<i class="udesc">攻守破博弈 · 三合定胜负 · 胜则重创对手</i></button>`;
   html+=`<button data-act="wait">待 机</button><button data-act="cancel">取 消</button>`;
   menuEl.innerHTML=html;
   menuEl.style.display='flex';
@@ -4117,11 +4151,6 @@ menuEl.addEventListener('click',async e=>{
     addFloat(selected.px,selected.py-30,'戒 备','#ffd24a');
     log(`${selected.name} 进入戒备，弓上弦、刀出鞘`,'sys');
     hideMenu();await finishAction();return;
-  }
-  if(act==='duel'){
-    const t=units[+btn.dataset.ti];
-    if(t&&t.alive&&t.side==='E')await startDuel(selected,t);
-    return;
   }
   if(act==='atk'){
     const u=selected;
@@ -6477,7 +6506,7 @@ function startChapter(i){
   party.forEach(u=>u._legendKills=0);
   const talDropped=enforceTalents();
   if(talDropped.length)log(`成就点不足（当前难度赠点 ${diffBonus()}），以下天赋本战未生效：${talDropped.join('、')}`,'hit');
-  fallenFlag=false;
+  fallenFlag=false;duelDone=false;
   if(retryN>0)log(`【越挫越勇】第 ${retryN} 次重整旗鼓：全军伤害 +${Math.min(retryN,5)*5}%、受伤 −${Math.min(retryN,5)*4}%`,'good');
   if(diffPct>=150&&!ch.extra){
     const n=diffPct>=500?3:diffPct>=300?2:1;
@@ -6548,7 +6577,13 @@ function openPrep(i){
   document.querySelector('.prepBody').scrollTop=0;
   const jl=document.getElementById('prepJoin');
   jl.style.display=joined.length?'':'none';
-  if(joined.length)jl.innerHTML=`新武将入伙：<b>${joined.join('、')}</b>！已自动补足等级，可在下方编入出战名单。`;
+  if(joined.length){
+    jl.innerHTML=joined.map(nm=>{
+      const raw=nm.replace(/〔.*〕/,'');
+      const line=JOIN_LINES[raw];
+      return `<div style="margin:2px 0"><b style="color:#ffd24a">${nm} 来投</b>${line?`　<span style="color:var(--paper);opacity:.9">「${line}」</span>`:''}</div>`;
+    }).join('')+`<div style="font-size:11px;opacity:.7;margin-top:2px">已自动补足等级，可在「出战配置」编入名单。</div>`;
+  }
   const ev=chainStepFor(i);
   if(ev&&!CHAPTERS[i].extra)showChain(ev);
 }
@@ -7489,6 +7524,9 @@ const CAMP_CAOCAO={
     {name:'荀彧',  g:'彧',cls:'军师',kind:'adv',  side:'P',x:0,y:0,lv:2,hp:85,mp:60,int:38,atk:16,def:10,mov:5,strats:['heal','fire'],crit:.05,joinCh:1},
     {name:'乐进',  g:'进',cls:'先锋',kind:'vanguard',side:'P',x:0,y:0,lv:1,hp:105,atk:28,def:13,mov:5,crit:.18,joinCh:2},
     {name:'许褚',  g:'褚',cls:'虎卫',kind:'guard',side:'P',x:0,y:0,lv:3,hp:145,atk:34,def:17,mov:5,rngShape:'square',crit:.19,joinCh:4},
+    {name:'李典',  g:'典',cls:'弓手',kind:'archer',side:'P',x:0,y:0,lv:1,hp:90,atk:26,def:11,mov:5,rngMin:2,rngMax:2,crit:.12,joinCh:2},
+    {name:'于禁',  g:'禁',cls:'枪兵',kind:'spear',side:'P',x:0,y:0,lv:1,hp:128,atk:27,def:19,mov:4,joinCh:3},
+    {name:'史涣',  g:'涣',cls:'投石',kind:'catapult',side:'P',x:0,y:0,lv:1,hp:86,atk:33,def:8,mov:4,rngMin:2,rngMax:3,rngShape:'cross',crit:.05,joinCh:5},
   ],
   ults:{
     '曹操':  {label:'奸雄令',  desc:'全军恢复 35 兵力',quote:'宁教我负天下人！全军——随孤进击！',type:'heal_flat',amt:35},
@@ -8203,6 +8241,16 @@ selectCampaign(CAMP_ZHAOYUN);
 function startNewRun(){
   initAudio();
   sfx.select();
+  // 有可分配成就点却未用满时，提醒先去配天赋
+  try{
+    const c=loadCodex();
+    const free=talBudget(c)-talSpent(c);
+    if(free>0&&!startNewRun._skipTalentPrompt){
+      promptTalent(free);
+      return;
+    }
+  }catch(e){}
+  startNewRun._skipTalentPrompt=false;
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
   bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;chains={};cargo={};goodTrend={};
@@ -8625,6 +8673,27 @@ document.getElementById('talentBtn').onclick=()=>{
   renderTalent();
   document.getElementById('talent').classList.remove('hidden');
 };
+/* 开局前天赋提醒：还有 free 点未分配，二选一 */
+function promptTalent(free){
+  document.getElementById('choiceQ').innerHTML=`你尚有 <b style="color:#ffd24a">${free}</b> 点成就点未分配天赋。<br>天赋全程生效、可显著强化全军——是否先去配置？`;
+  const bA=document.getElementById('choiceA'),bB=document.getElementById('choiceB');
+  bA.disabled=false;bB.style.display='';
+  bA.innerHTML='去 选 择 天 赋';
+  bB.innerHTML='一 意 孤 行（直接出阵）';
+  bA.onclick=()=>{
+    sfx.select();
+    document.getElementById('choice').classList.add('hidden');
+    renderTalent();
+    document.getElementById('talent').classList.remove('hidden');
+  };
+  bB.onclick=()=>{
+    sfx.select();
+    document.getElementById('choice').classList.add('hidden');
+    startNewRun._skipTalentPrompt=true;
+    startNewRun();
+  };
+  document.getElementById('choice').classList.remove('hidden');
+}
 document.getElementById('closeTalent').onclick=()=>{
   if(AC)sfx.select();
   document.getElementById('talent').classList.add('hidden');
