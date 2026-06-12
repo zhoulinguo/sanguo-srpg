@@ -11,7 +11,7 @@
   --ink:#16120d;
   --ink2:#221c14;
   --paper:#e8dcc0;
-  --paper-dim:#cdbf9e;
+  --paper-dim:#d8cdb0;
   --cinnabar:#b03a2e;
   --cinnabar-bright:#d6493a;
   --gold:#c9a227;
@@ -53,7 +53,7 @@ h1 .seal{
 .hud{display:flex;gap:22px;align-items:baseline;font-size:14px;color:var(--paper-dim)}
 .hud b{font-family:var(--display);font-size:22px;color:var(--gold);font-weight:400;letter-spacing:2px}
 .hud .phase{color:var(--cinnabar-bright)}
-.objective{font-size:12.5px;color:var(--paper-dim);letter-spacing:1px}
+.objective{font-size:13px;color:var(--paper);opacity:.92;letter-spacing:1px;line-height:1.7}
 .objective em{color:var(--gold);font-style:normal}
 
 .main{display:flex;gap:16px;align-items:flex-start}
@@ -82,15 +82,15 @@ canvas{display:block}
   padding:7px 14px;text-align:left;cursor:pointer;border-radius:3px;
 }
 #menu button:hover{background:rgba(176,58,46,.85);color:#fff}
-#menu button:disabled{opacity:.35;cursor:default}
+#menu button:disabled{opacity:.5;cursor:default}
 #menu button:disabled:hover{background:none;color:var(--paper)}
 #menu .mp{font-size:11px;color:var(--gold);letter-spacing:0;font-family:var(--body)}
 #menu button .udesc{
   display:block;font-style:normal;font-family:var(--body);
   font-size:10.5px;letter-spacing:.5px;line-height:1.5;
-  color:rgba(232,220,192,.55);margin-top:1px;
+  color:rgba(232,220,192,.75);margin-top:1px;
 }
-#menu button.ultBtn .udesc{color:rgba(255,210,120,.6)}
+#menu button.ultBtn .udesc{color:rgba(255,214,130,.85)}
 #menu button.ultBtn{color:#ffd24a}
 #menu button.ultBtn:not(:disabled){animation:ultPulse 1s ease-in-out infinite}
 @keyframes ultPulse{50%{background:rgba(201,142,30,.45)}}
@@ -152,7 +152,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 .bar.rage i{background:linear-gradient(90deg,#b35a1f,#ff9a3c)}
 .statline{display:flex;gap:9px;margin-top:5px;color:var(--paper-dim);flex-wrap:wrap}
 .statline b{color:var(--paper);font-weight:600}
-.trait{margin-top:4px;font-size:11px;color:var(--gold);letter-spacing:1px}
+.trait{margin-top:4px;font-size:11.5px;color:#ddb84a;letter-spacing:1px;line-height:1.6}
 #forecast{font-size:13px;line-height:1.7;color:var(--paper-dim);min-height:20px}
 #forecast .big{font-family:var(--display);font-size:20px;color:var(--cinnabar-bright);letter-spacing:2px}
 #forecast .adv{color:var(--gold)}
@@ -173,7 +173,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 }
 #endTurn:hover{transform:translateY(-1px);box-shadow:0 7px 20px rgba(176,58,46,.5)}
 #endTurn:disabled{opacity:.4;cursor:default;transform:none}
-.hint{font-size:11.5px;color:rgba(232,220,192,.45);letter-spacing:1px;text-align:center;line-height:1.8}
+.hint{font-size:11.5px;color:rgba(232,220,192,.66);letter-spacing:1px;text-align:center;line-height:1.8}
 .hint .b{color:#7ea4d4}.hint .r{color:#d4796a}
 
 #overlay{
@@ -242,7 +242,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   background:rgba(232,220,192,.05);border:1px solid rgba(201,162,39,.25);border-radius:4px;
   padding:10px 24px;cursor:pointer;transition:all .15s;
 }
-.diffBtn i{display:block;font-style:normal;font-family:var(--body);font-size:10.5px;letter-spacing:1px;margin-top:4px;color:rgba(232,220,192,.4)}
+.diffBtn i{display:block;font-style:normal;font-family:var(--body);font-size:10.5px;letter-spacing:1px;margin-top:4px;color:rgba(232,220,192,.62)}
 .diffBtn:hover{border-color:rgba(201,162,39,.6);transform:translateY(-1px)}
 .diffBtn.active{color:var(--gold);border-color:var(--gold);background:rgba(201,162,39,.12);box-shadow:0 0 16px rgba(201,162,39,.25)}
 .diffBtn.active i{color:rgba(201,162,39,.7)}
@@ -254,7 +254,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 }
 .diffSlider .dsName{font-family:var(--display);font-size:17px;letter-spacing:4px;color:var(--gold);min-width:74px;text-align:center}
 .diffSlider .dsPct{font-family:var(--display);font-size:16px;color:var(--paper);min-width:52px;text-align:right}
-.diffSlider .dsHint{flex-basis:100%;font-style:normal;font-family:var(--body);font-size:10.5px;letter-spacing:1px;color:rgba(232,220,192,.4);text-align:center}
+.diffSlider .dsHint{flex-basis:100%;font-style:normal;font-family:var(--body);font-size:10.5px;letter-spacing:1px;color:rgba(232,220,192,.62);text-align:center}
 #diffRange{
   -webkit-appearance:none;appearance:none;width:220px;height:6px;border-radius:3px;cursor:pointer;
   background:linear-gradient(90deg,#4d7a4d,#c9a227 30%,#b03a2e 60%,#6a1f8a 100%);outline:none;
@@ -294,7 +294,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   padding:4px 2px 10px;margin:-4px -2px 2px;
 }
 #prep h2 .pgold{font-family:var(--body);font-size:15px;color:#e8c655;letter-spacing:2px}
-#prep .phead{font-size:12.5px;color:var(--paper-dim);margin-bottom:10px;letter-spacing:1px}
+#prep .phead{font-size:12.5px;color:var(--paper);opacity:.88;margin-bottom:10px;letter-spacing:1px;line-height:1.8}
 #prep h3.sec{
   font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:5px;color:var(--gold);
   margin:14px 0 4px;display:flex;align-items:center;gap:10px;
@@ -308,7 +308,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   border-radius:4px;transition:background .15s;
 }
 .prow:hover{background:rgba(201,162,39,.06)}
-.prow.bench{opacity:.55}
+.prow.bench{opacity:.75}
 .depBtn{
   font-family:var(--display);font-size:13px;letter-spacing:2px;padding:6px 2px;width:54px;
   background:rgba(232,220,192,.05);color:var(--paper-dim);
@@ -327,7 +327,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 }
 .shopcard:hover{transform:translateY(-2px);border-color:rgba(201,162,39,.7);box-shadow:0 6px 18px rgba(0,0,0,.45)}
 .shopcard .sname{font-family:var(--display);font-size:16px;letter-spacing:2px;color:var(--paper)}
-.shopcard .sdesc{font-size:11.5px;color:var(--paper-dim);margin:4px 0 8px;line-height:1.7;min-height:34px}
+.shopcard .sdesc{font-size:12px;color:var(--paper);opacity:.82;margin:4px 0 8px;line-height:1.7;min-height:34px}
 .shopcard .sdesc i{color:rgba(201,162,39,.75);font-style:normal}
 .shopcard .srow{display:flex;justify-content:space-between;align-items:center}
 .shopcard .price{color:#e8c655;font-size:13px}
@@ -336,11 +336,11 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   background:linear-gradient(170deg,#6b4f1d,#4a350f);color:#f4e9d0;
   border:1px solid rgba(201,162,39,.4);border-radius:3px;cursor:pointer;
 }
-.shopcard button:disabled{opacity:.35;cursor:default}
+.shopcard button:disabled{opacity:.5;cursor:default}
 .shopcard button:not(:disabled):hover{background:linear-gradient(170deg,#8d6a27,#5e4413)}
 .prow .pname{font-family:var(--display);font-size:17px;letter-spacing:2px;color:var(--paper)}
 .prow .pname i{display:block;font-style:normal;font-family:var(--body);font-size:11px;color:var(--gold);letter-spacing:1px}
-.prow .pstat{font-size:12px;color:var(--paper-dim);line-height:1.7}
+.prow .pstat{font-size:12px;color:var(--paper);opacity:.85;line-height:1.7}
 .prow select{
   background:#1d1812;color:var(--paper);
   border:1px solid rgba(201,162,39,.35);border-radius:3px;
@@ -375,7 +375,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 .deerflow-badge{
   position:fixed;right:14px;bottom:12px;z-index:90;
   font-size:10.5px;letter-spacing:2px;text-decoration:none;
-  color:rgba(232,220,192,.38);
+  color:rgba(232,220,192,.62);
   border:1px solid rgba(201,162,39,.22);border-radius:3px;
   padding:3px 8px;background:rgba(13,10,7,.5);
   font-family:var(--body);
@@ -408,7 +408,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   animation:popIn .3s ease both;
 }
 #sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2,#casino h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
-#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote,#casino .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
+#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote,#casino .snote{font-size:12.5px;color:var(--paper);opacity:.85;margin-bottom:12px;letter-spacing:1px;line-height:1.8}
 #codex .sinner{width:min(680px,94vw);max-height:88vh;overflow-y:auto}
 #chlog .sinner{width:min(620px,94vw);max-height:88vh;overflow-y:auto}
 #casino .sinner{width:min(620px,94vw);max-height:90vh;overflow-y:auto}
@@ -419,7 +419,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   border:1px solid rgba(201,162,39,.3);border-radius:4px;transition:all .12s;
 }
 .casBtn.on{color:var(--gold);border-color:var(--gold);background:rgba(201,162,39,.14)}
-.casBtn:disabled{opacity:.35;cursor:default}
+.casBtn:disabled{opacity:.5;cursor:default}
 .casBtn:not(:disabled):hover{border-color:rgba(201,162,39,.7)}
 .dieBox{display:flex;gap:14px;justify-content:center;margin:14px 0}
 .die{
@@ -438,7 +438,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 }
 .cricket.on{border-color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,.3)}
 .cricket .cn{font-family:var(--display);font-size:16px;letter-spacing:2px;color:var(--paper)}
-.cricket .cs{font-size:11.5px;color:var(--paper-dim);line-height:1.8}
+.cricket .cs{font-size:12px;color:var(--paper);opacity:.85;line-height:1.8}
 .cricket.fight{animation:dieShake .1s 8}
 #chlog .chsec{font-family:var(--display);font-size:15px;letter-spacing:4px;color:var(--gold);margin:12px 0 6px;text-align:center}
 .chrow{
@@ -449,7 +449,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   padding:7px 12px;margin-bottom:5px;cursor:pointer;transition:all .12s;
 }
 .chrow:hover:not(:disabled){border-color:rgba(201,162,39,.6);background:rgba(201,162,39,.08)}
-.chrow:disabled{opacity:.32;cursor:default}
+.chrow:disabled{opacity:.55;cursor:default}
 .chrow .chst{font-size:11.5px;color:var(--gold);flex:0 0 auto;margin-left:10px}
 #codex h3{font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:4px;color:var(--gold);margin:14px 0 6px;display:flex;align-items:center;gap:10px}
 #codex h3::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(201,162,39,.45),transparent)}
@@ -458,8 +458,8 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   font-size:12px;padding:4px 10px;border-radius:3px;letter-spacing:1px;
   border:1px solid rgba(201,162,39,.3);background:rgba(232,220,192,.05);color:var(--paper);
 }
-#codex .cchip i{font-style:normal;color:var(--gold);margin-right:4px}
-#codex .cchip.locked{opacity:.35;color:var(--paper-dim)}
+#codex .cchip i{font-style:normal;color:#ddb84a;margin-right:4px}
+#codex .cchip.locked{opacity:.6;color:var(--paper-dim)}
 #codex .cchip.gotcha{border-color:rgba(201,162,39,.7);box-shadow:0 0 8px rgba(201,162,39,.15)}
 #codex .cstamp{font-size:12.5px;line-height:1.9;color:var(--paper)}
 #codex .cstamp b{color:#ffd24a;font-family:var(--display);font-weight:400;letter-spacing:2px}
@@ -470,7 +470,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 }
 .slot .sinfo{font-size:13px;line-height:1.7;color:var(--paper)}
 .slot .sinfo b{font-family:var(--display);font-weight:400;letter-spacing:2px;color:var(--gold)}
-.slot .stime{color:var(--paper-dim);font-size:11.5px}
+.slot .stime{color:var(--paper-dim);font-size:12px}
 .slot .sbtns{flex:0 0 auto}
 .slot button{
   font-family:var(--display);font-size:15px;letter-spacing:2px;padding:5px 14px;margin-left:8px;cursor:pointer;
@@ -478,7 +478,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   border:1px solid rgba(201,162,39,.4);border-radius:3px;
 }
 .slot button:hover:not(:disabled){background:linear-gradient(170deg,#8d6a27,#5e4413)}
-.slot button:disabled{opacity:.35;cursor:default}
+.slot button:disabled{opacity:.5;cursor:default}
 .srow2{display:flex;gap:12px;margin-top:16px}
 .srow2 button{
   flex:1;font-family:var(--display);font-size:17px;letter-spacing:4px;
@@ -3257,7 +3257,7 @@ function finish(win,loseMsg){
       if(mvp&&score(mvp)>0){
         ov.querySelector('.sub').innerHTML+=
           `<br><span style="color:#ffd24a">本章 MVP　${mvp.name}　击破 ${mvp.kills||0} 将 · 伤害 ${mvp.dmgSum||0}</span>`+
-          `<br><span style="font-size:11.5px;color:rgba(232,220,192,.55)">${party.map(u=>`${u.name} ${u.kills||0}破·${u.dmgSum||0}伤`).join('　')}</span>`;
+          `<br><span style="font-size:11.5px;color:rgba(232,220,192,.75)">${party.map(u=>`${u.name} ${u.kills||0}破·${u.dmgSum||0}伤`).join('　')}</span>`;
       }
       // 三星战功：速胜 / 无人阵亡 / 宝物全收（外传不计）
       if(!isExtra){
@@ -3267,8 +3267,8 @@ function finish(win,loseMsg){
         if(!fallenFlag)bits|=2;
         if(treasures.length===0)bits|=4;
         const labels=[[1,`速胜（≤${par}回合）`],[2,'无人阵亡'],[4,'宝物全收']];
-        const starStr=labels.map(([b,n])=>`<span style="color:${bits&b?'#ffd24a':'rgba(232,220,192,.3)'}">${bits&b?'★':'☆'}${n}</span>`).join('　');
-        ov.querySelector('.sub').innerHTML+=`<br><span style="font-size:12.5px">战功　${starStr}　<span style="color:rgba(232,220,192,.5)">每★1成就点</span></span>`;
+        const starStr=labels.map(([b,n])=>`<span style="color:${bits&b?'#ffd24a':'rgba(232,220,192,.6)'}">${bits&b?'★':'☆'}${n}</span>`).join('　');
+        ov.querySelector('.sub').innerHTML+=`<br><span style="font-size:12.5px">战功　${starStr}　<span style="color:rgba(232,220,192,.7)">每★1成就点</span></span>`;
         codexMark(c=>{
           const cc=campCodex(c);
           cc.stars=cc.stars||{};
@@ -3304,7 +3304,7 @@ function finish(win,loseMsg){
         const grade=total>=820?'S':total>=560?'A':total>=380?'B':'C';
         ov.querySelector('.sub').innerHTML+=
           `<br><span style="font-family:var(--display);font-size:22px;color:${grade==='S'?'#ffd24a':grade==='A'?'#e8c655':'#c9b896'}">战役总评　${grade} 级 · ${total} 分</span>`+
-          `<br><span style="font-size:11.5px;color:rgba(232,220,192,.55)">难度 ${diffPct}% × ${ngPlus+1}周目 · 全程 ${runTurns} 回合（均 ${avg.toFixed(1)}）</span>`;
+          `<br><span style="font-size:11.5px;color:rgba(232,220,192,.75)">难度 ${diffPct}% × ${ngPlus+1}周目 · 全程 ${runTurns} 回合（均 ${avg.toFixed(1)}）</span>`;
         const daoTitle=dao>=3?'仁德之主 · 箪食壶浆，万民归心':dao<=-3?'乱世枭雄 · 威加海内，群雄俯首':'中庸之道 · 恩威并济，社稷自安';
         ov.querySelector('.sub').innerHTML+=
           `<br><span style="color:#c9b896">道路注定——<b style="color:${dao>=3?'#9fd089':dao<=-3?'#e8845a':'#e8c655'}">${daoTitle}</b></span>`;
@@ -5268,7 +5268,7 @@ function drawUnits(time){
     if(u.alive){
       ctx.fillStyle=u.side==='P'?'rgba(34,52,78,.88)':(u.boss?'rgba(120,32,22,.9)':'rgba(94,72,22,.88)');
       ctx.beginPath();ctx.roundRect(bxp,byp,15,15,3);ctx.fill();
-      ctx.strokeStyle='rgba(232,220,192,.4)';ctx.lineWidth=1;ctx.stroke();
+      ctx.strokeStyle='rgba(232,220,192,.62)';ctx.lineWidth=1;ctx.stroke();
       ctx.fillStyle='#efe5cc';
       ctx.font='10px "Noto Serif SC","Songti SC",serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
@@ -5689,7 +5689,7 @@ function renderPrep(animate){
       ultSelHtml='<br><span style="color:#ffb066">必杀任选：</span>'+pool.map((o,oi)=>
         u.lv>=o.lv
           ?`<button class="depBtn ${cur===oi?'on':''}" data-ultsel="${ri}:${oi}" style="width:auto;padding:2px 8px;font-size:12px;letter-spacing:1px" title="${o.desc}">${o.label}</button>`
-          :`<span style="color:rgba(232,220,192,.35)">　${o.label}·Lv${o.lv}解锁</span>`
+          :`<span style="color:rgba(232,220,192,.6)">　${o.label}·Lv${o.lv}解锁</span>`
       ).join(' ');
     }
     const promo=PROMOS[u.kind];
@@ -5698,9 +5698,9 @@ function renderPrep(animate){
     const canAwake=aw&&u.promoted&&!u.awakened&&u.lv>=AWAKE_LV;
     let promoTag=u.promoted?`<br><span style="color:#ffd24a">「${u.promoted}」${u.awakened?`<span style="color:#ff9a3c">⟡「${u.awakened}」</span>`:''}</span>`
       :canPromo?`<br><button class="depBtn on" data-promo="${ri}" style="width:auto;padding:3px 10px" title="${promo.desc}">转职 → ${promo.n}</button>`
-      :promo?`<br><span style="color:rgba(232,220,192,.35)">Lv${PROMO_LV} 可转职 ${promo.n}</span>`:'';
+      :promo?`<br><span style="color:rgba(232,220,192,.6)">Lv${PROMO_LV} 可转职 ${promo.n}</span>`:'';
     if(canAwake)promoTag+=` <button class="depBtn on" data-awake="${ri}" style="width:auto;padding:3px 10px;color:#ff9a3c;border-color:#ff9a3c" title="${aw.desc}">觉醒 ⟡ ${aw.n}</button>`;
-    else if(u.promoted&&!u.awakened&&aw)promoTag+=` <span style="color:rgba(232,220,192,.35)">Lv${AWAKE_LV} 可觉醒</span>`;
+    else if(u.promoted&&!u.awakened&&aw)promoTag+=` <span style="color:rgba(232,220,192,.6)">Lv${AWAKE_LV} 可觉醒</span>`;
     return `<div class="prow ${animate?'anim':''} ${u.dep?'':'bench'}" style="${animate?`animation-delay:${ri*0.06}s`:''}">
       <button class="depBtn ${u.dep?'on':''}" data-dep="${ri}" ${u.leader?'disabled':''} title="${u.leader?'主帅必须出战':'点击切换出战/留守'}">${u.dep?'出战':'留守'}</button>
       <canvas id="pcv${ri}" width="62" height="76"></canvas>
@@ -7517,7 +7517,7 @@ function renderCodex(){
           const d=new Date(s.date);
           const pad=x=>String(x).padStart(2,'0');
           const dt=s.dao>=3?'仁德之主':s.dao<=-3?'乱世枭雄':s.dao!==undefined?'中庸之道':'';
-          return `<b>${s.g} 级</b>　难度 ${s.d}% · ${s.ng+1}周目 · ${s.t} 回合${dt?` · ${dt}`:''}　<span style="color:rgba(232,220,192,.45)">${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}</span>`;
+          return `<b>${s.g} 级</b>　难度 ${s.d}% · ${s.ng+1}周目 · ${s.t} 回合${dt?` · ${dt}`:''}　<span style="color:rgba(232,220,192,.66)">${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}</span>`;
         }).join('<br>')+'</div>'
       :'<div class="cstamp" style="color:var(--paper-dim)">—— 尚未通关 ——</div>';
   }
@@ -7536,7 +7536,7 @@ function renderCodex(){
   html+=`<h3>成就 ${achGot.length} / ${ACHV.length}</h3><div class="cgrid">`+
     ACHV.map(a=>{
       const has=achGot.includes(a);
-      return `<span class="cchip ${has?'gotcha':'locked'}" title="${a.d}">${has?'<i>成</i>':''}${a.n}<span style="color:rgba(232,220,192,.45)">　${a.d}</span></span>`;
+      return `<span class="cchip ${has?'gotcha':'locked'}" title="${a.d}">${has?'<i>成</i>':''}${a.n}<span style="color:rgba(232,220,192,.66)">　${a.d}</span></span>`;
     }).join('')+'</div>';
   document.getElementById('codexBody').innerHTML=html;
 }
