@@ -1963,7 +1963,7 @@ function ultTargets(u){
   if(ult.type==='single'||ult.type==='triple')return alive('E').filter(e=>shapeOk(u,e.x-u.x,e.y-u.y));
   return [u];
 }
-async function castUlt(u){
+async function castUlt(u,target){
   const ult=ULTS[u.name];
   hideMenu();state='busy';
   sfx.ult();
@@ -1991,7 +1991,8 @@ async function castUlt(u){
     }
     log(`${u.name} 发动【${ult.label}】，固守如山！`,'good');
   }else if(ult.type==='single'){
-    const ts=ultTargets(u).sort((a,b)=>a.hp-b.hp);
+    // 玩家选中的目标优先；无指定时回退为锁定血量最低者
+    const ts=target?[target]:ultTargets(u).sort((a,b)=>a.hp-b.hp);
     if(ts[0]){
       await animLunge(u,ts[0]);
       sfx.crit();addCritBurst(ts[0].px,ts[0].py);shakeT=.5;
@@ -2385,7 +2386,16 @@ menuEl.addEventListener('click',async e=>{
     return;
   }
   if(act==='back'){showMenu(selected);return;}
-  if(act==='ult'){await castUlt(selected);return;}
+  if(act==='ult'){
+    const ult=ULTS[selected.name];
+    if(ult&&ult.type==='single'){ // 单体必杀：与攻击一致，红格点选目标
+      const tiles=new Set(ultTargets(selected).map(e=>key(e.x,e.y)));
+      targeting={kind:'ult',tiles};
+      hideMenu();state='targeting';
+      return;
+    }
+    await castUlt(selected);return;
+  }
   if(act==='recruit'){
     const t=units[+btn.dataset.ti];
     if(t&&t.alive&&t.side==='E'&&recruitReady(t))await doRecruit(selected,t);
@@ -2476,7 +2486,11 @@ cv.addEventListener('mousemove',e=>{
     if(target){
       hoverTarget=target;
       if(targeting.kind==='attack')forecastAttack(selected,target);
-      else{
+      else if(targeting.kind==='ult'){
+        const ult=ULTS[selected.name];
+        const dd=Math.max(1,Math.round(S(selected,'atk')*ult.mult-S(target,'def')*.8));
+        showForecast(`必杀【${ult.label}】→ ${target.name}<br><span class="big">${dd}</span> 必杀伤害（必中）`);
+      }else{
         const s=STRAT[targeting.strat];
         if(s.kind==='dmg')showForecast(`【${s.name}】→ ${target.name}<br><span class="big">${stratDmg(selected,target)}</span> ${s.name}伤害（无视地形）`);
         else showForecast(`【${s.name}】→ ${target.name}<br><span class="big">+${Math.round(S(selected,'int')*1.1)}</span> 恢复兵力`);
@@ -2500,6 +2514,11 @@ function mobPreview(target){
   if(targeting.kind==='attack'){
     const [lo,hi]=dmgRange(selected,target);
     return `${selected.name} → ${target.name}　伤害 ${lo}~${hi}　敌剩 ${Math.max(0,target.hp-hi)}~${Math.max(0,target.hp-lo)}<br><b style="color:#e8c655">再点一次确认攻击 · 长按取消</b>`;
+  }
+  if(targeting.kind==='ult'){
+    const ult=ULTS[selected.name];
+    const dd=Math.max(1,Math.round(S(selected,'atk')*ult.mult-S(target,'def')*.8));
+    return `必杀【${ult.label}】→ ${target.name}　伤害 ${dd}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
   }
   const s=STRAT[targeting.strat];
   if(s.kind==='dmg')return `【${s.name}】→ ${target.name}　伤害 ${stratDmg(selected,target)}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
@@ -2556,6 +2575,7 @@ cv.addEventListener('click',async e=>{
       state='busy';
       const tg=targeting;targeting=null;showForecast('');
       if(tg.kind==='attack')await doAttack(u,target);
+      else if(tg.kind==='ult'){await castUlt(u,target);return;} // castUlt 内部已结算行动
       else await doStrategy(u,tg.strat,target);
       selected=u;
       await finishAction();
@@ -3991,7 +4011,7 @@ function loop(t){
     fillTiles(landSet,'rgba(90,140,210,.35)','rgba(140,180,235,.5)');
   }
   if(state==='targeting'&&targeting){
-    const c=targeting.kind==='attack'||STRAT[targeting.strat]?.kind==='dmg'
+    const c=targeting.kind==='attack'||targeting.kind==='ult'||STRAT[targeting.strat]?.kind==='dmg'
       ?['rgba(200,60,40,.42)','rgba(255,140,110,.7)']
       :['rgba(70,170,110,.42)','rgba(150,230,170,.7)'];
     fillTiles(targeting.tiles,c[0],c[1]);
