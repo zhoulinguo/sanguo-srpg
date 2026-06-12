@@ -637,6 +637,9 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <h3 class="sec">军情快报 · 战前一令</h3>
     <div class="phead">出阵前可颁布一道军令（耗军资，仅本场战斗生效）——再点一次可撤回退款。</div>
     <div id="prepOrders"></div>
+    <h3 class="sec">商队贸易 · 低买高卖</h3>
+    <div class="phead">行情每章浮动 ±40%（<span style="color:#9fc068">绿=低价宜囤</span>　<span style="color:#e8845a">红=高价宜抛</span>）；货舱运力 20。</div>
+    <div id="prepTrade"></div>
     <h3 class="sec">锻造坊 · 淬火砺刃</h3>
     <div class="phead">按武器种类强化，全军同名武器共享；每级武力 +2，至多 +3，越锻越贵。</div>
     <div id="prepForge"></div>
@@ -1469,7 +1472,8 @@ let CHAPTERS=[
     U({name:'韩瑶',g:'瑶',cls:'猛将',kind:'cav',side:'E',fac:'wei',x:12,y:7,hp:140,atk:32,def:14,mov:6,mounted:true,awakeR:5,crit:.16,drop:'shangyao'}),
     U({name:'韩琪',g:'琪',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:14,y:3,hp:145,atk:33,def:16,mov:5,awakeR:5,crit:.16,drop:'lingzhi'}),
     U({name:'韩琼',g:'琼',cls:'猛将',kind:'guard',side:'E',fac:'wei',x:14,y:7,hp:145,atk:32,def:17,mov:5,rngShape:'square',awakeR:5,crit:.15,drop:'danyao'}),
-    U({name:'韩德',g:'德',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:14,y:5,hp:210,atk:37,def:20,mov:5,boss:true,awakeR:4,crit:.2,drop:'longdanqiang'}),
+    U({name:'韩德',g:'德',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:14,y:5,hp:210,atk:37,def:20,mov:5,boss:true,awakeR:4,crit:.2,drop:'longdanqiang',
+        phase2:{hpr:.5,title:'怒 发 冲 冠',line:[['韩德','四子之仇——韩德今日不死不休！！']],atk:8,crit:.1,heal:.2,desc:'丧子之痛化作疯狂——攻击与暴击大幅提升！'}}),
   ];},
  },
  {
@@ -1648,6 +1652,88 @@ function barrelAt(x,y){return barrels.find(b=>b.x===x&&b.y===y);}
 let fireTiles=[]; // 燃烧地块：火计/油桶留下，停留其上每回合受伤，持续数回合
 let bondExp={}; // 羁绊熟练：并肩作战回合数，C→B(8)→A(18) 加成递增
 let warOrder=null; // 战前军情：备战时颁布，仅本场战斗生效
+let chains={}; // 奇遇事件链进度（id → 已完成步数；-1 表示链已断）
+let cargo={}; // 商队货舱（低买高卖，运力上限 20）
+const GOODS=[
+  {k:'silk', n:'蜀锦',base:200},
+  {k:'salt', n:'盐铁',base:150},
+  {k:'horse',n:'战马',base:400},
+  {k:'tea',  n:'茶砖',base:100},
+];
+const CARGO_CAP=20;
+function goodPrice(gi){ // 价格按章节确定性浮动 ±40%
+  return Math.max(20,Math.round(GOODS[gi].base*(0.6+hash(prepChap*7+gi*13+1,ngPlus*17+gi*31+3)*0.8)/5)*5);
+}
+function cargoTotal(){return Object.values(cargo).reduce((a,b)=>a+b,0);}
+/* 奇遇链：跨章节多步剧情，备战时弹出抉择，善缘自有后报 */
+const CHAINS=[
+ {id:'soldier',camp:'zhaoyun',steps:[
+  {at:2,q:'营外蜷着一名<b>盲眼老兵</b>，自称当年随卢植讨过黄巾，如今无家可归——',
+   a:{t:'收留军中，好生供养（耗 200 金）',cond:()=>gold>=200,fx:()=>{gold-=200;return '老兵泣谢。他枯坐校场，侧耳听了一下午操练。';}},
+   b:{t:'给些干粮，送他离开',fx:()=>{chains.soldier=-1;return '老兵蹒跚远去，背影消失在官道尽头。';}}},
+  {at:5,q:'盲眼老兵摸到张飞帐前：「将军的枪，风声太躁。老朽……斗胆指点一二？」',
+   a:{t:'让张飞虚心受教',fx:()=>{const u=roster.find(x=>x.name==='张飞');if(u){gainExp(u,80);}return '一夜枪啸。张飞出帐时若有所思——经验大涨！';}},
+   b:{t:'莫要打扰猛将歇息',fx:()=>{return '老兵默默退下，无人知他叹了什么。';}}},
+  {at:9,q:'老兵忽然跪地，老泪纵横：「这杆枪的声音……是<b>龙胆枪</b>！老朽当年为它淬过火！」他颤手取出一块奇铁——',
+   a:{t:'请他为神兵重新淬火',fx:()=>{if((forge.longdanqiang||0)<3){forge.longdanqiang=(forge.longdanqiang||0)+1;return '炉火三日不熄——龙胆亮银枪 锻+1！';}bag.lingzhi=(bag.lingzhi||0)+2;return '神兵已至极限，老人把奇铁换成了两株灵芝相赠。';}},
+   b:{t:'收下奇铁，让老人歇着',fx:()=>{gold+=600;return '奇铁卖了好价钱：+600 金。老人笑骂一声「俗物」。';}}},
+ ]},
+ {id:'merchant',camp:'zhaoyun',steps:[
+  {at:4,q:'一名<b>西域商人</b>兜售半卷焦黑的地图：「三百金，藏宝图——只剩半张，看缘分。」',
+   a:{t:'买下残卷（耗 300 金）',cond:()=>gold>=300,fx:()=>{gold-=300;return '残卷入手，墨迹指向汉中以北的群山。';}},
+   b:{t:'江湖骗子，轰走',fx:()=>{chains.merchant=-1;return '商人耸耸肩，消失在人群里。';}}},
+  {at:7,q:'按残卷指引挖开一处山洞，找到一只朽坏的木箱——以及压在箱底的<b>另半张地图</b>。',
+   a:{t:'开箱',fx:()=>{bag.danyao=(bag.danyao||0)+2;gold+=300;return '箱中丹药×2、三百金——而完整的地图指向了天水！';}}},
+  {at:12,q:'天水城外，地图终点。铲落处铮然一声——一只青铜匣静卧土中。',
+   a:{t:'开匣',fx:()=>{bag.bazhen=(bag.bazhen||0)+1;gold+=500;return '匣中竟是一座【八阵图】与五百金——商人诚不我欺！';}}},
+ ]},
+ {id:'scholar',camp:'caocao',steps:[
+  {at:1,q:'路旁一名<b>落难书生</b>盘缠被劫，欲投奔兖州投亲不得——',
+   a:{t:'赠一百金盘缠（耗 100 金）',cond:()=>gold>=100,fx:()=>{gold-=100;return '书生深揖到地：「他日必报！」';}},
+   b:{t:'乱世自顾不暇',fx:()=>{chains.scholar=-1;return '书生黯然离去。';}}},
+  {at:4,q:'濮阳城下，一小吏夜半缒城而出——竟是当年的书生！他献上城防布略——',
+   a:{t:'重赏，依计而行',fx:()=>{const u=roster.find(x=>x.name==='荀彧');if(u)gainExp(u,80);return '荀彧连夜推演布略，获益匪浅——经验大涨！';}}},
+  {at:7,q:'书生已官至主簿，专程来谢：「当年百金，今日奉还万一。」他献上一部手抄孤本——',
+   a:{t:'欣然受之',fx:()=>{bag.bingshu=(bag.bingshu||0)+1;gold+=400;return '获【兵法书】与四百金。善缘善果。';}}},
+ ]},
+];
+function chainStepFor(i){
+  for(const c of CHAINS){
+    if(c.camp!==activeCamp.key)continue;
+    const done=chains[c.id]||0;
+    if(done<0||done>=c.steps.length)continue;
+    if(c.steps[done].at===i)return {chain:c,step:c.steps[done]};
+  }
+  return null;
+}
+function showChain(hit){
+  const st=hit.step;
+  document.getElementById('choiceQ').innerHTML='【奇遇】'+st.q;
+  const bA=document.getElementById('choiceA'),bB=document.getElementById('choiceB');
+  const pick=opt=>{
+    sfx.select();
+    let msg='';
+    try{msg=opt.fx?opt.fx():'';}catch(e){}
+    if(chains[hit.chain.id]!==-1)chains[hit.chain.id]=(chains[hit.chain.id]||0)+1;
+    document.getElementById('choice').classList.add('hidden');
+    const jl=document.getElementById('prepJoin');
+    jl.style.display='';
+    jl.innerHTML='【奇遇】'+msg;
+    renderPrep(false);
+  };
+  const aOk=!st.a.cond||st.a.cond();
+  bA.innerHTML=st.a.t+(aOk?'':'（条件不足）');
+  bA.disabled=!aOk;
+  bA.onclick=()=>{if(!aOk)return;pick(st.a);};
+  if(st.b){
+    bB.style.display='';
+    bB.innerHTML=st.b.t;
+    bB.onclick=()=>pick(st.b);
+  }else{
+    bB.style.display='none';
+  }
+  document.getElementById('choice').classList.remove('hidden');
+}
 let maxChap=0; // 战役最远进度（战记选关解锁上限）
 let fallenFlag=false; // 本章是否有我方武将阵亡（三星战功·无伤）
 let retryN=0; // 本章败北重试次数（越挫越勇：每败一次全军伤害+5%/受伤-4%，至多5层）
@@ -2033,6 +2119,8 @@ function snapshotRoster(){
     bag:{...bag},
     forge:{...forge},
     bondExp:{...bondExp},
+    chains:{...chains},
+    cargo:{...cargo},
     dao,
     gold,
   };
@@ -2042,6 +2130,8 @@ function restoreRoster(snap){
   bag={...snap.bag};
   forge={...(snap.forge||{})};
   bondExp={...(snap.bondExp||{})};
+  chains={...(snap.chains||{})};
+  cargo={...(snap.cargo||{})};
   dao=snap.dao||0;
   gold=snap.gold;
   roster=snap.units.map(deserRosterUnit);
@@ -2716,6 +2806,10 @@ async function doDamage(target,dmg,color='#ffd9c4'){
   target.awake=true;
   addRage(target,30);
   addFloat(target.px,target.py-26,String(dmg),color);
+  if(target.alive&&target.hp>0&&target.boss&&target.phase2&&!target.phased
+     &&target.hp<=target.maxhp*target.phase2.hpr){
+    await bossPhase(target);
+  }
   if(target.hp<=0&&target.side==='P'&&!target.npc&&!target.temp){
     if(target.leader&&talentOn('t_lamp')&&!lampUsed){
       lampUsed=true;
@@ -2846,6 +2940,44 @@ async function guardCheck(e){
     gainExp(g,gd*.5+(dead?35:0));addRage(g,25);addStat(g,gd,dead);
     if(checkEnd())return;
   }
+}
+/* 多阶段 BOSS：血量跌破阈值触发变身（台词/强化/回血/召唤亲卫），每战一次 */
+async function bossPhase(t){
+  t.phased=true;
+  const p=t.phase2;
+  sfx.ult();flashT=.5;shakeT=.6;
+  addCritBurst(t.px,t.py);
+  banner(p.title||'魔 神 变');
+  await sleep(900);
+  if(p.line)await say(p.line,2500);
+  if(p.atk)t.atk+=p.atk;
+  if(p.def)t.def+=p.def;
+  if(p.crit)t.crit=(t.crit||.12)+p.crit;
+  if(p.heal){
+    const h=Math.min(t.maxhp-t.hp,Math.round(t.maxhp*p.heal));
+    if(h>0){t.hp+=h;sfx.heal();addHealFx(t.x,t.y);addFloat(t.px,t.py-30,'+'+h,'#b8e986');}
+  }
+  if(p.strats){
+    p.strats.forEach(k2=>{if(!t.strats.includes(k2))t.strats.push(k2);});
+    t.maxmp=Math.max(t.maxmp,99);t.mp=t.maxmp;t.int=Math.max(t.int,40);
+  }
+  if(p.summonN){
+    let n=0;
+    for(let r=1;r<=2&&n<p.summonN;r++)for(let dx=-r;dx<=r&&n<p.summonN;dx++)for(let dy=-r;dy<=r&&n<p.summonN;dy++){
+      if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+      const nx=t.x+dx,ny=t.y+dy;
+      if(!inMap(nx,ny)||unitAt(nx,ny)||tch(nx,ny)==='w'||tch(nx,ny)==='m')continue;
+      const m=U({name:p.minion||'亲卫死士',g:'卫',cls:'贼兵',kind:'brig',side:'E',fac:t.fac,x:nx,y:ny,
+        hp:Math.round(t.maxhp*.32),atk:Math.round(t.atk*.55),def:Math.round(t.def*.5),mov:5,awakeR:99,crit:.12});
+      m.awake=true;
+      units.push(m);n++;
+      addFloat(m.px,m.py-26,'召 唤','#cf9ae4');
+    }
+    units.forEach((u2,i2)=>u2._i=i2);
+  }
+  log(`<b>${t.name}</b> ${p.desc||'气势骤变，进入第二阶段！'}`,'hit');
+  updateHud();
+  await sleep(500);
 }
 async function doAttack(a,d){
   // 历史单挑事件：固定场景，每章一次，仅玩家主动发起，触发后替代本次普通攻击
@@ -5467,6 +5599,8 @@ function showChoice(c){
     state='idle';
     saveBattle();
   };
+  bA.disabled=false;
+  bB.style.display='';
   bA.innerHTML=`仁 · ${c.a.t}`;
   bB.innerHTML=`霸 · ${c.b.t}`;
   bA.onclick=()=>pick(c.a,'仁');
@@ -5501,6 +5635,8 @@ function openPrep(i){
   const jl=document.getElementById('prepJoin');
   jl.style.display=joined.length?'':'none';
   if(joined.length)jl.innerHTML=`新武将入伙：<b>${joined.join('、')}</b>！已自动补足等级，可在下方编入出战名单。`;
+  const ev=chainStepFor(i);
+  if(ev&&!CHAPTERS[i].extra)showChain(ev);
 }
 function renderPrep(animate){
   const host=document.getElementById('prepRoster');
@@ -5573,6 +5709,22 @@ function renderPrep(animate){
       <div class="srow"><span class="price">${w.cost} 金</span><button data-order="${k}" ${(!on&&gold<w.cost)?'disabled':''}>${on?'撤 回':'颁 布'}</button></div>
     </div>`;
   }).join('')+'</div>';
+  // 商队贸易
+  document.getElementById('prepTrade').innerHTML='<div class="shopgrid">'+GOODS.map((g,gi)=>{
+    const p=goodPrice(gi);
+    const pct=Math.round(p/g.base*100);
+    const col=pct<=85?'#9fc068':pct>=115?'#e8845a':'var(--paper-dim)';
+    const have=cargo[g.k]||0;
+    return `<div class="shopcard">
+      <div class="sname">${g.n}　<span style="font-size:12px;color:${col}">现价 ${p}（基准 ${g.base}·${pct}%）</span></div>
+      <div class="sdesc">货舱存 ${have} 件${have?`　<span style="color:#e8c655">市值 ${have*p} 金</span>`:''}　货舱 ${cargoTotal()}/${CARGO_CAP}</div>
+      <div class="srow">
+        <button data-buy-good="${gi}" ${gold>=p&&cargoTotal()<CARGO_CAP?'':'disabled'}>购 入</button>
+        <button data-sell-good="${gi}" ${have?'':'disabled'}>卖 出</button>
+        <button data-sellall-good="${gi}" ${have?'':'disabled'}>全 抛</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
   // 锻造坊：列出持有/已装备的武器
   const wkeys=[...new Set([
     ...Object.keys(bag).filter(k=>ITEMS[k].slot==='wp'&&bag[k]>0),
@@ -5603,6 +5755,28 @@ document.getElementById('prepOrders').addEventListener('click',e=>{
     if(warOrder)gold+=WAR_ORDERS[warOrder].cost; // 换令先退款
     gold-=WAR_ORDERS[k].cost;
     warOrder=k;
+  }
+  sfx.coin();
+  renderPrep(false);
+});
+document.getElementById('prepTrade').addEventListener('click',e=>{
+  const bb=e.target.closest('button[data-buy-good]');
+  const sb=e.target.closest('button[data-sell-good]');
+  const ab=e.target.closest('button[data-sellall-good]');
+  const btn=bb||sb||ab;
+  if(!btn||btn.disabled)return;
+  const gi=+(btn.dataset.buyGood??btn.dataset.sellGood??btn.dataset.sellallGood);
+  const g=GOODS[gi], p=goodPrice(gi);
+  if(bb){
+    if(gold<p||cargoTotal()>=CARGO_CAP)return;
+    gold-=p;cargo[g.k]=(cargo[g.k]||0)+1;
+  }else if(sb){
+    if(!(cargo[g.k]>0))return;
+    cargo[g.k]--;gold+=p;
+  }else{
+    const n=cargo[g.k]||0;
+    if(!n)return;
+    cargo[g.k]=0;gold+=p*n;
   }
   sfx.coin();
   renderPrep(false);
@@ -5760,15 +5934,15 @@ function newCrickets(){
   casPick=-1;casSeen=false;
 }
 function casStakeVal(){return casStake==='all'?gold:casStake;}
-function casPayout(win,amt,what){
+function casPayout(win,stakeAmt,net,what){
   if(win){
-    gold+=amt;
+    gold+=stakeAmt+net; // 退还本金 + 净彩
     sfx.coin();
-    casMsg(`<b style="color:#ffd24a">${what}　赢 ${amt} 金！</b>`);
-    casinoStat(cs=>{cs.won+=amt;cs.streak++;cs.bestStreak=Math.max(cs.bestStreak,cs.streak);cs.maxWin=Math.max(cs.maxWin||0,amt);});
+    casMsg(`<b style="color:#ffd24a">${what}　净赢 ${net} 金！</b>`);
+    casinoStat(cs=>{cs.won+=net;cs.streak++;cs.bestStreak=Math.max(cs.bestStreak,cs.streak);cs.maxWin=Math.max(cs.maxWin||0,net);});
   }else{
-    casMsg(`<span style="color:#e8845a">${what}　输了 ${amt} 金……</span>`);
-    casinoStat(cs=>{cs.lost+=amt;cs.streak=0;});
+    casMsg(`<span style="color:#e8845a">${what}　输了 ${stakeAmt} 金……</span>`);
+    casinoStat(cs=>{cs.lost+=stakeAmt;cs.streak=0;});
     if(gold<100){
       casinoStat(cs=>{cs.bankrupt=true;});
       casMsg('<b style="color:#e8845a">「客官，底钱都没了——回吧。」你被请出了赌坊。</b>');
@@ -5817,12 +5991,12 @@ async function casRollDice(){
     casMsg(`${desc}　——你及时撤了注，分文未损。`);
     saveGame(prepChap);
   }else if(casWinBet==='baozi'){
-    if(triple){casinoStat(cs=>{cs.baozi=true;if(wasAll)cs.allin=true;});casPayout(true,stake*24,desc);}
-    else casPayout(false,stake,desc);
+    if(triple){casinoStat(cs=>{cs.baozi=true;if(wasAll)cs.allin=true;});casPayout(true,stake,stake*24,desc);}
+    else casPayout(false,stake,0,desc);
   }else{
     const hit=!triple&&((casWinBet==='big'&&sum>=11)||(casWinBet==='small'&&sum<=10));
     if(hit&&wasAll)casinoStat(cs=>{cs.allin=true;});
-    casPayout(hit,stake,triple?desc+'（围骰通吃）':desc);
+    casPayout(hit,stake,stake,triple?desc+'（围骰通吃）':desc);
   }
   casFocus=false;casBusy=false;
   renderCasino();
@@ -5852,9 +6026,9 @@ async function casFightCrickets(){
   const winner=crickets[winIdx];
   if(winIdx===casPick){
     if(wasAll)casinoStat(cs=>{cs.allin=true;});
-    casPayout(true,Math.floor(stake*my.odds),`【${winner.name}】大获全胜！`);
+    casPayout(true,stake,Math.floor(stake*my.odds)-stake,`【${winner.name}】大获全胜！`);
   }else{
-    casPayout(false,stake,`【${winner.name}】胜出，你押的【${my.name}】败了。`);
+    casPayout(false,stake,0,`【${winner.name}】胜出，你押的【${my.name}】败了。`);
   }
   newCrickets();
   casBusy=false;
@@ -5988,7 +6162,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,bondExp,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,retryN,fallenFlag,lampUsed,
+      chap,diffPct,turn,gold,bag,forge,bondExp,chains,cargo,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,retryN,fallenFlag,lampUsed,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -6001,7 +6175,7 @@ function battlePayload(){
         crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,awakened:u.awakened,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,
         awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,revUsed:!!u.revUsed,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
-        equip:u.equip,drop:u.drop,recruit:u.recruit||null,
+        equip:u.equip,drop:u.drop,recruit:u.recruit||null,phase2:u.phase2||null,phased:!!u.phased,
       })),
   };
 }
@@ -6029,6 +6203,7 @@ function resumeBattle(d){
   renderBase();
   gold=d.gold;bag={...d.bag};forge={...(d.forge||{})};
   bondExp={...(d.bondExp||{})};dao=d.dao||0;warOrder=d.warOrder||null;
+  chains={...(d.chains||{})};cargo={...(d.cargo||{})};
   retryN=d.retryN||0;fallenFlag=!!d.fallenFlag;lampUsed=!!d.lampUsed;
   treasures=(d.treasures||[]).map(t=>({...t}));
   barrels=(d.barrels||[]).map(b=>({...b}));
@@ -6115,7 +6290,8 @@ const CAMP_ZHAOYUN={
       U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'wei',x:18,y:8,hp:130,atk:52,def:10,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
       U({name:'郭淮',g:'淮',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:21,y:10,hp:235,atk:40,def:21,mov:6,awakeR:5,crit:.16,drop:'lingzhi'}),
       U({name:'张郃',g:'郃',cls:'猛将',kind:'cav',side:'E',fac:'wei',x:14,y:6,hp:260,atk:42,def:24,mov:7,mounted:true,awakeR:5,crit:.18,drop:'bawang'}),
-      U({name:'司马懿',g:'懿',cls:'军师',kind:'adv',side:'E',fac:'wei',x:22,y:3,hp:320,mp:99,int:48,atk:34,def:24,mov:5,strats:['fire','poison'],boss:true,awakeR:4,crit:.12,drop:'bingshu'}),
+      U({name:'司马懿',g:'懿',cls:'军师',kind:'adv',side:'E',fac:'wei',x:22,y:3,hp:320,mp:99,int:48,atk:34,def:24,mov:5,strats:['fire','poison'],boss:true,awakeR:4,crit:.12,drop:'bingshu',
+        phase2:{hpr:.5,title:'冢 虎 出 山',line:[['司马懿','善败者不亡……现在，才是仲达的兵法。']],def:4,heal:.35,strats:['thunder'],summonN:2,minion:'宿卫死士',desc:'蛰伏已尽——习得落雷，亲卫来护！'}}),
     ];},
   },
 };
@@ -6359,7 +6535,8 @@ const CAMP_CAOCAO={
       U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'dong',x:13,y:5,hp:80,atk:40,def:7,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
       U({name:'张辽',g:'辽',cls:'猛将',kind:'cav',side:'E',fac:'dong',x:14,y:4,hp:140,atk:31,def:15,mov:7,mounted:true,awakeR:5,crit:.18,drop:'dilu'}),
       U({name:'高顺',g:'顺',cls:'陷阵',kind:'spear',side:'E',fac:'dong',x:14,y:6,hp:150,atk:28,def:20,mov:4,awakeR:5,crit:.12,drop:'bintie'}),
-      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:15,y:5,hp:200,atk:36,def:19,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'chitu'}),
+      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:15,y:5,hp:200,atk:36,def:19,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'chitu',
+        phase2:{hpr:.5,title:'赤 兔 狂 化',line:[['吕布','区区诸侯……也敢伤我？！赤兔——踏碎他们！']],atk:6,heal:.3,desc:'人马合一，杀气滔天——攻势大涨并恢复了体力！'}}),
     ];}},
    {title:'第四章 · 青州平乱',boss:'管亥',map:[
       "..f..tt......f....",".h...tt..g.....f..","......f.....t.....","rrrrrrrrrrrrrrrrrr",
@@ -6491,7 +6668,8 @@ const CAMP_CAOCAO={
           ['曹操','文远！吕布大势已去——以卿之忠义，何不与孤共定天下？'],
           ['张辽','……温侯既败，辽不殉私主。曹公以国士待我，辽，愿效死力！'],
          ]}}),
-      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:12,y:6,hp:240,atk:38,def:21,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'shoumian'}),
+      U({name:'吕布',g:'布',cls:'飞将',kind:'cav',side:'E',fac:'dong',x:12,y:6,hp:240,atk:38,def:21,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.2,drop:'shoumian',
+         phase2:{hpr:.5,title:'困 兽 之 怒',line:[['吕布','大水困得住城，困不住吕奉先！都来送死！']],atk:8,def:2,heal:.25,summonN:2,minion:'陷阵死士',desc:'背水一战，亲卫死士自城中杀出！'}}),
     ];}},
    {title:'第八章 · 粮道护卫战',boss:'韩猛',map:CC_LIANGDAO,deploy:8,weather:'snow',barrels:[[17,6]],
     win:{type:'protect',tiles:[[22,6],[23,6]],need:2,desc:'护送至少 <em>2</em> 辆粮车抵达东侧大营（或击破 <em>韩猛</em>）'},
@@ -6626,7 +6804,8 @@ const CAMP_CAOCAO={
       U({name:'射雕手',g:'雕',cls:'弓手',kind:'archer',side:'E',fac:'wh',x:16,y:7,hp:155,atk:37,def:14,mov:6,rngMin:2,rngMax:2,awakeR:6}),
       U({name:'乌延',g:'延',cls:'猛将',kind:'cav',side:'E',fac:'wh',x:18,y:4,hp:225,atk:39,def:19,mov:7,mounted:true,awakeR:5,crit:.16,drop:'lingzhi'}),
       U({name:'楼班',g:'班',cls:'猛将',kind:'chief',side:'E',fac:'wh',x:18,y:8,hp:225,atk:38,def:20,mov:6,awakeR:5,crit:.15,drop:'shangyao'}),
-      U({name:'蹋顿',g:'顿',cls:'飞将',kind:'cav',side:'E',fac:'wh',x:20,y:6,hp:300,atk:42,def:22,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.18,drop:'dilu'}),
+      U({name:'蹋顿',g:'顿',cls:'飞将',kind:'cav',side:'E',fac:'wh',x:20,y:6,hp:300,atk:42,def:22,mov:7,mounted:true,rngShape:'square',boss:true,awakeR:4,crit:.18,drop:'dilu',
+        phase2:{hpr:.5,title:'单 于 之 怒',line:[['蹋顿','草原的雄鹰，岂会折翼于汉人之手！']],atk:7,heal:.3,summonN:2,minion:'乌桓亲骑',desc:'单于亲卫驰援，杀气更盛！'}}),
     ];},
   },
 };
@@ -6730,7 +6909,7 @@ function godChapter(spec,i){
       x:bc[0],y:bc[1],hp:Math.round((200+d*13)*(spec.bossMul||1)),atk:34+Math.round(d*1.15),def:17+Math.round(d*.6),
       mov:spec.bkind==='cav'?7:5,mounted:spec.bkind==='cav',rngShape:spec.bshape||'diamond',
       strats:spec.bstrats||[],mp:spec.bstrats?99:0,int:spec.bstrats?40+d:10,
-      boss:true,awakeR:4,crit:.18,drop:spec.bdrop||null})));
+      boss:true,awakeR:4,crit:.18,drop:spec.bdrop||null,phase2:spec.phase2||null})));
     return foes;
   }
   const ch={
@@ -6809,8 +6988,10 @@ const GOD_SPECS=[
  {t:'赤壁 · 神火燎原',m:'river',boss:'神都督·周瑜',bcls:'军师',bkind:'adv',bstrats:['fire','firestorm'],bossMul:1.2,barrels:6,
   line:'三江口的东风永不停歇，火船烧了四十年。美周郎的火，今夜由你来熄。'},
  {t:'乌林 · 败走的丞相',m:'xiemin',boss:'魔王·曹操',bossMul:1.25,weather:'rain',
+  phase2:{hpr:.5,title:'心 魔 暴 走',line:[['魔王·曹操','宁教我负天下人……宁教我……负……救、救孤……']],atk:7,heal:.3,desc:'神丝绞紧，心魔彻底失控！'},
   line:'华容道上，被神力吞噬的曹操回过了头。斩断神丝，放他的魂魄归去。'},
  {t:'长坂 · 梦魇重演',m:'ch1',boss:'虚影·赵云',bkind:'cav',bossMul:1.3,bshape:'square',
+  phase2:{hpr:.5,title:'影 之 龙 胆',line:[['虚影·赵云','你的枪法……我也会。七探盘蛇——！']],atk:8,crit:.15,heal:.25,desc:'虚影使出了你的绝技！'},
   line:'坡上单骑救主的身影——是你自己。张角造出了你的影子。证明谁才是真正的常山赵子龙！'},
  {t:'江夏 · 北海遗风',m:'cc2',boss:'锦帆·苏飞',
   recruit:{name:'太史慈',g:'慈',cls:'弓骑',kind:'hcav',hp:250,atk:38,def:16,mov:6,rngMin:1,rngMax:2,mounted:true,awakeR:5,crit:.16,
@@ -6835,6 +7016,7 @@ const GOD_SPECS=[
  {t:'洛阳 · 燃烧的帝都',m:'xiemin',boss:'神使·华雄',winT:'escape',barrels:3,
   line:'洛阳大火映红了时光。带着汉室最后的体面，杀出东门。'},
  {t:'虎牢 · 三英的幻影',m:'cc2',boss:'神化·吕布',bkind:'cav',bossMul:1.45,bshape:'square',
+  phase2:{hpr:.55,title:'神 戟 開 天',line:[['神化·吕布','三英？不够。三十个英雄，也不够！！']],atk:9,heal:.35,summonN:2,minion:'画戟魔影',desc:'画戟劈开时空，魔影列阵！'},
   line:'虎牢关前，神化吕布手中画戟已能劈开山岳。没有三英——你们就是新的传说。'},
  {t:'汜水 · 关前血路',m:'cc2',boss:'鬼将·胡轸',
   line:'汜水关的水是红的，四十年没变过。踏过去。'},
@@ -6845,8 +7027,10 @@ const GOD_SPECS=[
  {t:'曲阳 · 人公祭坛',m:'julu',boss:'人公将军',bossMul:1.2,winT:'survive',turns:10,allies:{turn:5},
   line:'张梁在曲阳血祭十万生魂。撑住——祭坛完成之前他无法全力出手。'},
  {t:'巨鹿外围 · 神坛之下',m:'julu',boss:'大贤良师之影',bcls:'妖术',bkind:'adv',bstrats:['bolt','thunder','firestorm'],bossMul:1.3,weather:'fog',
+  phase2:{hpr:.5,title:'影 之 黄 天',line:[['大贤良师之影','本体八成之力……那便用九成！']],atk:6,heal:.4,summonN:2,minion:'黄巾神兵',desc:'影子汲取神坛之力，伤势尽复大半！'},
   line:'神坛已遥遥在望。张角的影子先于本体而来——它有本体八成的力量。'},
  {t:'巨鹿 · 改写黎明',m:'julu',boss:'黄天·张角',bcls:'妖术',bkind:'adv',bstrats:['bolt','thunder','firestorm','poison'],bossMul:1.8,bdrop:'bingshu',weather:'fog',barrels:4,
+  phase2:{hpr:.55,title:'黄 天 当 立',line:[['黄天·张角','苍天已死！黄天当立！岁在甲子——天下大吉！！'],['赵云','在你成神之前——枪，已至。']],atk:8,def:4,heal:.45,summonN:3,minion:'黄巾神兵',desc:'神坛全力灌注——这是成神前最后的疯狂！'},
   reinforce:(d,spawns,map)=>[
     {turn:4,line:'张角振臂——黄巾神兵自虚空涌出！',units(){return [
       U({name:'黄巾神兵',g:'神',cls:'贼兵',kind:'brig',side:'E',fac:'god',x:map[0].length-2,y:8,hp:160+d*5,atk:30+d,def:14,mov:5,crit:.12}),
@@ -6873,7 +7057,7 @@ function selectCampaign(camp){
   DUELS=camp.duels; LAST_WORDS=camp.lastWords; ULTS=camp.ults;
   AMBUSH_LINES=camp.ambush||{};
   campColor=camp.color; campName=camp.faction; campLeader=camp.leader;
-  bag={...camp.bag}; gold=500; forge={}; bondExp={}; dao=0;
+  bag={...camp.bag}; gold=500; forge={}; bondExp={}; dao=0; chains={}; cargo={};
   document.querySelector('h1').innerHTML=camp.title+'<span class="seal">'+camp.seal+'</span>';
   document.getElementById('campPre').textContent=camp.pre;
   document.getElementById('campBig').innerHTML=camp.big;
@@ -6910,7 +7094,7 @@ function startNewRun(){
   sfx.select();
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
-  bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;
+  bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;chains={};cargo={};
   if(talentOn('t_gold'))gold+=500;
   if(talentOn('t_supply')){bag.shangyao=(bag.shangyao||0)+3;bag.danyao=(bag.danyao||0)+2;}
   if(talentOn('t4_smuggle')){
