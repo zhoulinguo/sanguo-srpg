@@ -408,20 +408,20 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 #sysBtn:disabled{opacity:.4;cursor:default}
 #fastBtn.on{color:#ffd24a;border-color:rgba(255,210,74,.6)}
 #dangerBtn.on{color:#e87a6a;border-color:rgba(212,121,106,.65)}
-#sysMenu,#codex,#choice,#chlog,#talent,#casino{
+#sysMenu,#codex,#choice,#chlog,#talent,#casino,#duel{
   position:fixed;inset:0;z-index:82;display:flex;align-items:center;justify-content:center;
   background:rgba(13,10,7,.82);
 }
-#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden,#talent.hidden,#casino.hidden{display:none}
-#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner,#talent .sinner,#casino .sinner{
+#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden,#talent.hidden,#casino.hidden,#duel.hidden{display:none}
+#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner,#talent .sinner,#casino .sinner,#duel .sinner{
   width:min(540px,92vw);
   background:linear-gradient(170deg,#262017,#171310);
   border:1px solid rgba(201,162,39,.5);border-radius:6px;
   padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.7);
   animation:popIn .3s ease both;
 }
-#sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2,#casino h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
-#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote,#casino .snote{font-size:12.5px;color:var(--paper);opacity:.85;margin-bottom:12px;letter-spacing:1px;line-height:1.8}
+#sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2,#casino h2,#duel h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
+#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote,#casino .snote,#duel .snote{font-size:12.5px;color:var(--paper);opacity:.85;margin-bottom:12px;letter-spacing:1px;line-height:1.8}
 #codex .sinner{width:min(680px,94vw);max-height:88vh;overflow-y:auto}
 #chlog .sinner{width:min(620px,94vw);max-height:88vh;overflow-y:auto}
 #casino .sinner{width:min(620px,94vw);max-height:90vh;overflow-y:auto}
@@ -764,6 +764,19 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
       <button class="casBtn" id="casTonic">以 3000 金兑一颗随机培养丹（永久属性）</button>
     </div>
     <div class="srow2"><button id="closeCasino">离 场</button></div>
+  </div>
+</div>
+
+<div id="duel" class="hidden">
+  <div class="sinner" style="width:min(480px,94vw)">
+    <h2>单 挑</h2>
+    <div id="duelHp" style="display:flex;justify-content:space-between;font-size:13px;color:var(--paper);margin:6px 0"></div>
+    <div class="snote" id="duelMsg" style="min-height:40px;color:#ffd24a">两将拍马而出，阵前对峙——</div>
+    <div class="srow2" style="gap:8px">
+      <button class="casBtn" data-pose="atk" style="flex:1">攻 势<br><span style="font-size:11px;opacity:.8">克破·惧守</span></button>
+      <button class="casBtn" data-pose="def" style="flex:1">守 势<br><span style="font-size:11px;opacity:.8">克攻·惧破</span></button>
+      <button class="casBtn" data-pose="brk" style="flex:1">破 招<br><span style="font-size:11px;opacity:.8">克守·惧攻</span></button>
+    </div>
   </div>
 </div>
 
@@ -1706,7 +1719,7 @@ function itemDesc(k){
   if(it.crit)p.push('暴击+'+Math.round(it.crit*100)+'%');
   if(it.srng)p.push('策略范围+'+it.srng);
   if(forge[k])p.push('锻+'+forge[k]+'（武力再+'+forgeBonus(forge[k])+'）');
-  if(it.legend)p.push(`★神兵 · ${it.owner}专属：武力再+${it.ownerAtk}，${it.fxDesc}`);
+  if(it.legend)p.push(`★神兵 · ${it.owner}专属：武力再+${it.ownerAtk}${it.fx?'，'+it.fxDesc:''}${LEGEND_AWAKE[k]?'　<b style="color:#ffd24a">【已觉醒·加成翻倍·暴击+12%】</b>':`　（${it.owner}持此一战斩 ${LEGEND_AWAKEN_N} 将即觉醒）`}`);
   return p.join('　');
 }
 let bag={}, gold=500;
@@ -1929,7 +1942,7 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
     const k=u.equip[sl], it=k&&ITEMS[k];
     if(it&&it[stat])v+=it[stat];
     if(sl==='wp'&&stat==='atk'&&k&&forge[k])v+=forgeBonus(forge[k]);
-    if(sl==='wp'&&stat==='atk'&&it&&it.legend&&it.owner===u.name)v+=it.ownerAtk||0; // 神兵认主
+    if(sl==='wp'&&stat==='atk'&&it&&it.legend&&it.owner===u.name)v+=(it.ownerAtk||0)*(LEGEND_AWAKE[k]?2:1); // 神兵认主（觉醒翻倍）
     if(it&&it.legend&&it.owner===u.name&&it.ownerBonus&&it.ownerBonus[stat])v+=it.ownerBonus[stat]; // 名宝认主
   }
   if(u.side==='P'&&!u.npc&&warOrder){
@@ -1967,6 +1980,7 @@ function curWeather(){
 }
 function critOf(u){
   if(legendFx(u)==='sure_crit')return 1; // 青龙偃月：刀刀暴击
+  if(legendAwakened(u))return Math.min(1,(u.crit??.12)+.12); // 神兵觉醒：暴击 +12%
   let c=u.crit??.12;
   if(u.side==='P'&&!u.npc&&warOrder&&WAR_ORDERS[warOrder].crit)c+=WAR_ORDERS[warOrder].crit;
   if(u.side==='P'&&!u.npc&&talentOn('t_xuanyuan'))c+=.08;
@@ -2017,6 +2031,13 @@ function legendFx(u){
   const k=u&&u.equip&&u.equip.wp, it=k&&ITEMS[k];
   return (it&&it.legend&&it.owner===u.name)?it.fx:null;
 }
+let LEGEND_AWAKE={}; // 神兵觉醒缓存（图鉴持久）
+function loadLegendAwake(){try{LEGEND_AWAKE=loadCodex().legendAwake||{};}catch(e){LEGEND_AWAKE={};}}
+function legendAwakened(u){ // 命定之主持已觉醒神兵
+  const k=u&&u.equip&&u.equip.wp, it=k&&ITEMS[k];
+  return !!(it&&it.legend&&it.owner===u.name&&LEGEND_AWAKE[k]);
+}
+const LEGEND_AWAKEN_N=3; // 单场用神兵斩将达此数即觉醒
 function extraReach(u){return (legendFx(u)==='reach'?1:0)+(typeof rbHas==='function'&&rbHas(u,'reach')?1:0);}
 function gearFx(u,fx){
   if(!u||!u.equip)return false;
@@ -3341,6 +3362,94 @@ function findAssist(a,d){
   }
   return null;
 }
+/* ===================== 单挑·攻守破博弈 ===================== */
+const DUEL_MELEE=['cav','guard','chief','lord','spear','vanguard','brig'];
+function duelTarget(u){ // 近战猛将类，相邻敌方主将/猛将
+  if(!DUEL_MELEE.includes(u.kind))return null;
+  return alive('E').find(e=>Math.max(Math.abs(e.x-u.x),Math.abs(e.y-u.y))<=1
+    &&(e.boss||e.cls==='猛将'||e.kind==='chief'));
+}
+let duelState=null;
+function duelHpBar(){
+  const {a,d}=duelState;
+  document.getElementById('duelHp').innerHTML=
+    `<span style="color:#9fc068">${a.name} ${Math.max(0,a.hp)}/${a.maxhp}</span>`
+   +`<span style="color:#e8845a">${d.name} ${Math.max(0,d.hp)}/${d.maxhp}</span>`;
+}
+function startDuel(a,d){
+  hideMenu();
+  duelState={a,d,round:0};
+  duelHpBar();
+  document.getElementById('duelMsg').innerHTML=`<b>${a.name}</b> 拍马提兵，直取 <b>${d.name}</b>——三合见真章！选择你的姿态：`;
+  document.getElementById('duel').classList.remove('hidden');
+  state='busy';
+}
+// 攻克破、破克守、守克攻
+function duelResolve(pPose){
+  const {a,d}=duelState;
+  const aiPose=['atk','def','brk'][Math.floor(Math.random()*3)];
+  const beats={atk:'brk',brk:'def',def:'atk'};
+  const poseN={atk:'攻势',def:'守势',brk:'破招'};
+  const base=(at,df)=>Math.max(4,Math.round(S(at,'atk')*1.1-S(df,'def')*.5));
+  let log1='';
+  if(pPose===aiPose){
+    const x=Math.round(base(a,d)*.4),y=Math.round(base(d,a)*.4);
+    d.hp=Math.max(0,d.hp-x);a.hp=Math.max(0,a.hp-y);
+    log1=`双方同使<b>${poseN[pPose]}</b>，硬碰硬！${d.name} -${x}，${a.name} -${y}`;
+  }else if(beats[pPose]===aiPose){
+    const x=Math.round(base(a,d)*1.3);
+    d.hp=Math.max(0,d.hp-x);
+    log1=`你的<b>${poseN[pPose]}</b>克制敌之${poseN[aiPose]}——${d.name} 受创 <b>${x}</b>！`;
+  }else{
+    const y=Math.round(base(d,a)*1.3);
+    a.hp=Math.max(0,a.hp-y);
+    log1=`敌之${poseN[aiPose]}克制你的${poseN[pPose]}——${a.name} 受创 <b>${y}</b>！`;
+  }
+  return log1;
+}
+async function duelPick(pPose){
+  if(!duelState)return;
+  const msg=duelResolve(pPose);
+  duelState.round++;
+  duelHpBar();
+  const {a,d}=duelState;
+  document.getElementById('duelMsg').innerHTML=msg;
+  sfx.hit();shakeT=.2;
+  if(a.hp<=0||d.hp<=0||duelState.round>=3){
+    await new Promise(r=>setTimeout(r,700));
+    await endDuel();
+  }
+}
+async function endDuel(){
+  const {a,d}=duelState;
+  document.getElementById('duel').classList.add('hidden');
+  // 同步浮血到棋盘
+  d.px=(d.x+.5)*TILE;d.py=(d.y+.5)*TILE;a.px=(a.x+.5)*TILE;a.py=(a.y+.5)*TILE;
+  let killed=false;
+  if(d.hp<=0){
+    log(`<b>${a.name}</b> 单挑阵斩 <b>${d.name}</b>！威震全军！`,'good');
+    addRage(a,60);gainExp(a,80);
+    killed=await doDamage(d,9999,'#ffd24a');
+  }else if(a.hp<=0){
+    a.hp=1; // 单挑不致死，留一命败退
+    log(`${a.name} 单挑落于下风，险象环生，拨马退回阵中！`,'hit');
+  }else{
+    // 三合未分，按剩余血比判优劣
+    const ar=a.hp/a.maxhp,dr=d.hp/d.maxhp;
+    if(ar>dr){log(`三合已过，<b>${a.name}</b> 占得上风，${d.name} 气势已夺！`,'good');addRage(a,40);gainExp(a,40);}
+    else log(`三合未分胜负，各自收兵。`,'sys');
+  }
+  duelState=null;
+  selected=a;
+  state='idle';
+  if(checkEnd())return;
+  await finishAction();
+}
+document.querySelectorAll('#duel button[data-pose]').forEach(b=>b.onclick=()=>{
+  if(!duelState)return;
+  sfx.select();
+  duelPick(b.dataset.pose);
+});
 async function doAttack(a,d){
   // 历史单挑事件：固定场景，每章一次，仅玩家主动发起，触发后替代本次普通攻击
   const dk=a.name+'|'+d.name, dk2=d.name+'|'+a.name;
@@ -3397,6 +3506,20 @@ async function doAttack(a,d){
     }
   }
   if(a.side==='P'){gainExp(a,dmg*.5+(dead?50:25));addRage(a,dead?50:25);addStat(a,dmg,dead);}
+  // 神兵觉醒支线：命定之主持神兵单场斩将达标即觉醒（永久）
+  if(dead&&a.side==='P'){
+    const wk=a.equip&&a.equip.wp, wit=wk&&ITEMS[wk];
+    if(wit&&wit.legend&&wit.owner===a.name&&!LEGEND_AWAKE[wk]){
+      a._legendKills=(a._legendKills||0)+1;
+      if(a._legendKills>=LEGEND_AWAKEN_N){
+        LEGEND_AWAKE[wk]=true;
+        codexMark(c=>{c.legendAwake=c.legendAwake||{};c.legendAwake[wk]=true;});
+        sfx.ult();flashT=.4;shakeT=.4;
+        addFloat(a.px,a.py-40,'神兵觉醒！','#ffd24a','huge');
+        log(`<b>${a.name}</b> 重现当年之勇——【${wit.n}】<b style="color:#ffd24a">觉醒</b>！武力加成翻倍、暴击大涨，威能永驻！`,'good');
+      }
+    }
+  }
   if(checkEnd())return;
   // 连弩车：穿透射击，弹道沿线单位皆受七成伤害（敌我不分）
   if(a.pierceLine&&(a.x===d.x||a.y===d.y)){
@@ -3905,6 +4028,9 @@ function showMenu(u){
   const hasItem=Object.keys(bag).some(k=>bag[k]>0&&ITEMS[k].use);
   html+=`<button data-act="item" ${hasItem?'':'disabled'}>道 具</button>`;
   html+=`<button data-act="guard">戒 备<i class="udesc">敌军进入射程时自动反击一次（八成伤害）</i></button>`;
+  // 单挑：近战猛将类相邻敌方主将/猛将时可叫阵
+  const duelT=duelTarget(u);
+  if(duelT)html+=`<button data-act="duel" data-ti="${units.indexOf(duelT)}" class="ultBtn">单 挑 ${duelT.name}<i class="udesc">攻守破博弈 · 三合定胜负 · 胜则重创对手</i></button>`;
   html+=`<button data-act="wait">待 机</button><button data-act="cancel">取 消</button>`;
   menuEl.innerHTML=html;
   menuEl.style.display='flex';
@@ -3966,6 +4092,11 @@ menuEl.addEventListener('click',async e=>{
     addFloat(selected.px,selected.py-30,'戒 备','#ffd24a');
     log(`${selected.name} 进入戒备，弓上弦、刀出鞘`,'sys');
     hideMenu();await finishAction();return;
+  }
+  if(act==='duel'){
+    const t=units[+btn.dataset.ti];
+    if(t&&t.alive&&t.side==='E')await startDuel(selected,t);
+    return;
   }
   if(act==='atk'){
     const u=selected;
@@ -6309,7 +6440,8 @@ function startChapter(i){
     }
     if(bn){units.forEach((u2,i2)=>u2._i=i2);log(`天赋【撒豆成兵】：${bn} 名豆兵破土而出，本战助阵！`,'good');}
   }
-  loadTalents();
+  loadTalents();loadLegendAwake();
+  party.forEach(u=>u._legendKills=0);
   const talDropped=enforceTalents();
   if(talDropped.length)log(`成就点不足（当前难度赠点 ${diffBonus()}），以下天赋本战未生效：${talDropped.join('、')}`,'hit');
   fallenFlag=false;
@@ -6363,6 +6495,7 @@ function openPrep(i){
   shenXin=3;
   tradeShift={};
   warPlan=null;
+  loadLegendAwake();
   ensureRoster();
   const joined=syncJoins(i);
   // 整理出战名单：主帅必出战，超员的从后往前裁，缺员的按名册顺序补
