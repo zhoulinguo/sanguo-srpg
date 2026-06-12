@@ -2177,7 +2177,7 @@ let PLAYER_BASE=[
   {name:'黄忠',  g:'忠',cls:'弓骑',kind:'hcav', side:'P',x:0,y:0,lv:2,hp:105,atk:30,def:12,mov:6,rngMin:1,rngMax:2,mounted:true,crit:.16,joinCh:7},
 ];
 /* 名册序列化：完整字段，支持劝降而来的编外武将 */
-const ROSTER_FIELDS=['name','g','cls','kind','fac','lv','exp','maxhp','maxmp','int','atk','def','mov','rngMin','rngMax','rngShape','crit','mounted','leader','dep','promoted','awakened','srng','ultSel','tonics'];
+const ROSTER_FIELDS=['name','g','cls','kind','fac','lv','exp','maxhp','maxmp','int','atk','def','mov','rngMin','rngMax','rngShape','crit','mounted','leader','dep','promoted','awakened','srng','ultSel','tonics','rb'];
 function serRosterUnit(u){
   const o={};
   for(const k of ROSTER_FIELDS)o[k]=u[k];
@@ -2226,8 +2226,11 @@ function restoreRoster(snap){
 }
 /* 后期入伙武将按已历章节补成长，免得跟不上大部队 */
 function levelUpTo(u,lv){
+  lv=Math.min(lv,LV_MAX);
   while(u.lv<lv){
-    u.lv++;u.maxhp+=10;u.atk+=2;u.def+=2;u.int+=2;
+    u.lv++;
+    const g=rbGrowth(u.rb);
+    u.maxhp+=g.hp;u.atk+=g.st;u.def+=g.st;u.int+=g.st;
     if(u.maxmp>0)u.maxmp+=5;
   }
   u.hp=u.maxhp;u.mp=u.maxmp;
@@ -2468,7 +2471,7 @@ function rollDmg(a,d){
   const [lo,hi]=dmgRange(a,d);
   let dmg=lo+Math.random()*(hi-lo);
   const crit=Math.random()<critOf(a);
-  if(crit)dmg*=1.5;
+  if(crit)dmg*=(a.rb>=3?2:1.5); // 灭世重瞳：暴伤翻倍
   return {dmg:Math.max(1,Math.round(dmg)),crit};
 }
 function stratDmg(a,d,sk){
@@ -2590,19 +2593,50 @@ function addStat(u,dmg,killed){ // 章节战绩：伤害/击破数（MVP结算�
   u.dmgSum=(u.dmgSum||0)+Math.round(dmg);
   if(killed)u.kills=(u.kills||0)+1;
 }
+/* ===================== 等级与转生 =====================
+   经验需求随等级递增（越往后越慢），上限 Lv100；
+   满级可转生：回 Lv1、保留转职/觉醒、属性留四成、成长 +25%/次，至多九转；
+   第 1/3/7/9 转分别觉醒神级能力 */
+const LV_MAX=100, RB_MAX=9, RB_KEEP=.4;
+const RB_POWERS=[
+  {rb:1,n:'浴火涅槃',d:'每章开战怒气全满'},
+  {rb:3,n:'灭世重瞳',d:'暴击伤害 1.5 → 2 倍'},
+  {rb:7,n:'不灭金身',d:'每章免死一次（1 兵力撑住）'},
+  {rb:9,n:'时空缭乱',d:'每回合首次行动后可再动一次'},
+];
+function rbPowersOf(u){return RB_POWERS.filter(p=>(u.rb||0)>=p.rb);}
+function expNeed(lv){return 100+lv*6;}
+function rbGrowth(rb){return {hp:Math.round(10*(1+(rb||0)*.25)),st:Math.round(2*(1+(rb||0)*.25))};}
+function doRebirth(u){
+  if(u.lv<LV_MAX||(u.rb||0)>=RB_MAX)return false;
+  u.rb=(u.rb||0)+1;
+  u.lv=1;u.exp=0;
+  u.maxhp=Math.max(90,Math.round(u.maxhp*RB_KEEP));
+  u.atk=Math.max(20,Math.round(u.atk*RB_KEEP));
+  u.def=Math.max(10,Math.round(u.def*RB_KEEP));
+  u.int=Math.max(8,Math.round(u.int*RB_KEEP));
+  if(u.maxmp>0)u.maxmp=Math.max(40,Math.round(u.maxmp*RB_KEEP));
+  u.hp=u.maxhp;u.mp=u.maxmp;
+  return true;
+}
 function gainExp(u,amt){
   if(u.side!=='P'||!u.alive)return;
+  if(u.lv>=LV_MAX){u.exp=0;return;} // 满级：唯转生可再进
   u.exp+=Math.round(amt);
-  while(u.exp>=100){
-    u.exp-=100;u.lv++;
-    u.maxhp+=10;u.atk+=2;u.def+=2;u.int+=2;
+  let need=expNeed(u.lv);
+  while(u.exp>=need&&u.lv<LV_MAX){
+    u.exp-=need;u.lv++;
+    const g=rbGrowth(u.rb);
+    u.maxhp+=g.hp;u.atk+=g.st;u.def+=g.st;u.int+=g.st;
     if(u.maxmp>0){u.maxmp+=5;u.mp=Math.min(u.maxmp,u.mp+5);}
     u.hp=Math.min(u.maxhp,u.hp+Math.round(u.maxhp*.25));
-    addFloat(u.px,u.py-30,'升 级 !','#f6d35e',true);
-    log(`<b>${u.name}</b> 升至 ${u.lv} 级！武力、守备上升`, 'good');
+    addFloat(u.px,u.py-30,u.lv>=LV_MAX?'满 级 !':'升 级 !','#f6d35e',true);
+    log(`<b>${u.name}</b> 升至 ${u.lv} 级！${u.lv>=LV_MAX?'已臻凡人极限——备战界面可转生':'武力、守备上升'}`, 'good');
     sfx.levelup();
     checkLearn(u);
+    need=expNeed(u.lv);
   }
+  if(u.lv>=LV_MAX)u.exp=0;
 }
 
 /* ===================== 台词：宿敌对决 / 退场遗言 ===================== */
@@ -2913,6 +2947,14 @@ async function doDamage(target,dmg,color='#ffd9c4'){
     await bossPhase(target);
   }
   if(target.hp<=0&&target.side==='P'&&!target.npc&&!target.temp){
+    if((target.rb||0)>=7&&!target.goldenUsed){
+      target.goldenUsed=true;
+      target.hp=1;
+      sfx.heal();addHealFx(target.x,target.y);
+      addFloat(target.px,target.py-36,'不灭金身！','#ffd24a','huge');
+      log(`<b>${target.name}</b> 金身一闪——免死，以 1 兵力撑住！`,'good');
+      return false;
+    }
     if(target.leader&&talentOn('t_lamp')&&!lampUsed){
       lampUsed=true;
       target.hp=1;
@@ -3554,13 +3596,14 @@ function showUnitCard(u){
   <div class="ucard">
     <div class="uportrait" style="background:linear-gradient(160deg,${sideColor(u)},#1c1812)">${u.g}</div>
     <div class="ustats">
-      <div><span class="uname">${u.name}${(()=>{const tt=u.side==='P'&&!u.npc&&titleOf(u.name);return tt?`<span style="font-size:11px;color:#e8845a">〔${tt.n}〕</span>`:'';})()}</span><span class="ucls">${u.awakened||u.promoted||u.cls} · Lv${u.lv}</span></div>
+      <div><span class="uname">${u.name}${u.rb?`<span style="font-size:11px;color:#ff6a9a">✦${u.rb}</span>`:''}${(()=>{const tt=u.side==='P'&&!u.npc&&titleOf(u.name);return tt?`<span style="font-size:11px;color:#e8845a">〔${tt.n}〕</span>`:'';})()}</span><span class="ucls">${u.awakened||u.promoted||u.cls} · Lv${u.lv}${u.lv>=LV_MAX?'·满':''}</span></div>
       <div class="bar hp ${hpPct<35?'low':''}"><i style="width:${hpPct}%"></i></div>
       <div style="font-size:11px;color:var(--paper-dim)">兵力 ${u.hp}/${u.maxhp}${u.maxmp?`　策略 ${u.mp}/${u.maxmp}`:''}</div>
       ${u.maxmp?`<div class="bar mp"><i style="width:${Math.round(u.mp/u.maxmp*100)}%"></i></div>`:''}
-      ${u.side==='P'?`<div class="bar xp"><i style="width:${u.exp}%"></i></div>`:''}
+      ${u.side==='P'?`<div class="bar xp"><i style="width:${Math.min(100,Math.round(u.exp/expNeed(u.lv)*100))}%"></i></div>`:''}
       ${u.side==='P'&&ultOf(u)?`<div class="bar rage"><i style="width:${u.rage}%"></i></div>`:''}
       <div class="statline"><span>武 <b>${S(u,'atk')}${S(u,'atk')>u.atk?'<span style="color:#9fc068">↑</span>':''}</b></span><span>守 <b>${S(u,'def')}${S(u,'def')>u.def?'<span style="color:#9fc068">↑</span>':''}</b></span><span>移 <b>${S(u,'mov')}</b></span><span>射 <b>${rng}</b></span><span>暴 <b>${Math.round(critOf(u)*100)}%</b></span><span>地形 <b>${t.name}${t.def?` +${Math.round(t.def*100)}%`:''}</b></span></div>
+      ${u.rb&&rbPowersOf(u).length?`<div class="trait" style="color:#ff6a9a">转生神力 ${rbPowersOf(u).map(p=>`【${p.n}】`).join('')}</div>`:''}
       ${u.status&&u.status.length?`<div class="trait">${u.status.map(st=>`<span style="color:${STATUS_INFO[st.k].color}">【${STATUS_INFO[st.k].n}】余 ${st.t} 回合</span>`).join('　')}</div>`:''}
       ${u.side==='P'&&u.guard?`<div class="trait" style="color:#8cdcff">戒备中：敌进入射程自动反击</div>`:''}
       ${u.side==='E'&&u.alive&&phase==='P'?`<div class="trait" style="color:#e8a0a0">${(predictEnemy(u)||{}).label||''}</div>`:''}
@@ -3852,7 +3895,15 @@ function checkTreasure(u){
 }
 async function finishAction(){
   if(selected&&selected.side==='P'&&selected.alive)checkTreasure(selected);
-  if(selected){selected.acted=true;}
+  if(selected){
+    selected.acted=true;
+    if((selected.rb||0)>=9&&!selected.extraUsed&&selected.alive){ // 时空缭乱：再动！
+      selected.extraUsed=true;
+      selected.acted=false;
+      addFloat(selected.px,selected.py-34,'时空缭乱·再动！','#8fc4e8',true);
+      log(`<b>${selected.name}</b> 扭转时光——本回合可再行动一次！`,'good');
+    }
+  }
   if(checkEnd())return;
   if(dangerOn)calcDanger();
   saveBattle();
@@ -4422,6 +4473,7 @@ async function enemyPhase(){
   fireTiles=fireTiles.filter(f=>f.t>0);
   for(const p of units.filter(u=>u.side==='P'&&u.alive)){
     p.guard=false;
+    p.extraUsed=false;
     if(hasStatus(p,'stun')){
       p.acted=true; // 眩晕：本回合无法行动
       addFloat(p.px,p.py-30,'眩 晕','#ffd24a');
@@ -5844,6 +5896,8 @@ function startChapter(i){
   lampUsed=false;
   party.forEach((u,idx)=>{
     u.alive=true;u.fade=1;u.flash=0;u.acted=false;u.rage=0;u.kills=0;u.dmgSum=0;u.revUsed=false;u.status=[];u.guard=false;
+    u.goldenUsed=false;u.extraUsed=false;
+    if((u.rb||0)>=1)u.rage=100; // 浴火涅槃
     u.hp=u.maxhp;u.mp=u.maxmp;
     u.x=ch.spawns[idx][0];u.y=ch.spawns[idx][1];
     u.px=(u.x+.5)*TILE;u.py=(u.y+.5)*TILE;
@@ -6034,6 +6088,13 @@ function renderPrep(animate){
       :promo?`<br><span style="color:rgba(232,220,192,.6)">Lv${PROMO_LV} 可转职 ${promo.n}</span>`:'';
     if(canAwake)promoTag+=` <button class="depBtn on" data-awake="${ri}" style="width:auto;padding:3px 10px;color:#ff9a3c;border-color:#ff9a3c" title="${aw.desc}">觉醒 ⟡ ${aw.n}</button>`;
     else if(u.promoted&&!u.awakened&&aw)promoTag+=` <span style="color:rgba(232,220,192,.6)">Lv${AWAKE_LV} 可觉醒</span>`;
+    const rb=u.rb||0;
+    if(u.lv>=LV_MAX&&rb<RB_MAX){
+      promoTag+=` <button class="depBtn on" data-rb="${ri}" style="width:auto;padding:3px 10px;color:#ff6a9a;border-color:#ff6a9a" title="回到 Lv1：保留转职/觉醒，属性保留四成，成长+25%/转；第1/3/7/9转觉醒神级能力（涅槃满怒/暴伤2倍/免死金身/回合双动）">转 生 ✦ 第${rb+1}转</button>`;
+    }else if(u.lv>=LV_MAX){
+      promoTag+=` <span style="color:#ff6a9a">九转功成 · 仙凡有别</span>`;
+    }
+    if(rb)promoTag+=` <span style="color:#ff6a9a" title="${rbPowersOf(u).map(p=>p.n+'：'+p.d).join('；')||'尚未觉醒神力'}">✦${rb}转${rbPowersOf(u).length?'·'+rbPowersOf(u).map(p=>p.n).join('/'):''}</span>`;
     return `<div class="prow ${animate?'anim':''} ${u.dep?'':'bench'}" style="${animate?`animation-delay:${ri*0.06}s`:''}">
       <button class="depBtn ${u.dep?'on':''}" data-dep="${ri}" ${u.leader?'disabled':''} title="${u.leader?'主帅必须出战':'点击切换出战/留守'}">${u.dep?'出战':'留守'}</button>
       <canvas id="pcv${ri}" width="62" height="76"></canvas>
@@ -6272,6 +6333,21 @@ document.getElementById('prepRoster').addEventListener('click',e=>{
     const u=roster[+abtn.dataset.awake];
     if(applyAwake(u)){
       sfx.ult();
+      renderPrep(false);
+    }
+    return;
+  }
+  const rbtn=e.target.closest('button[data-rb]');
+  if(rbtn){
+    const u=roster[+rbtn.dataset.rb];
+    let yes=true;
+    try{yes=window.confirm(`${u.name} 第 ${(u.rb||0)+1} 次转生：\n回到 Lv1（保留转职/觉醒），属性保留四成，此后成长 +25%。\n确定凤凰涅槃？`);}catch(e2){}
+    if(!yes)return;
+    if(doRebirth(u)){
+      sfx.ult();
+      const jl=document.getElementById('prepJoin');
+      jl.style.display='';
+      jl.innerHTML=`<b style="color:#ff6a9a">${u.name} 凤凰涅槃——第 ${u.rb} 转！</b>${RB_POWERS.find(p=>p.rb===u.rb)?`觉醒神力【${RB_POWERS.find(p=>p.rb===u.rb).n}】：${RB_POWERS.find(p=>p.rb===u.rb).d}`:'成长再上一层。'}`;
       renderPrep(false);
     }
     return;
@@ -6630,7 +6706,7 @@ function battlePayload(){
         name:u.name,g:u.g,cls:u.cls,kind:u.kind,side:u.side,fac:u.fac,
         x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
         int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
-        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,awakened:u.awakened,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,tonics:u.tonics||0,
+        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,awakened:u.awakened,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,tonics:u.tonics||0,rb:u.rb||0,goldenUsed:!!u.goldenUsed,extraUsed:!!u.extraUsed,
         awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,revUsed:!!u.revUsed,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
         equip:u.equip,drop:u.drop,recruit:u.recruit||null,phase2:u.phase2||null,phased:!!u.phased,
