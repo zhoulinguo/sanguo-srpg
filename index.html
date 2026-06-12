@@ -395,20 +395,20 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 #sysBtn:disabled{opacity:.4;cursor:default}
 #fastBtn.on{color:#ffd24a;border-color:rgba(255,210,74,.6)}
 #dangerBtn.on{color:#e87a6a;border-color:rgba(212,121,106,.65)}
-#sysMenu,#codex,#choice,#chlog{
+#sysMenu,#codex,#choice,#chlog,#talent{
   position:fixed;inset:0;z-index:82;display:flex;align-items:center;justify-content:center;
   background:rgba(13,10,7,.82);
 }
-#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden{display:none}
-#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner{
+#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden,#talent.hidden{display:none}
+#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner,#talent .sinner{
   width:min(540px,92vw);
   background:linear-gradient(170deg,#262017,#171310);
   border:1px solid rgba(201,162,39,.5);border-radius:6px;
   padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.7);
   animation:popIn .3s ease both;
 }
-#sysMenu h2,#codex h2,#choice h2,#chlog h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
-#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
+#sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
+#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
 #codex .sinner{width:min(680px,94vw);max-height:88vh;overflow-y:auto}
 #chlog .sinner{width:min(620px,94vw);max-height:88vh;overflow-y:auto}
 #chlog .chsec{font-family:var(--display);font-size:15px;letter-spacing:4px;color:var(--gold);margin:12px 0 6px;text-align:center}
@@ -639,6 +639,14 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
   </div>
 </div>
 
+<div id="talent" class="hidden">
+  <div class="sinner" style="max-height:88vh;overflow-y:auto">
+    <h2>天 赋 · 成 就 点</h2>
+    <div id="talentBody"></div>
+    <div class="srow2"><button id="closeTalent">返 回</button></div>
+  </div>
+</div>
+
 <div id="chlog" class="hidden">
   <div class="sinner">
     <h2>战 记 · 选 关</h2>
@@ -673,10 +681,10 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
         <span class="dsName" id="diffName">虎 将</span>
         <input type="range" id="diffRange" min="80" max="800" step="10" value="100">
         <b class="dsPct" id="diffPctTxt">100%</b>
-        <i class="dsHint">敌军强度 80%—800%　拖动滑条自定难度</i>
+        <i class="dsHint">敌军强度 80%—800%　高难有犒军补给与金币加成（150%+ 起效，越难越厚）</i>
       </div>
     </div>
-    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button><button id="loadBtn">读 档</button><button id="codexBtn">图 鉴</button><button id="chlogBtn">战 记</button><button id="extraBtn" style="display:none">外 传</button></div>
+    <div><button id="startBtn">出 阵</button><button id="contBtn" style="display:none">继 续</button><button id="loadBtn">读 档</button><button id="codexBtn">图 鉴</button><button id="chlogBtn">战 记</button><button id="talentBtn">天 赋</button><button id="extraBtn" style="display:none">外 传</button></div>
   </div>
 </div>
 
@@ -1663,6 +1671,11 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
     const w=WAR_ORDERS[warOrder];
     if(w&&w[stat])v+=w[stat];
   }
+  if(u.side==='P'&&!u.npc&&TAL.size){
+    if(stat==='atk'&&TAL.has('t_atk'))v+=2;
+    if(stat==='def'&&TAL.has('t_def'))v+=2;
+    if(stat==='mov'&&TAL.has('t_mov'))v+=1;
+  }
   if(stat==='mov'&&curWeather()==='snow')v=Math.max(2,v-1);
   if(stat==='mov'&&hasStatus(u,'slow'))v=Math.max(1,v-2);
   if(stat==='mov')v=Math.max(1,v);
@@ -1844,6 +1857,35 @@ function stratRng(u,s){ // 法术范围 = 基础 + 扇笛等装备增程 + 转�
 }
 /* ===================== 转职（Lv15 解锁，按兵种一次性强化） ===================== */
 const PROMO_LV=15;
+const AWAKE_LV=30;
+const AWAKES={
+  lord:    {n:'天命主君',desc:'全属性+3 · 兵力+30 · 王者之气：相邻友军武+2'},
+  cav:     {n:'龙骧将军',desc:'武+4 · 兵力+25 · 暴击+5%'},
+  hcav:    {n:'神臂都尉',desc:'武+3 · 兵力+20 · 射程+1'},
+  spear:   {n:'陷阵都督',desc:'守+5 · 兵力+35'},
+  adv:     {n:'经天纬地',desc:'智+6 · 策略+20 · 法术范围再+1'},
+  guard:   {n:'古之恶来',desc:'武+4 · 兵力+30 · 暴击+8%'},
+  vanguard:{n:'万人之敌',desc:'武+4 · 兵力+20 · 暴击+10%'},
+  chief:   {n:'开国元勋',desc:'武+5 · 守+3 · 兵力+25'},
+  brig:    {n:'开国元勋',desc:'武+5 · 守+3 · 兵力+25'},
+};
+function applyAwake(u){
+  const aw=AWAKES[u.kind];
+  if(!aw||u.awakened||!u.promoted||u.lv<AWAKE_LV)return false;
+  switch(u.kind){
+    case 'lord':    u.atk+=3;u.def+=3;u.int+=3;u.maxhp+=30;break;
+    case 'cav':     u.atk+=4;u.maxhp+=25;u.crit+=.05;break;
+    case 'hcav':    u.atk+=3;u.maxhp+=20;u.rngMax+=1;break;
+    case 'spear':   u.def+=5;u.maxhp+=35;break;
+    case 'adv':     u.int+=6;u.maxmp+=20;u.srng=(u.srng||0)+1;break;
+    case 'guard':   u.atk+=4;u.maxhp+=30;u.crit+=.08;break;
+    case 'vanguard':u.atk+=4;u.maxhp+=20;u.crit+=.1;break;
+    default:        u.atk+=5;u.def+=3;u.maxhp+=25;
+  }
+  u.awakened=aw.n;
+  u.hp=u.maxhp;u.mp=u.maxmp;
+  return true;
+}
 const PROMOS={
   lord:    {n:'霸主',    desc:'全属性+2 · 兵力+20 · 移动+1'},
   cav:     {n:'虎骑将',  desc:'武+3 · 兵力+15 · 移动+1'},
@@ -1908,7 +1950,7 @@ let PLAYER_BASE=[
   {name:'黄忠',  g:'忠',cls:'弓骑',kind:'hcav', side:'P',x:0,y:0,lv:2,hp:105,atk:30,def:12,mov:6,rngMin:1,rngMax:2,mounted:true,crit:.16,joinCh:7},
 ];
 /* 名册序列化：完整字段，支持劝降而来的编外武将 */
-const ROSTER_FIELDS=['name','g','cls','kind','fac','lv','exp','maxhp','maxmp','int','atk','def','mov','rngMin','rngMax','rngShape','crit','mounted','leader','dep','promoted','srng','ultSel'];
+const ROSTER_FIELDS=['name','g','cls','kind','fac','lv','exp','maxhp','maxmp','int','atk','def','mov','rngMin','rngMax','rngShape','crit','mounted','leader','dep','promoted','awakened','srng','ultSel'];
 function serRosterUnit(u){
   const o={};
   for(const k of ROSTER_FIELDS)o[k]=u[k];
@@ -2145,9 +2187,13 @@ function pincerAlly(a,d){
   return (u&&u.alive&&u.side===a.side&&u!==a&&!u.npc)?u:null;
 }
 function auraBonus(u){
-  if(gearFx(u,'aura'))return 3;
-  return units.some(o=>o.alive&&o!==u&&o.side===u.side&&gearFx(o,'aura')
-    &&Math.max(Math.abs(o.x-u.x),Math.abs(o.y-u.y))<=1)?3:0;
+  let v=0;
+  if(gearFx(u,'aura'))v+=3;
+  else if(units.some(o=>o.alive&&o!==u&&o.side===u.side&&gearFx(o,'aura')
+    &&Math.max(Math.abs(o.x-u.x),Math.abs(o.y-u.y))<=1))v+=3;
+  if(units.some(o=>o.alive&&o!==u&&o.side===u.side&&o.awakened==='天命主君'
+    &&Math.max(Math.abs(o.x-u.x),Math.abs(o.y-u.y))<=1))v+=2; // 觉醒主君王气
+  return v;
 }
 function dmgRange(a,d){
   const atk=S(a,'atk')+bondStat(a,'atk')+(hasStatus(a,'rally')?6:0)+auraBonus(a);
@@ -2949,8 +2995,9 @@ function finish(win,loseMsg){
       if(ch.reward){
         const names=Object.entries(ch.reward).map(([k,n])=>`${ITEMS[k].n}${n>1?'×'+n:''}`).join('、');
         for(const [k,n] of Object.entries(ch.reward))bag[k]=(bag[k]||0)+n;
-        ov.querySelector('.sub').innerHTML+=`<br><span style="color:#c9a227">战利品：${names}${ch.goldReward?`　军资 +${ch.goldReward} 金`:''}</span>`;
-        if(ch.goldReward)gold+=ch.goldReward;
+        const gr=ch.goldReward?Math.round(ch.goldReward*(1+Math.max(0,diffPct-100)/100*.8)):0;
+        ov.querySelector('.sub').innerHTML+=`<br><span style="color:#c9a227">战利品：${names}${gr?`　军资 +${gr} 金${gr>ch.goldReward?`（高难加成）`:''}`:''}</span>`;
+        if(gr)gold+=gr;
       }
       // 本章 MVP 战绩（仅统计出战武将）
       const party=roster.filter(u=>u.dep);
@@ -3067,7 +3114,7 @@ function showUnitCard(u){
   <div class="ucard">
     <div class="uportrait" style="background:linear-gradient(160deg,${sideColor(u)},#1c1812)">${u.g}</div>
     <div class="ustats">
-      <div><span class="uname">${u.name}</span><span class="ucls">${u.promoted||u.cls} · Lv${u.lv}</span></div>
+      <div><span class="uname">${u.name}</span><span class="ucls">${u.awakened||u.promoted||u.cls} · Lv${u.lv}</span></div>
       <div class="bar hp ${hpPct<35?'low':''}"><i style="width:${hpPct}%"></i></div>
       <div style="font-size:11px;color:var(--paper-dim)">兵力 ${u.hp}/${u.maxhp}${u.maxmp?`　策略 ${u.mp}/${u.maxmp}`:''}</div>
       ${u.maxmp?`<div class="bar mp"><i style="width:${Math.round(u.mp/u.maxmp*100)}%"></i></div>`:''}
@@ -3115,7 +3162,7 @@ function recruitTalker(u,e){
   if(!r)return false;
   return r.by?r.by===u.name:!!u.leader;
 }
-function recruitReady(e){return e.recruit&&e.hp<=Math.ceil(e.maxhp*(e.recruit.hpr+(dao>=2?.1:0)));} // 仁德之名远播，劝降门槛放宽
+function recruitReady(e){return e.recruit&&e.hp<=Math.ceil(e.maxhp*(e.recruit.hpr+(dao>=2?.1:0)+(talentOn('t_mercy')?.05:0)));} // 仁德/天赋放宽劝降门槛
 async function doRecruit(u,t){
   hideMenu();state='busy';
   sfx.ult();flashT=.3;
@@ -3649,7 +3696,7 @@ async function enemyPhase(){
       reinforced.add(r.turn);
       const ru=r.units();
       const dm=enemyMult();
-      if(dm!==1)ru.forEach(e2=>{e2.hp=e2.maxhp=Math.round(e2.hp*dm);e2.atk=Math.round(e2.atk*dm);e2.def=Math.round(e2.def*(1+(dm-1)*.35));});
+      if(dm!==1)ru.forEach(e2=>{e2.hp=e2.maxhp=Math.round(e2.hp*dm);e2.atk=Math.round(e2.atk*(1+(dm-1)*.6));e2.def=Math.round(e2.def*(1+(dm-1)*.35));});
       for(const e2 of ru){
         e2.awake=true;
         if(unitAt(e2.x,e2.y)){ // 进场点被占则在邻格找空位
@@ -5235,7 +5282,7 @@ function startChapter(i){
   const dm=enemyMult();
   if(dm!==1)foes.forEach(e=>{
     e.hp=e.maxhp=Math.round(e.hp*dm);
-    e.atk=Math.round(e.atk*dm);
+    e.atk=Math.round(e.atk*(1+(dm-1)*.6)); // 攻击增幅放缓：高难是血战而非秒杀
     e.def=Math.round(e.def*(1+(dm-1)*.35)); // 守备增幅放缓，确保高难度下仍可破防
   });
   const npcs=ch.npcs?ch.npcs():[]; // 护送对象（百姓/粮车），自动赶路
@@ -5249,6 +5296,7 @@ function startChapter(i){
   fireTiles=[];
   if(ch.weather==='fog')foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-2);}); // 大雾：警戒收窄
   if(warOrder&&WAR_ORDERS[warOrder].awake)foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)+WAR_ORDERS[warOrder].awake);}); // 虚张声势
+  if(talentOn('t_scout'))foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-1);}); // 天赋·斥候先行
   ended=false;turn=1;phase='P';state='idle';
   floaters=[];particles=[];shakeT=0;flashT=0;threat=null;
   dangerOn=false;dangerTiles=null;
@@ -5261,6 +5309,14 @@ function startChapter(i){
   if(ch.weather)log(`【${WEATHER_INFO[ch.weather].n}】${WEATHER_INFO[ch.weather].desc}`,'sys');
   if(warOrder)log(`军情已布【${WAR_ORDERS[warOrder].n}】：${WAR_ORDERS[warOrder].desc}（本战生效）`,'good');
   if(barrels.length)log('战场上散落着<b>火油桶</b>——攻击引爆，3×3 烈焰敌我不分，亦会殃及相邻油桶！','sys');
+  if(talentOn('t_rage')){party.forEach(u=>addRage(u,30));log('天赋【怒涛之势】发动：全军怒气 +30','good');}
+  if(diffPct>=150&&!ch.extra){
+    const n=diffPct>=500?3:diffPct>=300?2:1;
+    bag.shangyao=(bag.shangyao||0)+n;
+    if(diffPct>=300)bag.lingzhi=(bag.lingzhi||0)+1;
+    if(diffPct>=500)bag.danyao=(bag.danyao||0)+2;
+    log(`高难犒军（${diffPct}%）：获伤药×${n}${diffPct>=300?'、灵芝×1':''}${diffPct>=500?'、丹药×2':''}`,'good');
+  }
   updateHud();
   banner(campName.split('').join(' ')+' 回 合');
   saveBattle();
@@ -5344,9 +5400,13 @@ function renderPrep(animate){
     }
     const promo=PROMOS[u.kind];
     const canPromo=promo&&!u.promoted&&u.lv>=PROMO_LV;
-    const promoTag=u.promoted?`<br><span style="color:#ffd24a">「${u.promoted}」</span>`
+    const aw=AWAKES[u.kind];
+    const canAwake=aw&&u.promoted&&!u.awakened&&u.lv>=AWAKE_LV;
+    let promoTag=u.promoted?`<br><span style="color:#ffd24a">「${u.promoted}」${u.awakened?`<span style="color:#ff9a3c">⟡「${u.awakened}」</span>`:''}</span>`
       :canPromo?`<br><button class="depBtn on" data-promo="${ri}" style="width:auto;padding:3px 10px" title="${promo.desc}">转职 → ${promo.n}</button>`
       :promo?`<br><span style="color:rgba(232,220,192,.35)">Lv${PROMO_LV} 可转职 ${promo.n}</span>`:'';
+    if(canAwake)promoTag+=` <button class="depBtn on" data-awake="${ri}" style="width:auto;padding:3px 10px;color:#ff9a3c;border-color:#ff9a3c" title="${aw.desc}">觉醒 ⟡ ${aw.n}</button>`;
+    else if(u.promoted&&!u.awakened&&aw)promoTag+=` <span style="color:rgba(232,220,192,.35)">Lv${AWAKE_LV} 可觉醒</span>`;
     return `<div class="prow ${animate?'anim':''} ${u.dep?'':'bench'}" style="${animate?`animation-delay:${ri*0.06}s`:''}">
       <button class="depBtn ${u.dep?'on':''}" data-dep="${ri}" ${u.leader?'disabled':''} title="${u.leader?'主帅必须出战':'点击切换出战/留守'}">${u.dep?'出战':'留守'}</button>
       <canvas id="pcv${ri}" width="62" height="76"></canvas>
@@ -5389,7 +5449,7 @@ function renderPrep(animate){
   document.getElementById('prepForge').innerHTML=wkeys.length
     ?'<div class="shopgrid">'+wkeys.map(k=>{
       const lv=forge[k]||0;
-      const cost=Math.round(ITEMS[k].price*.6*Math.pow(2,lv)/50)*50;
+      const cost=Math.round(ITEMS[k].price*.6*Math.pow(2,lv)/(talentOn('t_forge')?2:1)/50)*50;
       return `<div class="shopcard">
         <div class="sname">${ITEMS[k].n}${lv?` <span style="color:#ffd24a">+${lv}</span>`:''}</div>
         <div class="sdesc">${itemDesc(k)}</div>
@@ -5419,7 +5479,7 @@ document.getElementById('prepForge').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-forge]');
   if(!btn||btn.disabled)return;
   const k=btn.dataset.forge, lv=forge[k]||0;
-  const cost=Math.round(ITEMS[k].price*.6*Math.pow(2,lv)/50)*50;
+  const cost=Math.round(ITEMS[k].price*.6*Math.pow(2,lv)/(talentOn('t_forge')?2:1)/50)*50;
   if(lv>=3||gold<cost)return;
   gold-=cost;
   forge[k]=lv+1;
@@ -5460,6 +5520,15 @@ document.getElementById('prepRoster').addEventListener('click',e=>{
     const u=roster[+pbtn.dataset.promo];
     if(applyPromo(u)){
       sfx.levelup();
+      renderPrep(false);
+    }
+    return;
+  }
+  const abtn=e.target.closest('button[data-awake]');
+  if(abtn){
+    const u=roster[+abtn.dataset.awake];
+    if(applyAwake(u)){
+      sfx.ult();
       renderPrep(false);
     }
     return;
@@ -5591,7 +5660,7 @@ function battlePayload(){
         name:u.name,g:u.g,cls:u.cls,kind:u.kind,side:u.side,fac:u.fac,
         x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
         int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
-        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,
+        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,awakened:u.awakened,srng:u.srng,npc:u.npc,escaped:u.escaped,temp:u.temp,ultSel:u.ultSel,
         awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
         equip:u.equip,drop:u.drop,recruit:u.recruit||null,
@@ -6503,6 +6572,8 @@ function startNewRun(){
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
   bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;
+  if(talentOn('t_gold'))gold+=500;
+  if(talentOn('t_supply')){bag.shangyao=(bag.shangyao||0)+3;bag.danyao=(bag.danyao||0)+2;}
   runTurns=0;ngPlus=0;maxChap=0;
   openPrep(0);
 }
@@ -6688,24 +6759,49 @@ function campRecruitNames(camp){
   return out;
 }
 const ACHV=[
-  {n:'初露锋芒',d:'任意战役通关',ok:c=>['zhaoyun','caocao'].some(k=>campCodex(c,k).clear.length>0)},
-  {n:'双线制霸',d:'两条战役线均通关',ok:c=>['zhaoyun','caocao'].every(k=>campCodex(c,k).clear.length>0)},
-  {n:'仁德服人',d:'劝降全部可降武将',ok:c=>[CAMP_ZHAOYUN,CAMP_CAOCAO].every(cp=>campRecruitNames(cp).every(n=>campCodex(c,cp.key).rec.includes(n)))},
-  {n:'单挑名场面',d:'触发全部历史单挑事件',ok:c=>{
+  {n:'初露锋芒',pts:10,d:'任意战役通关',ok:c=>['zhaoyun','caocao'].some(k=>campCodex(c,k).clear.length>0)},
+  {n:'双线制霸',pts:20,d:'两条战役线均通关',ok:c=>['zhaoyun','caocao'].every(k=>campCodex(c,k).clear.length>0)},
+  {n:'仁德服人',pts:20,d:'劝降全部可降武将',ok:c=>[CAMP_ZHAOYUN,CAMP_CAOCAO].every(cp=>campRecruitNames(cp).every(n=>campCodex(c,cp.key).rec.includes(n)))},
+  {n:'单挑名场面',pts:20,d:'触发全部历史单挑事件',ok:c=>{
     const seen=new Set([...campCodex(c,'zhaoyun').duel,...campCodex(c,'caocao').duel]);
     return Object.keys(DUEL_EVENTS).every(k=>seen.has(k));
   }},
-  {n:'修罗证道',d:'以 150% 及以上难度通关',ok:c=>anyClear(c,s=>s.d>=150)},
-  {n:'天命所归',d:'以 800% 难度通关',ok:c=>anyClear(c,s=>s.d>=800)},
-  {n:'周而复始',d:'完成一次二周目',ok:c=>anyClear(c,s=>s.ng>=1)},
-  {n:'兵贵神速',d:'平均每章 7 回合内通关',ok:c=>['zhaoyun','caocao'].some(k=>{
+  {n:'修罗证道',pts:20,d:'以 150% 及以上难度通关',ok:c=>anyClear(c,s=>s.d>=150)},
+  {n:'天命所归',pts:30,d:'以 800% 难度通关',ok:c=>anyClear(c,s=>s.d>=800)},
+  {n:'周而复始',pts:10,d:'完成一次二周目',ok:c=>anyClear(c,s=>s.ng>=1)},
+  {n:'兵贵神速',pts:20,d:'平均每章 7 回合内通关',ok:c=>['zhaoyun','caocao'].some(k=>{
     const len=(k==='zhaoyun'?CAMP_ZHAOYUN:CAMP_CAOCAO).chapters.length;
     return campCodex(c,k).clear.some(s=>s.t/len<=7);
   })},
-  {n:'卧龙凤雏',d:'解锁全部隐藏武将',ok:c=>[CAMP_ZHAOYUN,CAMP_CAOCAO].every(cp=>(cp.hidden||[]).every(h=>{try{return h.cond(c);}catch(e){return false;}}))},
-  {n:'外传双绝',d:'制霸两条外传战役',ok:c=>!!(campCodex(c,'zhaoyun').extraClear&&campCodex(c,'caocao').extraClear)},
+  {n:'卧龙凤雏',pts:20,d:'解锁全部隐藏武将',ok:c=>[CAMP_ZHAOYUN,CAMP_CAOCAO].every(cp=>(cp.hidden||[]).every(h=>{try{return h.cond(c);}catch(e){return false;}}))},
+  {n:'外传双绝',pts:20,d:'制霸两条外传战役',ok:c=>!!(campCodex(c,'zhaoyun').extraClear&&campCodex(c,'caocao').extraClear)},
 ];
 function anyClear(c,fn){return ['zhaoyun','caocao'].some(k=>campCodex(c,k).clear.some(fn));}
+/* ===================== 天赋（成就点兑换，跨周目永久生效，可随时重新搭配） ===================== */
+const TALENTS=[
+  {k:'t_gold',  n:'富甲一方',cost:10,d:'每次新开局军资 +500'},
+  {k:'t_supply',n:'兵精粮足',cost:10,d:'每次新开局伤药×3、丹药×2'},
+  {k:'t_scout', n:'斥候先行',cost:10,d:'敌军警戒范围 −1'},
+  {k:'t_mercy', n:'仁望天下',cost:10,d:'劝降门槛再放宽 5%'},
+  {k:'t_atk',   n:'虎贲之锐',cost:20,d:'全军武力 +2'},
+  {k:'t_def',   n:'铁壁之坚',cost:20,d:'全军守备 +2'},
+  {k:'t_forge', n:'天工开物',cost:20,d:'锻造费用减半'},
+  {k:'t_rage',  n:'怒涛之势',cost:20,d:'每章开战全军怒气 +30'},
+  {k:'t_mov',   n:'急行军',  cost:30,d:'全军移动 +1'},
+];
+let TAL=new Set();
+function loadTalents(){
+  try{TAL=new Set((loadCodex().talents||[]));}catch(e){TAL=new Set();}
+}
+function achPoints(c){
+  let p=0;
+  for(const a of ACHV){try{if(a.ok(c))p+=a.pts||10;}catch(e){}}
+  return p;
+}
+function talSpent(c){
+  return (c.talents||[]).reduce((s2,k)=>{const t=TALENTS.find(x=>x.k===k);return s2+(t?t.cost:0);},0);
+}
+function talentOn(k){return TAL.has(k);}
 function renderCodex(){
   const c=loadCodex();
   let html='';
@@ -6757,6 +6853,47 @@ function renderCodex(){
     }).join('')+'</div>';
   document.getElementById('codexBody').innerHTML=html;
 }
+function renderTalent(){
+  const c=loadCodex();
+  const earned=achPoints(c);
+  const spent=talSpent(c);
+  let html=`<div class="snote">成就点：剩余 <b style="color:#ffd24a">${earned-spent}</b> ／ 共 ${earned}（图鉴成就解锁获得；天赋可随时重新搭配，全程生效）</div>`;
+  html+=TALENTS.map(t=>{
+    const on=(c.talents||[]).includes(t.k);
+    const afford=on||(earned-spent)>=t.cost;
+    return `<div class="slot" style="${on?'border-color:var(--gold);box-shadow:0 0 10px rgba(201,162,39,.2)':''}">
+      <div class="sinfo"><b>${t.n}</b>${on?' <span style="color:#ffd24a">已装备</span>':''}　${t.d}<br><span class="stime">${t.cost} 点</span></div>
+      <div class="sbtns"><button data-tal="${t.k}" ${afford?'':'disabled'}>${on?'卸 下':'装 备'}</button></div>
+    </div>`;
+  }).join('');
+  document.getElementById('talentBody').innerHTML=html;
+}
+document.getElementById('talentBtn').onclick=()=>{
+  initAudio();sfx.select();
+  renderTalent();
+  document.getElementById('talent').classList.remove('hidden');
+};
+document.getElementById('closeTalent').onclick=()=>{
+  if(AC)sfx.select();
+  document.getElementById('talent').classList.add('hidden');
+};
+document.getElementById('talentBody').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-tal]');
+  if(!btn||btn.disabled)return;
+  const k=btn.dataset.tal;
+  codexMark(c=>{
+    c.talents=c.talents||[];
+    const i=c.talents.indexOf(k);
+    if(i>=0)c.talents.splice(i,1);
+    else{
+      const t=TALENTS.find(x=>x.k===k);
+      if(achPoints(c)-talSpent(c)>=t.cost)c.talents.push(k);
+    }
+  });
+  loadTalents();
+  sfx.coin();
+  renderTalent();
+});
 function renderChlog(){
   const sv=loadGame();
   const mine=sv&&sv.camp===activeCamp.key;
@@ -6830,7 +6967,9 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&!sysMenuEl.classList.contains('hidden'))closeSysMenu();
   if(e.key==='Escape')document.getElementById('codex').classList.add('hidden');
   if(e.key==='Escape')document.getElementById('chlog').classList.add('hidden');
+  if(e.key==='Escape')document.getElementById('talent').classList.add('hidden');
 });
+loadTalents();
 requestAnimationFrame(loop);
 </script>
 </body>
