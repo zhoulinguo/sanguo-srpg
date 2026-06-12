@@ -395,22 +395,51 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 #sysBtn:disabled{opacity:.4;cursor:default}
 #fastBtn.on{color:#ffd24a;border-color:rgba(255,210,74,.6)}
 #dangerBtn.on{color:#e87a6a;border-color:rgba(212,121,106,.65)}
-#sysMenu,#codex,#choice,#chlog,#talent{
+#sysMenu,#codex,#choice,#chlog,#talent,#casino{
   position:fixed;inset:0;z-index:82;display:flex;align-items:center;justify-content:center;
   background:rgba(13,10,7,.82);
 }
-#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden,#talent.hidden{display:none}
-#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner,#talent .sinner{
+#sysMenu.hidden,#codex.hidden,#choice.hidden,#chlog.hidden,#talent.hidden,#casino.hidden{display:none}
+#sysMenu .sinner,#codex .sinner,#choice .sinner,#chlog .sinner,#talent .sinner,#casino .sinner{
   width:min(540px,92vw);
   background:linear-gradient(170deg,#262017,#171310);
   border:1px solid rgba(201,162,39,.5);border-radius:6px;
   padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.7);
   animation:popIn .3s ease both;
 }
-#sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
-#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
+#sysMenu h2,#codex h2,#choice h2,#chlog h2,#talent h2,#casino h2{font-family:var(--display);font-weight:400;letter-spacing:6px;color:var(--gold);font-size:24px;margin-bottom:8px}
+#sysMenu .snote,#codex .snote,#choice .snote,#chlog .snote,#talent .snote,#casino .snote{font-size:12px;color:var(--paper-dim);margin-bottom:12px;letter-spacing:1px;line-height:1.7}
 #codex .sinner{width:min(680px,94vw);max-height:88vh;overflow-y:auto}
 #chlog .sinner{width:min(620px,94vw);max-height:88vh;overflow-y:auto}
+#casino .sinner{width:min(620px,94vw);max-height:90vh;overflow-y:auto}
+.casRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.casBtn{
+  font-family:var(--display);font-size:14px;letter-spacing:2px;padding:7px 16px;cursor:pointer;
+  background:rgba(232,220,192,.05);color:var(--paper-dim);
+  border:1px solid rgba(201,162,39,.3);border-radius:4px;transition:all .12s;
+}
+.casBtn.on{color:var(--gold);border-color:var(--gold);background:rgba(201,162,39,.14)}
+.casBtn:disabled{opacity:.35;cursor:default}
+.casBtn:not(:disabled):hover{border-color:rgba(201,162,39,.7)}
+.dieBox{display:flex;gap:14px;justify-content:center;margin:14px 0}
+.die{
+  width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:52px;line-height:1;color:#2a2118;background:linear-gradient(160deg,#f4e9d0,#d8c9a8);
+  border:1px solid rgba(0,0,0,.4);box-shadow:0 4px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.6);
+  transition:transform .15s;
+}
+.die.rolling{animation:dieShake .12s infinite}
+@keyframes dieShake{0%{transform:rotate(-6deg) translateY(-2px)}50%{transform:rotate(5deg) translateY(2px)}100%{transform:rotate(-6deg) translateY(-2px)}}
+.die.settle{transform:scale(1.12);box-shadow:0 0 18px rgba(201,162,39,.5)}
+.casMsg{min-height:22px;font-size:13px;letter-spacing:1px;color:#ffd24a;text-align:center;margin:6px 0}
+.cricket{
+  flex:1;min-width:150px;border:1px solid rgba(201,162,39,.3);border-radius:5px;padding:10px;cursor:pointer;
+  background:rgba(232,220,192,.04);transition:all .12s;
+}
+.cricket.on{border-color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,.3)}
+.cricket .cn{font-family:var(--display);font-size:16px;letter-spacing:2px;color:var(--paper)}
+.cricket .cs{font-size:11.5px;color:var(--paper-dim);line-height:1.8}
+.cricket.fight{animation:dieShake .1s 8}
 #chlog .chsec{font-family:var(--display);font-size:15px;letter-spacing:4px;color:var(--gold);margin:12px 0 6px;text-align:center}
 .chrow{
   display:flex;justify-content:space-between;align-items:center;width:100%;
@@ -611,7 +640,10 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <h3 class="sec">锻造坊 · 淬火砺刃</h3>
     <div class="phead">按武器种类强化，全军同名武器共享；每级武力 +2，至多 +3，越锻越贵。</div>
     <div id="prepForge"></div>
-    <button id="prepGo">出 阵</button>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button id="prepGo" style="flex:1">出 阵</button>
+      <button id="casinoBtn" style="flex:0 0 auto;background:linear-gradient(170deg,#5a3a6b,#3a2447);border:1px solid rgba(201,140,220,.4);border-radius:4px;color:#e8d0f0;font-family:var(--display);font-size:16px;letter-spacing:3px;padding:12px 22px;cursor:pointer">赌 坊</button>
+    </div>
   </div>
 </div>
 
@@ -659,6 +691,20 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <div class="snote">回访已通关章节：可补刷神兵、练级、劝降与单挑名场面；最远进度不会倒退。沿用当前章节存档的名册与难度。</div>
     <div id="chlogBody"></div>
     <div class="srow2"><button id="closeChlog">返 回</button></div>
+  </div>
+</div>
+
+<div id="casino" class="hidden">
+  <div class="sinner">
+    <h2>醉 仙 赌 坊</h2>
+    <div class="snote" id="casHead"></div>
+    <div class="srow2" style="margin-top:0">
+      <button id="casTabDice" class="casBtn on" style="flex:1">骰 宝 · 猜 大 小</button>
+      <button id="casTabCricket" class="casBtn" style="flex:1">斗 蛐 蛐</button>
+    </div>
+    <div id="casBody"></div>
+    <div class="casMsg" id="casMsg"></div>
+    <div class="srow2"><button id="closeCasino">离 场</button></div>
   </div>
 </div>
 
@@ -5429,6 +5475,7 @@ function showChoice(c){
 }
 /* ===================== 备战界面 ===================== */
 let prepChap=0;
+let shenXin=3; // 心神：赌坊作弊资源，每次进入备战重置为 3，不累积
 function ensureRoster(){if(roster.length===0)roster=PLAYER_BASE.filter(o=>!(o.joinCh>0)).map(o=>U({...o}));}
 const SLOT_LABEL={wp:'武器',ar:'防具',ac:'宝物'};
 function deployCap(i){
@@ -5437,6 +5484,7 @@ function deployCap(i){
 }
 function openPrep(i){
   prepChap=i;
+  shenXin=3;
   ensureRoster();
   const joined=syncJoins(i);
   // 整理出战名单：主帅必出战，超员的从后往前裁，缺员的按名册顺序补
@@ -5647,6 +5695,212 @@ document.getElementById('prepGo').onclick=()=>{
   document.getElementById('prep').classList.add('hidden');
   startChapter(prepChap);
 };
+/* ===================== 醉仙赌坊 ===================== */
+const DIE_FACE=['','\u2680','\u2681','\u2682','\u2683','\u2684','\u2685'];
+let casGame='dice', casStake=100, casBet='big', casFocus=false, casBusy=false;
+let casWinBet=null; // 凝神改注窗口期写入
+let crickets=[], casPick=-1, casSeen=false;
+function casinoStat(fn){codexMark(c=>{c.casino=c.casino||{won:0,lost:0,maxWin:0,streak:0,bestStreak:0};fn(c.casino);});}
+function casMsg(t){document.getElementById('casMsg').innerHTML=t;}
+function casHead(){
+  document.getElementById('casHead').innerHTML=
+    `军资 <b style="color:#e8c655">${gold}</b> 金　·　心神 <b style="color:#c89ce0">${'●'.repeat(shenXin)}${'○'.repeat(Math.max(0,3-shenXin))}</b>　·　十赌九输，点到为止`;
+}
+function stakeRow(){
+  return `<div class="casRow">注额：${[100,500,1000].map(v=>
+    `<button class="casBtn ${casStake===v?'on':''}" data-stake="${v}">${v}</button>`).join('')}
+    <button class="casBtn ${casStake==='all'?'on':''}" data-stake="all" style="color:#e8845a">梭 哈</button></div>`;
+}
+function renderCasino(){
+  casHead();
+  const body=document.getElementById('casBody');
+  if(casGame==='dice'){
+    body.innerHTML=stakeRow()
+      +`<div class="casRow">押注：
+        <button class="casBtn ${casBet==='big'?'on':''}" data-bet="big">大（11~17）赔 1:1</button>
+        <button class="casBtn ${casBet==='small'?'on':''}" data-bet="small">小（4~10）赔 1:1</button>
+        <button class="casBtn ${casBet==='baozi'?'on':''}" data-bet="baozi" style="color:#e8845a">豹子 赔 1:24</button></div>
+      <div class="dieBox"><div class="die" id="die0">？</div><div class="die" id="die1">？</div><div class="die" id="die2">？</div></div>
+      <div class="casRow" style="justify-content:center">
+        <button class="casBtn ${casFocus?'on':''}" id="casFocusBtn" ${shenXin<1&&!casFocus?'disabled':''}>凝 神（耗1心神·慢放骰子可改注）</button>
+        <button class="casBtn" id="casRoll" style="font-size:16px;padding:8px 30px;color:var(--gold)">开 骰</button>
+      </div>
+      <div class="casRow" id="casWindow" style="display:none;justify-content:center;background:rgba(201,162,39,.08);border-radius:4px;padding:6px">
+        <span style="color:#ffd24a;font-size:12px">骰势已显——</span>
+        <button class="casBtn" data-switch="big">改押大</button>
+        <button class="casBtn" data-switch="small">改押小</button>
+        <button class="casBtn" data-switch="cancel" style="color:#e8845a">撤 注</button>
+      </div>`;
+  }else{
+    if(!crickets.length)newCrickets();
+    body.innerHTML=stakeRow()
+      +`<div class="casRow">${crickets.map((c,i)=>`
+        <div class="cricket ${casPick===i?'on':''}" data-ck="${i}" id="ck${i}">
+          <div class="cn">${c.name}</div>
+          <div class="cs">体格 ${'▰'.repeat(c.ti)}<br>凶猛 ${'▰'.repeat(c.xiong)}<br>斗性 ${casSeen?'▰'.repeat(c.dou):'？？？'}</div>
+          <div class="cs" style="color:#e8c655">赔率 ${c.odds}x</div>
+        </div>`).join('')}</div>
+      <div class="casRow" style="justify-content:center">
+        <button class="casBtn" id="casSeeBtn" ${casSeen||shenXin<1?'disabled':''}>相 虫（耗1心神·看穿斗性）</button>
+        <button class="casBtn" id="casFight" style="font-size:16px;padding:8px 30px;color:var(--gold)">开 斗</button>
+        <button class="casBtn" id="casRenew">换一批蛐蛐</button>
+      </div>`;
+  }
+}
+function newCrickets(){
+  const names=['铁头大将军','黑旋风','油葫芦','紫金翅','常胜将军','咬天王','金琵琶','夜游神'];
+  const picked=[];
+  while(picked.length<3){
+    const n=names[Math.floor(Math.random()*names.length)];
+    if(!picked.includes(n))picked.push(n);
+  }
+  crickets=picked.map(n=>({name:n,ti:3+Math.floor(Math.random()*6),xiong:3+Math.floor(Math.random()*6),dou:3+Math.floor(Math.random()*6)}));
+  const order=[...crickets].sort((a,b)=>(b.ti+b.xiong)-(a.ti+a.xiong));
+  crickets.forEach(c=>{c.odds=c===order[0]?1.5:c===order[1]?2:3;});
+  casPick=-1;casSeen=false;
+}
+function casStakeVal(){return casStake==='all'?gold:casStake;}
+function casPayout(win,amt,what){
+  if(win){
+    gold+=amt;
+    sfx.coin();
+    casMsg(`<b style="color:#ffd24a">${what}　赢 ${amt} 金！</b>`);
+    casinoStat(cs=>{cs.won+=amt;cs.streak++;cs.bestStreak=Math.max(cs.bestStreak,cs.streak);cs.maxWin=Math.max(cs.maxWin||0,amt);});
+  }else{
+    casMsg(`<span style="color:#e8845a">${what}　输了 ${amt} 金……</span>`);
+    casinoStat(cs=>{cs.lost+=amt;cs.streak=0;});
+    if(gold<100){
+      casinoStat(cs=>{cs.bankrupt=true;});
+      casMsg('<b style="color:#e8845a">「客官，底钱都没了——回吧。」你被请出了赌坊。</b>');
+    }
+  }
+  saveGame(prepChap);
+  renderPrep(false);
+}
+async function casRollDice(){
+  if(casBusy)return;
+  const stake=casStakeVal();
+  if(gold<100){casMsg('身上不足 100 金，赌坊谢客。');return;}
+  if(stake<=0||gold<stake){casMsg('军资不足此注。');return;}
+  casBusy=true;
+  const wasAll=casStake==='all';
+  gold-=stake;
+  casHead();
+  const d=[1+Math.floor(Math.random()*6),1+Math.floor(Math.random()*6),1+Math.floor(Math.random()*6)];
+  const els=[0,1,2].map(i=>document.getElementById('die'+i));
+  els.forEach(el=>{el.classList.add('rolling');el.classList.remove('settle');});
+  const flick=setInterval(()=>{els.forEach(el=>{if(el.classList.contains('rolling'))el.textContent=DIE_FACE[1+Math.floor(Math.random()*6)];});},80);
+  casWinBet=casBet;
+  const per=casFocus?1300:380;
+  await sleep(500);
+  for(let i=0;i<3;i++){
+    if(casFocus&&i===2){
+      // 凝神：末骰落定前的改注窗口
+      const w=document.getElementById('casWindow');
+      if(w)w.style.display='flex';
+      await sleep(1700);
+      if(w)w.style.display='none';
+    }
+    const el=els[i];
+    el.classList.remove('rolling');
+    el.classList.add('settle');
+    el.textContent=DIE_FACE[d[i]];
+    sfx.hit();
+    await sleep(per);
+  }
+  clearInterval(flick);
+  const sum=d[0]+d[1]+d[2];
+  const triple=d[0]===d[1]&&d[1]===d[2];
+  const desc=`${d.join('·')}＝${sum} ${triple?'<b style="color:#e8845a">围骰豹子！</b>':sum>=11?'大':'小'}`;
+  if(casWinBet==='cancel'){
+    gold+=stake;
+    casMsg(`${desc}　——你及时撤了注，分文未损。`);
+    saveGame(prepChap);
+  }else if(casWinBet==='baozi'){
+    if(triple){casinoStat(cs=>{cs.baozi=true;if(wasAll)cs.allin=true;});casPayout(true,stake*24,desc);}
+    else casPayout(false,stake,desc);
+  }else{
+    const hit=!triple&&((casWinBet==='big'&&sum>=11)||(casWinBet==='small'&&sum<=10));
+    if(hit&&wasAll)casinoStat(cs=>{cs.allin=true;});
+    casPayout(hit,stake,triple?desc+'（围骰通吃）':desc);
+  }
+  casFocus=false;casBusy=false;
+  renderCasino();
+  casHead();
+}
+async function casFightCrickets(){
+  if(casBusy)return;
+  if(casPick<0){casMsg('先选一只蛐蛐。');return;}
+  const stake=casStakeVal();
+  if(gold<100){casMsg('身上不足 100 金，赌坊谢客。');return;}
+  if(stake<=0||gold<stake){casMsg('军资不足此注。');return;}
+  casBusy=true;
+  const wasAll=casStake==='all';
+  gold-=stake;
+  casHead();
+  const my=crickets[casPick];
+  const ws=crickets.map(c=>c.ti+c.xiong+c.dou);
+  for(let r=0;r<3;r++){
+    crickets.forEach((c,i)=>{const el=document.getElementById('ck'+i);if(el)el.classList.add('fight');});
+    casMsg(['两虫对峙，须爪交错……','「咔！」狠狠咬住了——','翻滚！甩开！再扑——'][r]);
+    await sleep(700);
+    crickets.forEach((c,i)=>{const el=document.getElementById('ck'+i);if(el)el.classList.remove('fight');});
+    await sleep(150);
+  }
+  let total=ws.reduce((a,b)=>a+b,0), roll=Math.random()*total, winIdx=0;
+  for(let i=0;i<ws.length;i++){roll-=ws[i];if(roll<=0){winIdx=i;break;}}
+  const winner=crickets[winIdx];
+  if(winIdx===casPick){
+    if(wasAll)casinoStat(cs=>{cs.allin=true;});
+    casPayout(true,Math.floor(stake*my.odds),`【${winner.name}】大获全胜！`);
+  }else{
+    casPayout(false,stake,`【${winner.name}】胜出，你押的【${my.name}】败了。`);
+  }
+  newCrickets();
+  casBusy=false;
+  renderCasino();
+  casHead();
+}
+document.getElementById('casinoBtn').onclick=()=>{
+  if(AC)sfx.select();
+  casGame='dice';casFocus=false;casBusy=false;
+  newCrickets();
+  renderCasino();
+  casMsg(gold<100?'身上不足 100 金，赌坊谢客。':'买定离手——');
+  document.getElementById('casino').classList.remove('hidden');
+};
+document.getElementById('closeCasino').onclick=()=>{
+  if(casBusy)return;
+  if(AC)sfx.select();
+  document.getElementById('casino').classList.add('hidden');
+};
+document.getElementById('casTabDice').onclick=()=>{if(casBusy)return;casGame='dice';document.getElementById('casTabDice').classList.add('on');document.getElementById('casTabCricket').classList.remove('on');renderCasino();};
+document.getElementById('casTabCricket').onclick=()=>{if(casBusy)return;casGame='cricket';document.getElementById('casTabCricket').classList.add('on');document.getElementById('casTabDice').classList.remove('on');renderCasino();};
+document.getElementById('casBody').addEventListener('click',e=>{
+  const st=e.target.closest('button[data-stake]');
+  if(st&&!casBusy){casStake=st.dataset.stake==='all'?'all':+st.dataset.stake;sfx.select();renderCasino();return;}
+  const bt=e.target.closest('button[data-bet]');
+  if(bt&&!casBusy){casBet=bt.dataset.bet;sfx.select();renderCasino();return;}
+  const sw=e.target.closest('button[data-switch]');
+  if(sw){casWinBet=sw.dataset.switch==='cancel'?'cancel':sw.dataset.switch;sfx.select();casMsg(sw.dataset.switch==='cancel'?'撤注！':'改押'+(sw.dataset.switch==='big'?'大':'小')+'！');return;}
+  const ck=e.target.closest('.cricket');
+  if(ck&&!casBusy){casPick=+ck.dataset.ck;sfx.select();renderCasino();return;}
+  if(e.target.id==='casFocusBtn'&&!casBusy){
+    if(!casFocus&&shenXin<1)return;
+    casFocus=!casFocus;
+    if(casFocus)shenXin--;else shenXin++;
+    sfx.select();renderCasino();return;
+  }
+  if(e.target.id==='casRoll'){casRollDice();return;}
+  if(e.target.id==='casFight'){casFightCrickets();return;}
+  if(e.target.id==='casSeeBtn'&&!casBusy){
+    if(shenXin<1||casSeen)return;
+    shenXin--;casSeen=true;
+    sfx.select();renderCasino();
+    casMsg('凝神细察——三虫斗性尽收眼底。');
+    return;
+  }
+});
 
 /* 难度：80%~800% 连续滑条。敌军 HP/攻击按百分比缩放，守备增幅放缓 */
 let diffPct=100;
@@ -6896,6 +7150,11 @@ const ACHV=[
   })},
   {n:'卧龙凤雏',pts:20,d:'解锁全部隐藏武将',ok:c=>[CAMP_ZHAOYUN,CAMP_CAOCAO].every(cp=>(cp.hidden||[]).every(h=>{try{return h.cond(c);}catch(e){return false;}}))},
   {n:'外传双绝',pts:20,d:'制霸两条外传战役',ok:c=>!!(campCodex(c,'zhaoyun').extraClear&&campCodex(c,'caocao').extraClear)},
+  {n:'小赌怡情',pts:10,d:'赌坊累计赢得 5000 金',ok:c=>((c.casino||{}).won||0)>=5000},
+  {n:'豹子！',  pts:20,d:'骰宝押中一次豹子',ok:c=>!!(c.casino||{}).baozi},
+  {n:'梭哈之魂',pts:20,d:'梭哈并获胜一次',ok:c=>!!(c.casino||{}).allin},
+  {n:'十连胜',  pts:20,d:'赌坊连胜 10 把',ok:c=>((c.casino||{}).bestStreak||0)>=10},
+  {n:'倾家荡产',pts:10,d:'被赌坊请出门一次（输到 100 金以下）',ok:c=>!!(c.casino||{}).bankrupt},
 ];
 function anyClear(c,fn){return ['zhaoyun','caocao'].some(k=>campCodex(c,k).clear.some(fn));}
 /* ===================== 天赋（成就点兑换，跨周目永久生效，可随时重新搭配） ===================== */
@@ -7012,6 +7271,10 @@ function renderCodex(){
     allDuel.map(k=>seen.has(k)
       ?`<span class="cchip"><i>录</i>${k.replace('|','　对　')}</span>`
       :`<span class="cchip locked">？？？</span>`).join('')+'</div>';
+  const cas=c.casino||{};
+  html+=`<h3>赌坊战绩</h3><div class="cstamp">${(cas.won||cas.lost)
+    ?`累计赢 <b>${cas.won||0}</b> 金 · 累计输 ${cas.lost||0} 金 · 最高单赢 ${cas.maxWin||0} · 最佳连胜 ${cas.bestStreak||0}${cas.bankrupt?' · <span style="color:#e8845a">曾倾家荡产</span>':''}`
+    :'<span style="color:var(--paper-dim)">—— 尚未涉足赌坊 ——</span>'}</div>`;
   const achGot=ACHV.filter(a=>{try{return a.ok(c);}catch(e){return false;}});
   html+=`<h3>成就 ${achGot.length} / ${ACHV.length}</h3><div class="cgrid">`+
     ACHV.map(a=>{
