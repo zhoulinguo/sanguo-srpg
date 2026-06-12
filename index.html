@@ -570,6 +570,7 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
         张飞九宫格 · 投石车十字直射 2~3 · 弓手隔格射 · 骑克步、枪克骑<br>
         <span style="color:#ffb066">前后夹击 ×1.3 · 羁绊并肩成长 C→B→A · 点敌将可「合击」一键围殴 · 「戒备」自动反击</span><br>
         <span style="color:#e8a07a">火计/油桶留下燃烧地块 · 虎卫近战可击退（落水重创/撞物眩晕/撞桶殉爆） · 点敌将看「预计行动」</span><br>
+        <span style="color:#8fc4e8">★神兵藏于隐秘宝箱与强敌身上，认主觉醒特效 · 军师随等级习得新法术 · 主将备战可任选必杀 · 战前可颁军情令</span><br>
         左键选择/移动　右键或 Esc 取消　点敌将或按「危险区」看威胁　<span style="color:#e8c655">金光处藏宝</span><br>
         手机：长按画面＝取消　攻击需点两次确认　战场可左右滑动
       </div>
@@ -592,6 +593,9 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
     <div id="prepBag"></div>
     <h3 class="sec">军市 · 以金易物</h3>
     <div id="prepShop"></div>
+    <h3 class="sec">军情快报 · 战前一令</h3>
+    <div class="phead">出阵前可颁布一道军令（耗军资，仅本场战斗生效）——再点一次可撤回退款。</div>
+    <div id="prepOrders"></div>
     <h3 class="sec">锻造坊 · 淬火砺刃</h3>
     <div class="phead">按武器种类强化，全军同名武器共享；每级武力 +2，至多 +3，越锻越贵。</div>
     <div id="prepForge"></div>
@@ -1013,7 +1017,7 @@ let CHAPTERS=[
   shop:['bawang','tieji','tietai','baiyu','bintie','shangyao','lingzhi','danyao','hudan'],
   treasures:[
     {x:3,y:2,item:'shangyao'},{x:3,y:8,gold:400},
-    {x:15,y:5,item:'danyao'},{x:14,y:1,gold:500},
+    {x:15,y:5,item:'danyao'},{x:14,y:1,gold:500},{x:9,y:0,item:'shemao'},
   ],
   reinforce:[
     {turn:3,line:'曹军追兵自西面杀到——快向东突围！',units(){return [
@@ -1127,7 +1131,7 @@ let CHAPTERS=[
         ['张飞','老将军！断头将军之名，飞素来敬重！何不与我等共扶汉室？'],
         ['严颜','我州但有断头将军，无降将军！……然将军以义相待，颜，拜服！'],
        ]}}),
-    U({name:'刘璝',g:'璝',cls:'猛将',kind:'chief',side:'E',fac:'shu',x:20,y:4,hp:185,atk:33,def:18,mov:5,boss:true,awakeR:4,crit:.16,drop:'bazhen'}),
+    U({name:'刘璝',g:'璝',cls:'猛将',kind:'chief',side:'E',fac:'shu',x:20,y:4,hp:185,atk:33,def:18,mov:5,boss:true,awakeR:4,crit:.16,drop:'yanyue'}),
   ];},
  },
  {
@@ -1175,7 +1179,7 @@ let CHAPTERS=[
     U({name:'丘陵伏骑',g:'伏',cls:'铁骑',kind:'cav',side:'E',fac:'cao',x:12,y:8,hp:115,atk:30,def:12,mov:7,mounted:true,crit:.15,awakeR:3}),
     U({name:'投石车',g:'石',cls:'投石',kind:'catapult',side:'E',fac:'cao',x:14,y:4,hp:82,atk:41,def:7,mov:3,rngMin:2,rngMax:3,rngShape:'cross',awakeR:7,crit:.08}),
     U({name:'杜袭',g:'袭',cls:'猛将',kind:'chief',side:'E',fac:'cao',x:14,y:6,hp:140,atk:31,def:16,mov:5,awakeR:5,crit:.15,drop:'shangyao'}),
-    U({name:'夏侯渊',g:'渊',cls:'猛将',kind:'cav',side:'E',fac:'cao',x:14,y:5,hp:190,atk:35,def:18,mov:7,mounted:true,boss:true,awakeR:5,crit:.18,drop:'tietai'}),
+    U({name:'夏侯渊',g:'渊',cls:'猛将',kind:'cav',side:'E',fac:'cao',x:14,y:5,hp:190,atk:35,def:18,mov:7,mounted:true,boss:true,awakeR:5,crit:.18,drop:'luori'}),
   ];},
  },
  {
@@ -1328,7 +1332,7 @@ let CHAPTERS=[
     U({name:'韩瑶',g:'瑶',cls:'猛将',kind:'cav',side:'E',fac:'wei',x:12,y:7,hp:140,atk:32,def:14,mov:6,mounted:true,awakeR:5,crit:.16,drop:'shangyao'}),
     U({name:'韩琪',g:'琪',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:14,y:3,hp:145,atk:33,def:16,mov:5,awakeR:5,crit:.16,drop:'lingzhi'}),
     U({name:'韩琼',g:'琼',cls:'猛将',kind:'guard',side:'E',fac:'wei',x:14,y:7,hp:145,atk:32,def:17,mov:5,rngShape:'square',awakeR:5,crit:.15,drop:'danyao'}),
-    U({name:'韩德',g:'德',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:14,y:5,hp:210,atk:37,def:20,mov:5,boss:true,awakeR:4,crit:.2,drop:'longdan'}),
+    U({name:'韩德',g:'德',cls:'猛将',kind:'chief',side:'E',fac:'wei',x:14,y:5,hp:210,atk:37,def:20,mov:5,boss:true,awakeR:4,crit:.2,drop:'longdanqiang'}),
   ];},
  },
  {
@@ -1415,6 +1419,19 @@ const ITEMS={
   bazhen:   {n:'八阵图',slot:'ac',int:8,atk:2,price:1500,lore:'孔明推演之阵法'},
   dilu:     {n:'的卢鞍辔',slot:'ac',mov:2,price:2000,lore:'的卢马，一跃三丈'},
   bingshu:  {n:'兵法书',slot:'ac',int:10,price:1800,lore:'兵者诡道，百战之策'},
+  // 神兵（有且仅有一把，不入军市；在命定之主手中觉醒特殊效果）
+  longdanqiang:{n:'龙胆亮银枪',slot:'wp',wtype:'spear',atk:10,legend:true,owner:'赵云',ownerAtk:6,fx:'reach',
+    fxDesc:'攻击距离 +1（枪芒吐露，隔空伤敌）',price:3000,lore:'银枪如龙，常山之胆'},
+  shemao:   {n:'丈八蛇矛',slot:'wp',wtype:'spear',atk:10,legend:true,owner:'张飞',ownerAtk:6,fx:'splash',
+    fxDesc:'分裂攻击：溅射目标相邻敌军四成伤害',price:3000,lore:'矛出如蛇，万军辟易'},
+  yanyue:   {n:'青龙偃月刀',slot:'wp',wtype:'halberd',atk:11,legend:true,owner:'关羽',ownerAtk:6,fx:'sure_crit',
+    fxDesc:'刀刀暴击（青龙偃月，势不可挡）',price:3200,lore:'冷艳锯，重八十二斤'},
+  luori:    {n:'落日神弓',slot:'wp',wtype:'bow',atk:9,legend:true,owner:'黄忠',ownerAtk:5,fx:'reach',
+    fxDesc:'射程 +1（百步穿杨，箭无虚发）',price:3000,lore:'老将之弓，能开二石'},
+  yitian:   {n:'倚天剑',slot:'wp',wtype:'sword',atk:10,legend:true,owner:'曹操',ownerAtk:6,fx:'venom',
+    fxDesc:'剑气侵蚀：命中附中毒 2 回合',price:3200,lore:'与青釭并世，剑气森寒'},
+  shuangji: {n:'恶来双戟',slot:'wp',wtype:'halberd',atk:10,legend:true,owner:'典韦',ownerAtk:6,fx:'splash',
+    fxDesc:'分裂攻击：双戟横扫，溅射相邻敌军四成伤害',price:3000,lore:'古之恶来，提戟八十斤'},
   // 消耗品
   shangyao: {n:'伤药',use:'hp60',price:100},
   lingzhi:  {n:'灵芝',use:'hpfull',price:350},
@@ -1461,6 +1478,7 @@ function itemDesc(k){
   if(it.crit)p.push('暴击+'+Math.round(it.crit*100)+'%');
   if(it.srng)p.push('策略范围+'+it.srng);
   if(forge[k])p.push('锻+'+forge[k]+'（武力再+'+forge[k]*2+'）');
+  if(it.legend)p.push(`★神兵 · ${it.owner}专属：武力再+${it.ownerAtk}，${it.fxDesc}`);
   return p.join('　');
 }
 let bag={}, gold=500;
@@ -1471,6 +1489,14 @@ let barrels=[]; // 战场机关：火油桶（攻击引爆，3×3 烈焰，敌�
 function barrelAt(x,y){return barrels.find(b=>b.x===x&&b.y===y);}
 let fireTiles=[]; // 燃烧地块：火计/油桶留下，停留其上每回合受伤，持续数回合
 let bondExp={}; // 羁绊熟练：并肩作战回合数，C→B(8)→A(18) 加成递增
+let warOrder=null; // 战前军情：备战时颁布，仅本场战斗生效
+const WAR_ORDERS={
+  drums:  {n:'擂鼓助威',cost:300,desc:'全军武力 +3',atk:3},
+  march:  {n:'轻装疾行',cost:300,desc:'全军移动 +1',mov:1},
+  forlorn:{n:'死士先登',cost:250,desc:'全军暴击 +8%，但守备 −3',crit:.08,def:-3},
+  fortify:{n:'坚壁清野',cost:250,desc:'全军守备 +4，但移动 −1',def:4,mov:-1},
+  feint:  {n:'虚张声势',cost:300,desc:'敌军警戒范围 −2，便于各个击破',awake:-2},
+};
 let dao=0; // 仁霸值：战场抉择累积，+仁 −霸，影响劝降难度/暴击/结局
 function fireAt(x,y){return fireTiles.find(f=>f.x===x&&f.y===y);}
 /* 状态效果：灼烧/中毒（回合伤害）、眩晕（跳过行动） */
@@ -1478,6 +1504,8 @@ const STATUS_INFO={
   burn:{n:'灼烧',g:'燃',color:'#f3a33c',dmg:10},
   poison:{n:'中毒',g:'毒',color:'#8fc46a',dmg:8},
   stun:{n:'眩晕',g:'晕',color:'#ffd24a',dmg:0},
+  slow:{n:'迟滞',g:'缓',color:'#8fb4e8',dmg:0},
+  rally:{n:'激励',g:'激',color:'#ffb066',dmg:0},
 };
 function addStatus(u,k,t){
   if(!u.alive)return;
@@ -1519,8 +1547,15 @@ function S(u,stat){ // 含装备加成的属性（武器另加锻造层级，风
     const k=u.equip[sl], it=k&&ITEMS[k];
     if(it&&it[stat])v+=it[stat];
     if(sl==='wp'&&stat==='atk'&&k&&forge[k])v+=forge[k]*2;
+    if(sl==='wp'&&stat==='atk'&&it&&it.legend&&it.owner===u.name)v+=it.ownerAtk||0; // 神兵认主
+  }
+  if(u.side==='P'&&!u.npc&&warOrder){
+    const w=WAR_ORDERS[warOrder];
+    if(w&&w[stat])v+=w[stat];
   }
   if(stat==='mov'&&curWeather()==='snow')v=Math.max(2,v-1);
+  if(stat==='mov'&&hasStatus(u,'slow'))v=Math.max(1,v-2);
+  if(stat==='mov')v=Math.max(1,v);
   return v;
 }
 /* ===================== 天气 ===================== */
@@ -1534,7 +1569,9 @@ function curWeather(){
   return (ch&&ch.weather)||null;
 }
 function critOf(u){
+  if(legendFx(u)==='sure_crit')return 1; // 青龙偃月：刀刀暴击
   let c=u.crit??.12;
+  if(u.side==='P'&&!u.npc&&warOrder&&WAR_ORDERS[warOrder].crit)c+=WAR_ORDERS[warOrder].crit;
   if(u.side==='P'&&!u.npc&&typeof dao!=='undefined'&&dao<=-2)c+=.03; // 霸道立威：全军暴击+3%
   if(u.equip)for(const sl of ['wp','ar','ac']){
     const it=u.equip[sl]&&ITEMS[u.equip[sl]];
@@ -1573,24 +1610,32 @@ function moveCost(u,ch){
 const key=(x,y)=>x+','+y;
 const manh=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 /* 攻击范围形状：diamond=菱形(曼哈顿) square=九宫格(含斜角) cross=十字直线 */
+/* 神兵觉醒效果：仅当命定之主亲自持有时生效 */
+function legendFx(u){
+  const k=u&&u.equip&&u.equip.wp, it=k&&ITEMS[k];
+  return (it&&it.legend&&it.owner===u.name)?it.fx:null;
+}
 function shapeOk(u,dx,dy){
   const ax=Math.abs(dx),ay=Math.abs(dy);
   let d;
   if(u.rngShape==='square')d=Math.max(ax,ay);
   else if(u.rngShape==='cross'){if(ax>0&&ay>0)return false;d=ax+ay;}
   else d=ax+ay;
-  return d>=u.rngMin&&d<=u.rngMax;
+  const rmax=u.rngMax+(legendFx(u)==='reach'?1:0);
+  return d>=u.rngMin&&d<=rmax;
 }
 function offsetsFor(u){
   const out=[];
-  for(let dx=-u.rngMax;dx<=u.rngMax;dx++)for(let dy=-u.rngMax;dy<=u.rngMax;dy++){
+  const rm=u.rngMax+(legendFx(u)==='reach'?1:0);
+  for(let dx=-rm;dx<=rm;dx++)for(let dy=-rm;dy<=rm;dy++){
     if(dx===0&&dy===0)continue;
     if(shapeOk(u,dx,dy))out.push([dx,dy]);
   }
   return out;
 }
 function rngLabel(u){
-  const r=u.rngMin===u.rngMax?String(u.rngMax):`${u.rngMin}~${u.rngMax}`;
+  const rm=u.rngMax+(legendFx(u)==='reach'?1:0);
+  const r=u.rngMin===rm?String(rm):`${u.rngMin}~${rm}`;
   if(u.rngShape==='square')return '九宫格';
   if(u.rngShape==='cross')return `十字${r}`;
   return r;
@@ -1643,7 +1688,33 @@ const STRAT={
   heal:{name:'治愈',mp:10,rng:4,kind:'heal',desc:'范围4 · 恢复友军兵力（智力×1.1）并解除灼烧/中毒'},
   bolt:{name:'妖术',mp:10,rng:4,kind:'dmg',desc:'范围4 · 妖法伤害，无视地形加成'},
   poison:{name:'毒计',mp:10,rng:4,kind:'dmg',desc:'范围4 · 小伤害＋中毒3回合（每回合损 8 兵力）'},
+  thunder:{name:'落雷',mp:16,rng:4,kind:'dmg',desc:'范围4 · 雷殛重伤（智力×1.5），四成几率眩晕 1 回合'},
+  firestorm:{name:'业火燎原',mp:22,rng:3,kind:'dmg',aoe:1,desc:'范围3 · 以落点为心 3×3 烈焰，皆灼烧并点燃落点'},
+  slow:{name:'迟滞',mp:8,rng:4,kind:'dmg',desc:'范围4 · 轻伤＋迟滞 2 回合（移动 −2）'},
+  rally:{name:'激励',mp:10,rng:3,kind:'buff',desc:'范围3 · 友军武力 +6，持续 2 回合'},
 };
+/* 法术随等级习得 */
+const LEARN={
+  '诸葛亮':[{lv:12,sk:'firestorm'},{lv:18,sk:'thunder'}],
+  '荀彧':[{lv:10,sk:'rally'}],
+  '庞统':[{lv:12,sk:'slow'}],
+  '郭嘉':[{lv:12,sk:'thunder'}],
+  '刘备':[{lv:14,sk:'rally'}],
+  '姜维':[{lv:16,sk:'thunder'}],
+};
+function checkLearn(u,quiet){
+  const ls=LEARN[u.name];
+  if(!ls)return;
+  for(const o of ls){
+    if(u.lv>=o.lv&&!u.strats.includes(o.sk)){
+      u.strats.push(o.sk);
+      if(!quiet){
+        addFloat(u.px,u.py-36,`习得【${STRAT[o.sk].name}】！`,'#8fc4e8',true);
+        log(`<b>${u.name}</b> 研习兵法有成，习得新法术【${STRAT[o.sk].name}】！`,'good');
+      }
+    }
+  }
+}
 function stratRng(u,s){ // 法术范围 = 基础 + 扇笛等装备增程 + 转职增程
   let r=s.rng;
   if(u.equip)for(const sl of ['wp','ar','ac']){
@@ -1719,7 +1790,7 @@ let PLAYER_BASE=[
   {name:'黄忠',  g:'忠',cls:'弓骑',kind:'hcav', side:'P',x:0,y:0,lv:2,hp:105,atk:30,def:12,mov:6,rngMin:1,rngMax:2,mounted:true,crit:.16,joinCh:7},
 ];
 /* 名册序列化：完整字段，支持劝降而来的编外武将 */
-const ROSTER_FIELDS=['name','g','cls','kind','fac','lv','exp','maxhp','maxmp','int','atk','def','mov','rngMin','rngMax','rngShape','crit','mounted','leader','dep','promoted','srng'];
+const ROSTER_FIELDS=['name','g','cls','kind','fac','lv','exp','maxhp','maxmp','int','atk','def','mov','rngMin','rngMax','rngShape','crit','mounted','leader','dep','promoted','srng','ultSel'];
 function serRosterUnit(u){
   const o={};
   for(const k of ROSTER_FIELDS)o[k]=u[k];
@@ -1767,6 +1838,7 @@ function levelUpTo(u,lv){
     if(u.maxmp>0)u.maxmp+=5;
   }
   u.hp=u.maxhp;u.mp=u.maxmp;
+  checkLearn(u,true);
 }
 /* 剧情入伙：进入第 i 章备战时，把 joinCh<=i 且未在册的武将编入，返回新入伙名单 */
 function syncJoins(i){
@@ -1954,7 +2026,7 @@ function pincerAlly(a,d){
   return (u&&u.alive&&u.side===a.side&&u!==a&&!u.npc)?u:null;
 }
 function dmgRange(a,d){
-  const atk=S(a,'atk')+bondStat(a,'atk');
+  const atk=S(a,'atk')+bondStat(a,'atk')+(hasStatus(a,'rally')?6:0);
   const def=S(d,'def')+bondStat(d,'def');
   let base=atk*advMult(a,d)-def*(1+terrDef(d.x,d.y));
   if(pincerAlly(a,d))base*=1.3;
@@ -2093,6 +2165,7 @@ function gainExp(u,amt){
     addFloat(u.px,u.py-30,'升 级 !','#f6d35e',true);
     log(`<b>${u.name}</b> 升至 ${u.lv} 级！武力、守备上升`, 'good');
     sfx.levelup();
+    checkLearn(u);
   }
 }
 
@@ -2267,8 +2340,30 @@ let ULTS={
   '姜维':  {label:'麒麟胆',  desc:'单体 230% 伤害（必定暴击）',quote:'伯约之枪，承丞相之志！',type:'single',mult:2.3},
   '庞统':  {label:'连环计',  desc:'射程内至多三敌各受 140% 伤害',quote:'连环既设，万事俱备。',type:'triple',mult:1.4},
 };
+/* 主将必杀池：备战时任选，随等级解锁 */
+const LEADER_ULTS={
+  '赵云':[
+    {lv:1, label:'龙胆枪',    desc:'九宫格内所有敌人受 160% 伤害',quote:'吾乃常山赵子龙！',type:'aoe',mult:1.6},
+    {lv:12,label:'七探盘蛇枪',desc:'单体 270% 伤害（必定暴击）',quote:'枪出七探，影分七路——破！',type:'single',mult:2.7},
+    {lv:20,label:'百鸟朝凤枪',desc:'射程内至多三敌各受 150% 伤害',quote:'百鸟朝凤，万军辟易！',type:'triple',mult:1.5},
+  ],
+  '曹操':[
+    {lv:1, label:'奸雄令',  desc:'全军恢复 35 兵力',quote:'宁教我负天下人！全军——随孤进击！',type:'heal_flat',amt:35},
+    {lv:12,label:'孟德新书',desc:'全军怒气 +30',quote:'兵法之要，尽在此书！',type:'rage_all',amt:30},
+    {lv:20,label:'魏武天威',desc:'九宫格内所有敌人受 160% 伤害',quote:'山不厌高，海不厌深——天下归孤！',type:'aoe',mult:1.6},
+  ],
+};
+function ultOf(u){
+  const pool=LEADER_ULTS[u.name];
+  if(pool){
+    let i=u.ultSel??0;
+    if(!(pool[i]&&u.lv>=pool[i].lv))i=0;
+    return pool[i];
+  }
+  return ULTS[u.name];
+}
 function addRage(u,amt){
-  if(u.side!=='P'||!u.alive||!ULTS[u.name])return;
+  if(u.side!=='P'||!u.alive||!ultOf(u))return;
   const was=u.rage;
   u.rage=Math.min(100,u.rage+amt);
   if(was<100&&u.rage>=100){
@@ -2277,14 +2372,14 @@ function addRage(u,amt){
   }
 }
 function ultTargets(u){
-  const ult=ULTS[u.name];
+  const ult=ultOf(u);
   if(!ult)return [];
   if(ult.type==='aoe')return alive('E').filter(e=>Math.max(Math.abs(e.x-u.x),Math.abs(e.y-u.y))<=1);
   if(ult.type==='single'||ult.type==='triple')return alive('E').filter(e=>shapeOk(u,e.x-u.x,e.y-u.y));
   return [u];
 }
 async function castUlt(u,target){
-  const ult=ULTS[u.name];
+  const ult=ultOf(u);
   hideMenu();state='busy';
   sfx.ult();
   flashT=.4;shakeT=.3;
@@ -2299,6 +2394,14 @@ async function castUlt(u,target){
       if(r>0){p.hp+=r;addHealFx(p.x,p.y);addFloat(p.px,p.py-26,'+'+r,'#b8e986');}
     }
     log(`${u.name} 发动【${ult.label}】，全军士气大振！`,'good');
+  }else if(ult.type==='rage_all'){
+    sfx.ult();
+    for(const p of alive('P')){
+      if(p.npc||p===u||!ultOf(p))continue;
+      addRage(p,ult.amt);
+      addFloat(p.px,p.py-26,'+'+ult.amt+' 怒','#ff9a3c');
+    }
+    log(`${u.name} 颁行【${ult.label}】，全军斗志昂扬！`,'good');
   }else if(ult.type==='heal_self'){
     sfx.heal();
     const r=Math.min(ult.selfAmt,u.maxhp-u.hp);u.hp+=r;
@@ -2502,6 +2605,21 @@ async function doAttack(a,d){
   const dead=await doDamage(d,dmg,crit?'#f6d35e':'#ffd9c4');
   if(a.side==='P'){gainExp(a,dmg*.5+(dead?50:25));addRage(a,dead?50:25);addStat(a,dmg,dead);}
   if(checkEnd())return;
+  // 神兵觉醒：倚天淬毒 / 蛇矛双戟分裂
+  const lfx=legendFx(a);
+  if(lfx==='venom'&&!dead&&d.alive)addStatus(d,'poison',2);
+  if(lfx==='splash'){
+    const around=units.filter(x=>x.alive&&x.side===d.side&&x!==d&&Math.max(Math.abs(x.x-d.x),Math.abs(x.y-d.y))<=1);
+    for(const sp of around){
+      const sd=Math.max(1,Math.round(dmg*.4));
+      addFloat(sp.px,sp.py-26,String(sd),'#ffb066');
+      log(`神兵余势溅射 ${sp.name}，<b>${sd}</b> 伤害！`,a.side==='P'?'good':'hit');
+      const sdead=await doDamage(sp,sd,'#ffb066');
+      if(a.side==='P'){gainExp(a,sd*.3+(sdead?25:0));addStat(a,sd,sdead);}
+      if(ended)return;
+    }
+    if(checkEnd())return;
+  }
   // 虎卫系（戟卫）近身重击震退目标一格：落水重创、撞物眩晕、撞上油桶殉爆
   if(!dead&&d.alive&&a.kind==='guard'&&Math.max(Math.abs(a.x-d.x),Math.abs(a.y-d.y))<=1&&!d.boss){
     await doKnockback(a,d);
@@ -2570,22 +2688,46 @@ async function doStrategy(a,stratKey,d){
   const s=STRAT[stratKey];
   a.mp-=s.mp;
   if(s.kind==='dmg'){
-    if(stratKey==='bolt'){sfx.bolt();addBolt(d.x,d.y);}
+    if(stratKey==='bolt'||stratKey==='thunder'){sfx.bolt();addBolt(d.x,d.y);}
     else{sfx.fire();addFire(d.x,d.y);}
     await sleep(380);
     let dmg=stratDmg(a,d,stratKey);
     if(stratKey==='poison')dmg=Math.max(1,Math.round(dmg*.6));
+    if(stratKey==='slow')dmg=Math.max(1,Math.round(dmg*.3));
+    if(stratKey==='thunder')dmg=Math.max(1,Math.round(dmg*1.15));
     log(`${a.name} 施放【${s.name}】，${d.name} 受到 <b>${dmg}</b> 伤害`, a.side==='P'?'good':'hit');
-    const dead=await doDamage(d,dmg,stratKey==='bolt'?'#cf9ae4':stratKey==='poison'?'#8fc46a':'#f3a33c');
+    const dead=await doDamage(d,dmg,stratKey==='bolt'||stratKey==='thunder'?'#cf9ae4':stratKey==='poison'?'#8fc46a':stratKey==='slow'?'#8fb4e8':'#f3a33c');
     if(!dead&&d.alive){
-      if(stratKey==='fire'){
+      if(stratKey==='fire'||stratKey==='firestorm'){
         addStatus(d,'burn',2);
         if(!fireAt(d.x,d.y)&&tch(d.x,d.y)!=='w')fireTiles.push({x:d.x,y:d.y,t:2});
       }
       if(stratKey==='poison')addStatus(d,'poison',3);
+      if(stratKey==='slow')addStatus(d,'slow',2);
+      if(stratKey==='thunder'&&Math.random()<.4){addStatus(d,'stun',1);log(`${d.name} 遭雷殛震慑，<b>眩晕</b>！`,a.side==='P'?'good':'hit');}
     }
     if(a.side==='P'){gainExp(a,dmg*.5+(dead?35:0));addRage(a,20);addStat(a,dmg,dead);}
+    // 业火燎原：波及落点四周
+    if(stratKey==='firestorm'&&!ended){
+      const around=units.filter(x=>x.alive&&x.side===d.side&&x!==d&&Math.max(Math.abs(x.x-d.x),Math.abs(x.y-d.y))<=(s.aoe||1));
+      for(const sp of around){
+        addFire(sp.x,sp.y);
+        const sd=Math.max(1,Math.round(stratDmg(a,sp,'fire')*.8));
+        log(`烈焰蔓延至 ${sp.name}，<b>${sd}</b> 伤害！`,a.side==='P'?'good':'hit');
+        const sdead=await doDamage(sp,sd,'#f3a33c');
+        if(!sdead&&sp.alive)addStatus(sp,'burn',2);
+        if(a.side==='P'){gainExp(a,sd*.3+(sdead?25:0));addStat(a,sd,sdead);}
+        if(ended)return;
+      }
+    }
     checkEnd();
+  }else if(s.kind==='buff'){
+    sfx.heal();
+    addHealFx(d.x,d.y);
+    await sleep(320);
+    addStatus(d,'rally',2);
+    log(`${a.name} 施放【${s.name}】，${d.name} 士气大振（武力 +6，2 回合）`, a.side==='P'?'good':'hit');
+    gainExp(a,12);
   }else{
     sfx.heal();
     addHealFx(d.x,d.y);
@@ -2624,6 +2766,7 @@ function checkEnd(){
 }
 function finish(win,loseMsg){
   ended=true;state='over';
+  warOrder=null; // 军情仅本战生效
   hideMenu();
   clearBattle(); // 战斗结束清除战斗存档（章节存档另存）
   const ch=CHAPTERS[chap];
@@ -2769,7 +2912,7 @@ function showUnitCard(u){
       <div style="font-size:11px;color:var(--paper-dim)">兵力 ${u.hp}/${u.maxhp}${u.maxmp?`　策略 ${u.mp}/${u.maxmp}`:''}</div>
       ${u.maxmp?`<div class="bar mp"><i style="width:${Math.round(u.mp/u.maxmp*100)}%"></i></div>`:''}
       ${u.side==='P'?`<div class="bar xp"><i style="width:${u.exp}%"></i></div>`:''}
-      ${u.side==='P'&&ULTS[u.name]?`<div class="bar rage"><i style="width:${u.rage}%"></i></div>`:''}
+      ${u.side==='P'&&ultOf(u)?`<div class="bar rage"><i style="width:${u.rage}%"></i></div>`:''}
       <div class="statline"><span>武 <b>${S(u,'atk')}${S(u,'atk')>u.atk?'<span style="color:#9fc068">↑</span>':''}</b></span><span>守 <b>${S(u,'def')}${S(u,'def')>u.def?'<span style="color:#9fc068">↑</span>':''}</b></span><span>移 <b>${S(u,'mov')}</b></span><span>射 <b>${rng}</b></span><span>暴 <b>${Math.round(critOf(u)*100)}%</b></span><span>地形 <b>${t.name}${t.def?` +${Math.round(t.def*100)}%`:''}</b></span></div>
       ${u.status&&u.status.length?`<div class="trait">${u.status.map(st=>`<span style="color:${STATUS_INFO[st.k].color}">【${STATUS_INFO[st.k].n}】余 ${st.t} 回合</span>`).join('　')}</div>`:''}
       ${u.side==='P'&&u.guard?`<div class="trait" style="color:#8cdcff">戒备中：敌进入射程自动反击</div>`:''}
@@ -2778,7 +2921,7 @@ function showUnitCard(u){
       ${(()=>{const bs=bondActive(u);return bs.length?`<div class="trait" style="color:#ffb066">羁绊 ${bs.map(b=>`【${b.n}·${b.rank}】武+${b.atk} 守+${b.def}`).join('　')}</div>`:'';})()}
       ${u.side==='E'&&u.recruit?`<div class="trait" style="color:#ffd24a">可劝降：兵力打至 ${Math.round(u.recruit.hpr*100)}% 以下，由${u.recruit.by||'主帅'}相邻出面${recruitReady(u)?'——条件已达成！':''}</div>`:''}
       ${u.side==='P'?`<div class="trait" style="color:#9db4d8">装备：${['wp','ar','ac'].map(s2=>u.equip&&u.equip[s2]?`${ITEMS[u.equip[s2]].n}（${itemDesc(u.equip[s2])}）`:null).filter(Boolean).join('　')||'无'}</div>`:''}
-      ${u.side==='P'&&ULTS[u.name]?`<div class="trait" style="color:#ffb066">必杀【${ULTS[u.name].label}】${ULTS[u.name].desc}（怒气 ${u.rage}/100）</div>`:''}
+      ${u.side==='P'&&ultOf(u)?`<div class="trait" style="color:#ffb066">必杀【${ultOf(u).label}】${ultOf(u).desc}（怒气 ${u.rage}/100）</div>`:''}
     </div>
   </div>`;
 }
@@ -2850,7 +2993,7 @@ function showMenu(u){
     const ok=u.mp>=s.mp&&targets.size>0;
     html+=`<button data-act="strat" data-strat="${sk}" ${ok?'':'disabled'}>${s.name} <span class="mp">${s.mp}MP</span><i class="udesc">${s.desc}</i></button>`;
   }
-  const ult=ULTS[u.name];
+  const ult=ultOf(u);
   if(ult){
     const ok=u.rage>=100&&ultTargets(u).length>0;
     html+=`<button data-act="ult" ${ok?'':'disabled'} class="ultBtn">必杀·${ult.label} <span class="mp">${u.rage}/100</span><i class="udesc">${ult.desc}</i></button>`;
@@ -2883,6 +3026,12 @@ function stratTargets(u,sk){
     for(const e of alive(u.side==='P'?'E':'P')){
       const d=manh(u,e);
       if(d>=1&&d<=rng)set.add(key(e.x,e.y));
+    }
+  }else if(s.kind==='buff'){
+    for(const a of alive(u.side)){
+      if(a.npc)continue;
+      const d=manh(u,a);
+      if(d<=rng&&!hasStatus(a,'rally'))set.add(key(a.x,a.y));
     }
   }else{
     for(const a of alive(u.side)){
@@ -2944,7 +3093,7 @@ menuEl.addEventListener('click',async e=>{
   }
   if(act==='back'){showMenu(selected);return;}
   if(act==='ult'){
-    const ult=ULTS[selected.name];
+    const ult=ultOf(selected);
     if(ult&&ult.type==='single'){ // 单体必杀：与攻击一致，红格点选目标
       const tiles=new Set(ultTargets(selected).map(e=>key(e.x,e.y)));
       targeting={kind:'ult',tiles};
@@ -3066,7 +3215,7 @@ cv.addEventListener('mousemove',e=>{
       hoverTarget=target;
       if(targeting.kind==='attack')forecastAttack(selected,target);
       else if(targeting.kind==='ult'){
-        const ult=ULTS[selected.name];
+        const ult=ultOf(selected);
         const dd=Math.max(1,Math.round(S(selected,'atk')*ult.mult-S(target,'def')*.8));
         showForecast(`必杀【${ult.label}】→ ${target.name}<br><span class="big">${dd}</span> 必杀伤害（必中）`);
       }else if(targeting.kind==='item'){
@@ -3098,7 +3247,7 @@ function mobPreview(target){
     return `${selected.name} → ${target.name}　伤害 ${lo}~${hi}　敌剩 ${Math.max(0,target.hp-hi)}~${Math.max(0,target.hp-lo)}<br><b style="color:#e8c655">再点一次确认攻击 · 长按取消</b>`;
   }
   if(targeting.kind==='ult'){
-    const ult=ULTS[selected.name];
+    const ult=ultOf(selected);
     const dd=Math.max(1,Math.round(S(selected,'atk')*ult.mult-S(target,'def')*.8));
     return `必杀【${ult.label}】→ ${target.name}　伤害 ${dd}<br><b style="color:#e8c655">再点一次确认 · 长按取消</b>`;
   }
@@ -3182,6 +3331,7 @@ cv.addEventListener('click',async e=>{
       await finishAction();
     }else{
       touchConfirm=null;mobHint('');
+      cancelStep(); // 点选范围之外：返回行动菜单，可重选技能/取消
     }
     return;
   }
@@ -4636,7 +4786,7 @@ function drawUnits(time){
       ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=.8;
       ctx.strokeRect(u.px-bw/2,u.py+19,bw,4.5);
       // 怒气条
-      if(u.side==='P'&&ULTS[u.name]){
+      if(u.side==='P'&&ultOf(u)){
         ctx.fillStyle='rgba(0,0,0,.55)';
         ctx.fillRect(u.px-bw/2,u.py+24.6,bw,2.6);
         ctx.fillStyle=u.rage>=100?'#ffd24a':'#ff9a3c';
@@ -4906,6 +5056,7 @@ function startChapter(i){
   barrels=(ch.barrels||[]).map(([x,y])=>({x,y}));
   fireTiles=[];
   if(ch.weather==='fog')foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)-2);}); // 大雾：警戒收窄
+  if(warOrder&&WAR_ORDERS[warOrder].awake)foes.forEach(e=>{e.awakeR=Math.max(2,(e.awakeR||6)+WAR_ORDERS[warOrder].awake);}); // 虚张声势
   ended=false;turn=1;phase='P';state='idle';
   floaters=[];particles=[];shakeT=0;flashT=0;threat=null;
   dangerOn=false;dangerTiles=null;
@@ -4916,6 +5067,7 @@ function startChapter(i){
   document.getElementById('log').innerHTML='';
   for(const [t,c] of ch.intro)log(t,c);
   if(ch.weather)log(`【${WEATHER_INFO[ch.weather].n}】${WEATHER_INFO[ch.weather].desc}`,'sys');
+  if(warOrder)log(`军情已布【${WAR_ORDERS[warOrder].n}】：${WAR_ORDERS[warOrder].desc}（本战生效）`,'good');
   if(barrels.length)log('战场上散落着<b>火油桶</b>——攻击引爆，3×3 烈焰敌我不分，亦会殃及相邻油桶！','sys');
   updateHud();
   banner(campName.split('').join(' ')+' 回 合');
@@ -4987,6 +5139,17 @@ function renderPrep(animate){
       }
       return `<select data-ri="${ri}" data-slot="${slot}" title="${cur?itemDesc(cur):''}">${opts}</select>`;
     }).join('');
+    const pool=LEADER_ULTS[u.name];
+    let ultSelHtml='';
+    if(pool){
+      let cur=u.ultSel??0;
+      if(!(pool[cur]&&u.lv>=pool[cur].lv))cur=0;
+      ultSelHtml='<br><span style="color:#ffb066">必杀任选：</span>'+pool.map((o,oi)=>
+        u.lv>=o.lv
+          ?`<button class="depBtn ${cur===oi?'on':''}" data-ultsel="${ri}:${oi}" style="width:auto;padding:2px 8px;font-size:12px;letter-spacing:1px" title="${o.desc}">${o.label}</button>`
+          :`<span style="color:rgba(232,220,192,.35)">　${o.label}·Lv${o.lv}解锁</span>`
+      ).join(' ');
+    }
     const promo=PROMOS[u.kind];
     const canPromo=promo&&!u.promoted&&u.lv>=PROMO_LV;
     const promoTag=u.promoted?`<br><span style="color:#ffd24a">「${u.promoted}」</span>`
@@ -4996,7 +5159,7 @@ function renderPrep(animate){
       <button class="depBtn ${u.dep?'on':''}" data-dep="${ri}" ${u.leader?'disabled':''} title="${u.leader?'主帅必须出战':'点击切换出战/留守'}">${u.dep?'出战':'留守'}</button>
       <canvas id="pcv${ri}" width="62" height="76"></canvas>
       <span class="pname">${u.name}<i>Lv${u.lv} · ${u.cls}${u.promoted?'·'+u.promoted:''}</i></span>
-      <span class="pstat">武 ${S(u,'atk')} · 守 ${S(u,'def')} · 移 ${S(u,'mov')} · 智 ${S(u,'int')} · 暴击 ${Math.round(critOf(u)*100)}%${ULTS[u.name]?`<br><span style="color:#ffb066">必杀「${ULTS[u.name].label}」${ULTS[u.name].desc}</span>`:''}${promoTag}</span>
+      <span class="pstat">武 ${S(u,'atk')} · 守 ${S(u,'def')} · 移 ${S(u,'mov')} · 智 ${S(u,'int')} · 暴击 ${Math.round(critOf(u)*100)}%${ultOf(u)?`<br><span style="color:#ffb066">必杀「${ultOf(u).label}」${ultOf(u).desc}</span>`:''}${ultSelHtml}${promoTag}</span>
       ${sels}
     </div>`;
   }).join('');
@@ -5017,6 +5180,15 @@ function renderPrep(animate){
       <div class="srow"><span class="price">${it.price} 金</span><button data-buy="${k}" ${gold>=it.price?'':'disabled'}>购 入</button></div>
     </div>`;
   }).join('')+'</div>';
+  // 军情快报
+  document.getElementById('prepOrders').innerHTML='<div class="shopgrid">'+Object.entries(WAR_ORDERS).map(([k,w])=>{
+    const on=warOrder===k;
+    return `<div class="shopcard" style="${on?'border-color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,.3)':''}">
+      <div class="sname">${w.n}${on?' <span style="color:#ffd24a">已颁布</span>':''}</div>
+      <div class="sdesc">${w.desc}</div>
+      <div class="srow"><span class="price">${w.cost} 金</span><button data-order="${k}" ${(!on&&gold<w.cost)?'disabled':''}>${on?'撤 回':'颁 布'}</button></div>
+    </div>`;
+  }).join('')+'</div>';
   // 锻造坊：列出持有/已装备的武器
   const wkeys=[...new Set([
     ...Object.keys(bag).filter(k=>ITEMS[k].slot==='wp'&&bag[k]>0),
@@ -5035,6 +5207,22 @@ function renderPrep(animate){
     :'<span class="chip" style="opacity:.5">暂无可锻造的武器</span>';
   document.getElementById('prepGold').textContent=`军资 ${gold} 金`;
 }
+document.getElementById('prepOrders').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-order]');
+  if(!btn||btn.disabled)return;
+  const k=btn.dataset.order;
+  if(warOrder===k){ // 撤回退款
+    gold+=WAR_ORDERS[k].cost;
+    warOrder=null;
+  }else{
+    if(gold<WAR_ORDERS[k].cost)return;
+    if(warOrder)gold+=WAR_ORDERS[warOrder].cost; // 换令先退款
+    gold-=WAR_ORDERS[k].cost;
+    warOrder=k;
+  }
+  sfx.coin();
+  renderPrep(false);
+});
 document.getElementById('prepForge').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-forge]');
   if(!btn||btn.disabled)return;
@@ -5067,6 +5255,14 @@ document.getElementById('prepBag').addEventListener('click',e=>{
   renderPrep(false);
 });
 document.getElementById('prepRoster').addEventListener('click',e=>{
+  const ubtn=e.target.closest('button[data-ultsel]');
+  if(ubtn){
+    const [ri,oi]=ubtn.dataset.ultsel.split(':').map(Number);
+    roster[ri].ultSel=oi;
+    sfx.select();
+    renderPrep(false);
+    return;
+  }
   const pbtn=e.target.closest('button[data-promo]');
   if(pbtn){
     const u=roster[+pbtn.dataset.promo];
@@ -5186,7 +5382,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,bondExp,dao,runTurns,ngPlus,escapedN,barrels,fireTiles,
+      chap,diffPct,turn,gold,bag,forge,bondExp,dao,warOrder,runTurns,ngPlus,escapedN,barrels,fireTiles,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -5196,7 +5392,7 @@ function battlePayload(){
         name:u.name,g:u.g,cls:u.cls,kind:u.kind,side:u.side,fac:u.fac,
         x:u.x,y:u.y,lv:u.lv,exp:u.exp,hp:u.hp,maxhp:u.maxhp,mp:u.mp,maxmp:u.maxmp,
         int:u.int,atk:u.atk,def:u.def,mov:u.mov,rngMin:u.rngMin,rngMax:u.rngMax,rngShape:u.rngShape,
-        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,srng:u.srng,npc:u.npc,escaped:u.escaped,
+        crit:u.crit,mounted:u.mounted,strats:u.strats,boss:u.boss,leader:u.leader,dep:u.dep,promoted:u.promoted,srng:u.srng,npc:u.npc,escaped:u.escaped,ultSel:u.ultSel,
         awakeR:u.awakeR,awake:u.awake,acted:u.acted,alive:u.alive,rage:u.rage,status:u.status||[],guard:!!u.guard,
         kills:u.kills||0,dmgSum:u.dmgSum||0,
         equip:u.equip,drop:u.drop,recruit:u.recruit||null,
@@ -5226,7 +5422,7 @@ function resumeBattle(d){
   setMapSize(MAP);
   renderBase();
   gold=d.gold;bag={...d.bag};forge={...(d.forge||{})};
-  bondExp={...(d.bondExp||{})};dao=d.dao||0;
+  bondExp={...(d.bondExp||{})};dao=d.dao||0;warOrder=d.warOrder||null;
   treasures=(d.treasures||[]).map(t=>({...t}));
   barrels=(d.barrels||[]).map(b=>({...b}));
   fireTiles=(d.fireTiles||[]).map(f=>({...f}));
@@ -5597,7 +5793,7 @@ const CAMP_CAOCAO={
     winPre:'濮阳夺还 · 兖州复定',winSub:t=>`第 ${t} 回合击破陈宫，吕布弃城东走，兖州复为曹公所有！<br>张绣割据宛城，威胁许都侧背——南征！`,
     nextBtn:'南 征 宛 城',reward:{shangyao:2,lingzhi:1},goldReward:850,
     shop:['bawang','tieji','tietai','baiyu','bintie','shangyao','lingzhi','danyao','hudan'],
-    treasures:[{x:4,y:0,item:'lingzhi'},{x:6,y:4,gold:350},{x:12,y:8,item:'shangyao'},{x:15,y:11,gold:450},{x:9,y:9,item:'danyao'}],
+    treasures:[{x:4,y:0,item:'lingzhi'},{x:6,y:4,gold:350},{x:12,y:8,item:'shangyao'},{x:15,y:11,gold:450},{x:9,y:9,item:'danyao'},{x:18,y:3,item:'shuangji'}],
     enemies(){return [
       U({name:'吕军枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:9,y:4,hp:118,atk:28,def:15,mov:5,awakeR:6}),
       U({name:'吕军枪兵',g:'枪',cls:'枪兵',kind:'spear',side:'E',fac:'dong',x:9,y:8,hp:118,atk:28,def:15,mov:5,awakeR:6}),
@@ -5774,7 +5970,7 @@ const CAMP_CAOCAO={
           ['曹操','儁乂！郭图谗言害你，本初岂是明主？孤虚左以待久矣！'],
           ['张郃','袁公疑而无断，谗臣当道……郃，愿归曹公，效犬马之劳！'],
          ]}}),
-      U({name:'袁绍',g:'绍',cls:'猛将',kind:'chief',side:'E',fac:'yuan',x:20,y:1,hp:235,atk:37,def:21,mov:5,boss:true,awakeR:4,crit:.17,drop:'bazhen'}),
+      U({name:'袁绍',g:'绍',cls:'猛将',kind:'chief',side:'E',fac:'yuan',x:20,y:1,hp:235,atk:37,def:21,mov:5,boss:true,awakeR:4,crit:.17,drop:'yitian'}),
     ];}},
   ],
   bag:{tiejian:1,changmao:1,sangmu:1,yushan:1,pijia:2,xue:1,shangyao:3,danyao:1},
