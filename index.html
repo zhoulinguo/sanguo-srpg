@@ -1746,6 +1746,28 @@ function itemDesc(k){
   return p.join('　');
 }
 let bag={}, gold=500;
+let forgeBag={}; // 锻造池：武器型号→已卸下的锻造等级数组（降序）。换装时锻造跟随武器，不丢失
+function fbStash(key,lv){ // 卸下一把锻过的武器，把锻造等级存入池
+  if(!key||!lv||!ITEMS[key]||ITEMS[key].slot!=='wp')return;
+  (forgeBag[key]=forgeBag[key]||[]).push(lv);
+  forgeBag[key].sort((a,b)=>b-a);
+}
+function fbTake(key){ // 装备一把武器，从池中取该型号最高的锻造等级（无则 0）
+  const a=forgeBag[key];
+  if(!a||!a.length)return 0;
+  return a.shift();
+}
+/* 统一换装：处理武器锻造在「武将槽 ↔ 锻造池」间转移 */
+function setEquip(u,slot,key){
+  const cur=u.equip[slot];
+  if(cur)bag[cur]=(bag[cur]||0)+1;
+  if(slot==='wp'){
+    if(cur&&u.wpForge>0)fbStash(cur,u.wpForge); // 卸下的旧武器：锻造存池
+    u.wpForge=key?fbTake(key):0;                 // 新武器：从池取回锻造（同型号继承）
+  }
+  if(key){bag[key]--;u.equip[slot]=key;}
+  else u.equip[slot]=null;
+}
 let forge={}; // 锻造层级（按武器种类，全军共享）。无上限：+9 后成功率恒为 15%，+6 起失败掉级
 const FORGE_MAX=99; // 实际无上限（保留常量兼容旧引用）
 const FORGE_RATE=[1,.95,.85,.7,.55,.45,.35,.25,.15]; // +9 之后恒取末位 15%
@@ -2331,6 +2353,7 @@ function snapshotRoster(){
   return {
     units:roster.map(serRosterUnit),
     bag:{...bag},
+    forgeBag:JSON.parse(JSON.stringify(forgeBag)),
     forge:{...forge},
     bondExp:{...bondExp},
     chains:{...chains},
@@ -2344,6 +2367,7 @@ function snapshotRoster(){
 function restoreRoster(snap){
   if(!snap||!snap.units)return;
   bag={...snap.bag};
+  forgeBag=snap.forgeBag?JSON.parse(JSON.stringify(snap.forgeBag)):{};
   forge={...(snap.forge||{})};
   bondExp={...(snap.bondExp||{})};
   chains={...(snap.chains||{})};
@@ -2357,7 +2381,7 @@ function restoreRoster(snap){
   roster.forEach(u=>{
     for(const sl of ['wp','ar','ac']){
       const k=u.equip[sl];
-      if(k&&!canEquip(u,k)){bag[k]=(bag[k]||0)+1;u.equip[sl]=null;}
+      if(k&&!canEquip(u,k)){if(sl==='wp'&&u.wpForge>0)fbStash(k,u.wpForge);if(sl==='wp')u.wpForge=0;bag[k]=(bag[k]||0)+1;u.equip[sl]=null;}
     }
   });
 }
@@ -2729,6 +2753,7 @@ function stratDmg(a,d,sk){
 let fastMode=(()=>{try{return localStorage.getItem('sanguo_speed')||'off';}catch(e){return 'off';}})(); // off / enemy / all
 const spd=()=>fastMode==='all'?2.2:(fastMode==='enemy'&&phase==='E')?2.4:1;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms/spd()));
+const rsleep=ms=>new Promise(r=>setTimeout(r,ms)); // 真实时长，不受敌速/全速加速影响（赌坊用）
 function tween(dur,fn){
   dur/=spd();
   return new Promise(res=>{
@@ -6951,10 +6976,7 @@ document.getElementById('prepRoster').addEventListener('change',e=>{
   const sel=e.target.closest('select');
   if(!sel)return;
   const u=roster[+sel.dataset.ri], slot=sel.dataset.slot, key=sel.value;
-  const cur=u.equip[slot];
-  if(cur)bag[cur]=(bag[cur]||0)+1;
-  if(key){bag[key]--;u.equip[slot]=key;}
-  else u.equip[slot]=null;
+  setEquip(u,slot,key);
   sfx.coin();
   renderPrep(false);
 });
@@ -6988,10 +7010,17 @@ function casHead(){
   document.getElementById('casHead').innerHTML=
     `军资 <b style="color:#e8c655">${gold}</b> 金　·　心神 <b style="color:#c89ce0">${'●'.repeat(shenXin)}${'○'.repeat(Math.max(0,3-shenXin))}</b>　·　十赌九输，点到为止`;
 }
+function curStakeNum(){return casStake==='all'?gold:casStake;}
 function stakeRow(){
-  return `<div class="casRow">注额：${[100,500,1000].map(v=>
-    `<button class="casBtn ${casStake===v?'on':''}" data-stake="${v}">${v}</button>`).join('')}
-    <button class="casBtn ${casStake==='all'?'on':''}" data-stake="all" style="color:#e8845a">梭 哈</button></div>`;
+  const cur=casStake==='all'?'梭哈':curStakeNum()+' 金';
+  return `<div class="casRow">注额
+    <button class="casBtn" data-stakeadj="-500">−500</button>
+    <button class="casBtn" data-stakeadj="-100">−100</button>
+    <b style="min-width:84px;text-align:center;color:${casStake==='all'?'#e8845a':'#ffd24a'}">${cur}</b>
+    <button class="casBtn" data-stakeadj="100">+100</button>
+    <button class="casBtn" data-stakeadj="500">+500</button>
+    <button class="casBtn ${casStake==='all'?'on':''}" data-stake="all" style="color:#e8845a">梭 哈</button></div>
+    <div class="casRow" style="margin-top:-4px">快捷：${[100,500,1000,5000].map(v=>`<button class="casBtn ${casStake===v?'on':''}" data-stake="${v}">${v}</button>`).join('')}</div>`;
 }
 function renderCasino(){
   casHead();
@@ -7073,14 +7102,15 @@ async function casRollDice(){
   els.forEach(el=>{el.classList.add('rolling');el.classList.remove('settle');});
   const flick=setInterval(()=>{els.forEach(el=>{if(el.classList.contains('rolling'))el.textContent=DIE_FACE[1+Math.floor(Math.random()*6)];});},80);
   casWinBet=casBet;
-  const per=casFocus?1300:380;
-  await sleep(500);
+  const per=casFocus?900:380;
+  await rsleep(500);
   for(let i=0;i<3;i++){
     if(casFocus&&i===2){
-      // 凝神：末骰落定前的改注窗口
+      // 凝神：末骰落定前的改注窗口（真实时长 2.6s，不受加速影响）
       const w=document.getElementById('casWindow');
       if(w)w.style.display='flex';
-      await sleep(1700);
+      casMsg('<b style="color:#ffd24a">凝神窗口开启——可改押 / 撤注！</b>');
+      await rsleep(2600);
       if(w)w.style.display='none';
     }
     const el=els[i];
@@ -7088,7 +7118,7 @@ async function casRollDice(){
     el.classList.add('settle');
     el.textContent=DIE_FACE[d[i]];
     sfx.hit();
-    await sleep(per);
+    await rsleep(per);
   }
   clearInterval(flick);
   const sum=d[0]+d[1]+d[2];
@@ -7127,9 +7157,9 @@ async function casFightCrickets(){
   for(let r=0;r<3;r++){
     crickets.forEach((c,i)=>{const el=document.getElementById('ck'+i);if(el)el.classList.add('fight');});
     casMsg(['两虫对峙，须爪交错……','「咔！」狠狠咬住了——','翻滚！甩开！再扑——'][r]);
-    await sleep(700);
+    await rsleep(700);
     crickets.forEach((c,i)=>{const el=document.getElementById('ck'+i);if(el)el.classList.remove('fight');});
-    await sleep(150);
+    await rsleep(150);
   }
   let total=ws.reduce((a,b)=>a+b,0), roll=Math.random()*total, winIdx=0;
   for(let i=0;i<ws.length;i++){roll-=ws[i];if(roll<=0){winIdx=i;break;}}
@@ -7173,12 +7203,25 @@ document.getElementById('closeCasino').onclick=()=>{
 document.getElementById('casTabDice').onclick=()=>{if(casBusy)return;casGame='dice';document.getElementById('casTabDice').classList.add('on');document.getElementById('casTabCricket').classList.remove('on');renderCasino();};
 document.getElementById('casTabCricket').onclick=()=>{if(casBusy)return;casGame='cricket';document.getElementById('casTabCricket').classList.add('on');document.getElementById('casTabDice').classList.remove('on');renderCasino();};
 document.getElementById('casBody').addEventListener('click',e=>{
+  const adj=e.target.closest('button[data-stakeadj]');
+  if(adj&&!casBusy){
+    let base=casStake==='all'?gold:casStake;
+    base=Math.round((base+(+adj.dataset.stakeadj))/100)*100;
+    base=Math.max(100,Math.min(base,Math.floor(gold/100)*100||100));
+    casStake=base;sfx.select();renderCasino();return;
+  }
   const st=e.target.closest('button[data-stake]');
-  if(st&&!casBusy){casStake=st.dataset.stake==='all'?'all':+st.dataset.stake;sfx.select();renderCasino();return;}
+  if(st&&!casBusy){casStake=st.dataset.stake==='all'?'all':Math.min(+st.dataset.stake,Math.floor(gold/100)*100||100);sfx.select();renderCasino();return;}
   const bt=e.target.closest('button[data-bet]');
   if(bt&&!casBusy){casBet=bt.dataset.bet;sfx.select();renderCasino();return;}
   const sw=e.target.closest('button[data-switch]');
-  if(sw){casWinBet=sw.dataset.switch==='cancel'?'cancel':sw.dataset.switch;sfx.select();casMsg(sw.dataset.switch==='cancel'?'撤注！':'改押'+(sw.dataset.switch==='big'?'大':'小')+'！');return;}
+  if(sw){
+    casWinBet=sw.dataset.switch==='cancel'?'cancel':sw.dataset.switch;
+    sfx.select();
+    document.querySelectorAll('#casWindow button[data-switch]').forEach(b=>b.classList.toggle('on',b===sw));
+    casMsg(sw.dataset.switch==='cancel'?'<b style="color:#e8845a">已选择撤注</b>':'<b style="color:#ffd24a">已改押'+(sw.dataset.switch==='big'?'大':'小')+'</b>');
+    return;
+  }
   const ck=e.target.closest('.cricket');
   if(ck&&!casBusy){casPick=+ck.dataset.ck;sfx.select();renderCasino();return;}
   if(e.target.id==='casFocusBtn'&&!casBusy){
@@ -7296,7 +7339,7 @@ function battlePayload(){
   return {
       ver:SAVE_VER,
       camp:activeCamp.key,
-      chap,diffPct,turn,gold,bag,forge,bondExp,chains,cargo,fort,dao,warOrder,warPlan,runTurns,ngPlus,maxChap,escapedN,barrels,fireTiles,tileOverride,retryN,fallenFlag,lampUsed,
+      chap,diffPct,turn,gold,bag,forgeBag,forge,bondExp,chains,cargo,fort,dao,warOrder,warPlan,runTurns,ngPlus,maxChap,escapedN,barrels,fireTiles,tileOverride,retryN,fallenFlag,lampUsed,
       treasures,
       duels:[...seenDuels],
       reinforced:[...reinforced],
@@ -7342,7 +7385,7 @@ function resumeBattle(d){
   setMapSize(MAP);
   tileOverride={...(d.tileOverride||{})};
   renderBase();
-  gold=d.gold;bag={...d.bag};forge={...(d.forge||{})};
+  gold=d.gold;bag={...d.bag};forgeBag=d.forgeBag?JSON.parse(JSON.stringify(d.forgeBag)):{};forge={...(d.forge||{})};
   bondExp={...(d.bondExp||{})};dao=d.dao||0;warOrder=d.warOrder||null;
   chains={...(d.chains||{})};cargo={...(d.cargo||{})};
   fort=Object.assign({camp:0,drill:0,smith:0,clinic:0,stable:0},d.fort||{});
@@ -8227,7 +8270,7 @@ function selectCampaign(camp){
   DUELS=camp.duels; LAST_WORDS=camp.lastWords; ULTS=camp.ults;
   AMBUSH_LINES=camp.ambush||{};
   campColor=camp.color; campName=camp.faction; campLeader=camp.leader;
-  bag={...camp.bag}; gold=500; forge={}; bondExp={}; dao=0; chains={}; cargo={}; goodTrend={}; fort={camp:0,drill:0,smith:0,clinic:0,stable:0};
+  bag={...camp.bag}; gold=500; forge={}; forgeBag={}; bondExp={}; dao=0; chains={}; cargo={}; goodTrend={}; fort={camp:0,drill:0,smith:0,clinic:0,stable:0};
   document.querySelector('h1').innerHTML=camp.title+'<span class="seal">'+camp.seal+'</span>';
   document.getElementById('campPre').textContent=camp.pre;
   document.getElementById('campBig').innerHTML=camp.big;
@@ -8274,7 +8317,7 @@ function startNewRun(){
   startNewRun._skipTalentPrompt=false;
   document.getElementById('overlay').classList.add('hidden');
   roster=[];
-  bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;chains={};cargo={};goodTrend={};
+  bag={...activeCamp.bag};gold=500;forge={};forgeBag={};bondExp={};dao=0;chains={};cargo={};goodTrend={};
   fort={camp:0,drill:0,smith:0,clinic:0,stable:0};
   if(talentOn('t_gold'))gold+=500;
   if(talentOn('t_supply')){bag.shangyao=(bag.shangyao||0)+3;bag.danyao=(bag.danyao||0)+2;}
@@ -8293,7 +8336,7 @@ document.getElementById('extraBtn').onclick=()=>{
   const ex=activeCamp.extra;
   if(!ex)return;
   const sv=loadGame();
-  roster=[];bag={...activeCamp.bag};gold=2500;forge={};runTurns=0;ngPlus=0;
+  roster=[];bag={...activeCamp.bag};gold=2500;forge={};forgeBag={};runTurns=0;ngPlus=0;
   ensureRoster();
   if(sv&&sv.camp===activeCamp.key&&sv.snap)restoreRoster(sv.snap);
   CHAPTERS=[...activeCamp.chapters,ex];
@@ -8807,7 +8850,7 @@ document.getElementById('chlogBody').addEventListener('click',e=>{
   const sv=loadGame();
   document.getElementById('chlog').classList.add('hidden');
   document.getElementById('overlay').classList.add('hidden');
-  roster=[];bag={...activeCamp.bag};gold=500;forge={};bondExp={};dao=0;runTurns=0;ngPlus=0;maxChap=0;
+  roster=[];bag={...activeCamp.bag};gold=500;forge={};forgeBag={};bondExp={};dao=0;runTurns=0;ngPlus=0;maxChap=0;
   ensureRoster();
   if(sv&&sv.camp===activeCamp.key&&sv.snap){
     restoreRoster(sv.snap);
