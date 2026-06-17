@@ -8426,36 +8426,75 @@ function renderSlots(){
   host.innerHTML=html;
   host._autos=autos;
 }
-/* 存档码：打包全部 localStorage 进度为 base64 文本 */
-const PORT_KEYS=['zhaoyun_save','zhaoyun_battle','sanguo_codex','sanguo_slot_1','sanguo_slot_2','sanguo_slot_3','sanguo_auto_1','sanguo_auto_2','sanguo_auto_3','sanguo_auto_ptr','sanguo_speed'];
+/* 存档码：通用文本码（任何人可导入，不绑设备）。
+   只打包迁移必需的核心数据——主进度、图鉴/天赋、3个手动槽、速度偏好；
+   不含临时战斗档与 3 份自动备份（纯本地防误删用，迁移无意义，砍掉大幅缩短）。
+   压缩用纯 JS LZW（不依赖任何浏览器 API，全平台结果一致），向后兼容旧 SG 码。 */
+const PORT_KEYS=['zhaoyun_save','sanguo_codex','sanguo_slot_1','sanguo_slot_2','sanguo_slot_3','sanguo_speed'];
+/* LZW 压缩：字符串→码点数组；再映射到安全可见字符做 base64 */
+function lzwComp(s){
+  const dict=new Map();let dim=256;
+  for(let i=0;i<256;i++)dict.set(String.fromCharCode(i),i);
+  let w='',res=[];
+  for(const c of s){const wc=w+c;if(dict.has(wc))w=wc;else{res.push(dict.get(w));dict.set(wc,dim++);w=c;}}
+  if(w!=='')res.push(dict.get(w));
+  return res;
+}
+function lzwDecomp(arr){
+  const dict=[];for(let i=0;i<256;i++)dict[i]=String.fromCharCode(i);
+  let dim=256,w=String.fromCharCode(arr[0]),res=w;
+  for(let i=1;i<arr.length;i++){
+    const k=arr[i];let entry;
+    if(dict[k]!==undefined)entry=dict[k];
+    else if(k===dim)entry=w+w.charAt(0);
+    else throw new Error('lzw');
+    res+=entry;dict[dim++]=w+entry.charAt(0);w=entry;
+  }
+  return res;
+}
+/* 码点数组 ↔ 字节（变长，每码 12+ 位用 2~3 字节）→ base64 */
+function codesToB64(codes){
+  const bytes=[];
+  for(const c of codes){bytes.push(c&0xff,(c>>8)&0xff,(c>>16)&0xff);} // 3字节/码，足够（字典远小于2^24）
+  let bin='';for(const b of bytes)bin+=String.fromCharCode(b);
+  return btoa(bin);
+}
+function b64ToCodes(b64){
+  const bin=atob(b64),codes=[];
+  for(let i=0;i+2<bin.length;i+=3)codes.push(bin.charCodeAt(i)|(bin.charCodeAt(i+1)<<8)|(bin.charCodeAt(i+2)<<16));
+  return codes;
+}
+function portEncode(str){return 'SGL'+codesToB64(lzwComp(str));}
+function portDecode(code){
+  if(code.startsWith('SGL'))return lzwDecomp(b64ToCodes(code.slice(3)));
+  if(code.startsWith('SG'))return decodeURIComponent(escape(atob(code.slice(2)))); // 兼容旧码
+  throw new Error('bad code');
+}
 document.getElementById('portExport').onclick=()=>{
   if(AC)sfx.select();
   const data={_v:SAVE_VER};
   for(const k of PORT_KEYS){
     try{const v=localStorage.getItem(k);if(v!=null)data[k]=v;}catch(e){}
   }
-  const code='SG'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const code=portEncode(JSON.stringify(data));
   const ta=document.getElementById('portCode');
-  ta.value=code;
-  ta.select();
+  ta.value=code;ta.select();
   try{navigator.clipboard.writeText(code);}catch(e){}
-  log('存档码已生成并尝试复制到剪贴板——请妥善保存','sys');
+  log(`存档码已生成（${code.length} 字）并尝试复制——发给好友也能直接导入`,'sys');
 };
 document.getElementById('portImport').onclick=()=>{
   if(AC)sfx.select();
   const code=document.getElementById('portCode').value.trim();
-  if(!code.startsWith('SG')){alert('存档码格式不对（应以 SG 开头）');return;}
-  try{
-    const data=JSON.parse(decodeURIComponent(escape(atob(code.slice(2)))));
-    if(data._v!==SAVE_VER&&!confirm('存档码版本与当前不一致，仍要导入吗？'))return;
-    for(const k of PORT_KEYS){
-      if(data[k]!=null)localStorage.setItem(k,data[k]);
-    }
-    alert('导入成功！页面即将刷新载入进度。');
-    location.reload();
-  }catch(e){
-    alert('存档码解析失败，请检查是否完整粘贴。');
+  if(!/^SG/.test(code)){alert('存档码格式不对（应以 SG 开头）');return;}
+  let data;
+  try{data=JSON.parse(portDecode(code));}
+  catch(e){alert('存档码解析失败，请检查是否完整粘贴。');return;}
+  if(data._v!==SAVE_VER&&!confirm('存档码版本与当前不一致，仍要导入吗？'))return;
+  for(const k of PORT_KEYS){
+    if(data[k]!=null)localStorage.setItem(k,data[k]);
   }
+  alert('导入成功！页面即将刷新载入进度。');
+  location.reload();
 };
 const sysMenuEl=document.getElementById('sysMenu');
 function openSysMenu(fromTitle){
