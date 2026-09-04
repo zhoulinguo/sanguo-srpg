@@ -103,8 +103,8 @@ canvas{display:block}
   transform:scaleX(0);
 }
 #banner .txt{font-family:var(--display);font-size:52px;letter-spacing:22px;color:var(--paper);opacity:0;display:inline-block}
-#banner.show .strip{animation:stripIn .9s ease forwards}
-#banner.show .txt{animation:txtIn .9s .12s ease forwards}
+#banner.show .strip{animation:stripIn var(--banner-dur,.9s) ease forwards}
+#banner.show .txt{animation:txtIn var(--banner-dur,.9s) ease forwards}
 @keyframes stripIn{0%{transform:scaleX(0)}35%{transform:scaleX(1)}100%{transform:scaleX(1)}}
 @keyframes txtIn{0%{opacity:0;transform:translateX(40px)}40%{opacity:1;transform:translateX(0)}100%{opacity:1}}
 
@@ -334,13 +334,21 @@ aside{flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px
 .deployTools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
 .deployTools button{font-family:var(--display);font-size:13px;letter-spacing:2px;padding:7px 14px;color:var(--paper);background:rgba(232,220,192,.05);border:1px solid rgba(201,162,39,.32);border-radius:3px;cursor:pointer}
 .deployTools button:hover{color:var(--gold);border-color:var(--gold)}
-.deployArena{position:relative;width:min(100%,820px);height:430px;margin:0 auto 12px;overflow:hidden;border:1px solid rgba(201,162,39,.48);border-radius:8px;background:radial-gradient(circle at 70% 35%,rgba(202,78,54,.16),transparent 32%),linear-gradient(135deg,#28352a,#171e1a 55%,#31221d);box-shadow:inset 0 0 60px rgba(0,0,0,.52),0 12px 32px rgba(0,0,0,.35)}
-.deployArena::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(232,220,192,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(232,220,192,.07) 1px,transparent 1px);background-size:calc(100% / var(--cols)) calc(100% / var(--rows));pointer-events:none}
-.deployArena::after{content:'敌 阵 方 向  →';position:absolute;right:10px;top:8px;color:rgba(232,132,90,.62);font-family:var(--display);font-size:12px;letter-spacing:3px}
-.deploySlot{position:absolute;transform:translate(-50%,-50%);width:54px;padding:4px 2px;border:1px solid rgba(143,196,232,.62);border-radius:6px;background:linear-gradient(145deg,rgba(43,91,126,.94),rgba(25,51,74,.96));color:#f4ead5;box-shadow:0 5px 14px rgba(0,0,0,.45);cursor:pointer;transition:transform .14s,box-shadow .14s,border-color .14s;z-index:2}
+.deployArena{position:relative;width:min(100%,calc(430px * var(--ratio)));aspect-ratio:var(--ratio);margin:0 auto 12px;overflow:hidden;border:1px solid rgba(201,162,39,.55);border-radius:5px;background:#91ad58;box-shadow:0 10px 26px rgba(0,0,0,.32)}
+.deployArena::after{content:'敌军初始位置';position:absolute;right:8px;top:6px;padding:2px 6px;background:rgba(37,24,17,.72);color:#e8845a;border:1px solid rgba(232,132,90,.35);border-radius:2px;font-family:var(--display);font-size:10px;letter-spacing:2px;z-index:5}
+.deployTerrain{position:absolute;box-sizing:border-box;border:1px solid rgba(65,83,43,.12);overflow:hidden}
+.deployTerrain::after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:11px;color:rgba(46,56,31,.58)}
+.dt-r{background:#c8a879}.dt-w{background:#5f9fc0}.dt-s{background:#91c3c4}.dt-b{background:repeating-linear-gradient(90deg,#a8733e 0 7px,#6f482b 7px 9px)}
+.dt-f{background:#789449}.dt-f::after{content:'木';color:rgba(28,74,37,.72)}.dt-m{background:#87906f}.dt-m::after{content:'山';color:rgba(67,65,47,.75)}
+.dt-c{background:#b39467}.dt-c::after{content:'寨';color:rgba(91,49,30,.78)}.dt-h{background:#a8aa70}.dt-h::after{content:'舍';color:rgba(77,63,38,.7)}
+.dt-t{background:repeating-linear-gradient(90deg,#c8ad67 0 4px,#b89b55 4px 6px)}.dt-g{background:#93a46a}.dt-g::after{content:'丘'}.dt-z{background:#6f8c69}.dt-z::after{content:'沼'}
+.deployEnemy{position:absolute;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#9b342c;border:2px solid #f0b080;box-shadow:0 2px 5px rgba(0,0,0,.55);z-index:2}
+.deployEnemy.boss{width:19px;height:19px;background:#b43b2d;border-color:#ffd24a}.deployEnemy b{position:absolute;left:50%;top:17px;transform:translateX(-50%);font-size:8px;color:#ffe1bd;background:rgba(45,20,16,.82);padding:1px 3px;white-space:nowrap;border-radius:2px}
+.deploySlot{position:absolute;transform:translate(-50%,-55%);width:38px;padding:1px 1px 2px;border:1px solid rgba(143,196,232,.72);border-radius:4px;background:linear-gradient(145deg,rgba(43,91,126,.93),rgba(25,51,74,.96));color:#f4ead5;box-shadow:0 4px 10px rgba(0,0,0,.42);cursor:pointer;transition:transform .14s,box-shadow .14s,border-color .14s;z-index:4}
 .deploySlot:hover,.deploySlot.pick{transform:translate(-50%,-50%) scale(1.09);border-color:#ffd24a;box-shadow:0 0 22px rgba(255,210,74,.34)}
-.deploySlot b{display:block;color:#ffd24a;font-family:var(--display);font-size:12px;white-space:nowrap}
-.deploySlot i{display:block;font-style:normal;font-size:9px;color:#b9d8ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deploySlot canvas{display:block;width:28px;height:36px;margin:-4px auto -2px;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.deploySlot b{position:absolute;left:-5px;top:-5px;display:block;width:14px;height:14px;line-height:14px;border-radius:50%;background:#294f70;color:#ffd24a;border:1px solid rgba(255,210,74,.65);font-family:var(--display);font-size:8px;white-space:nowrap}
+.deploySlot i{display:block;font-style:normal;font-size:8px;color:#b9d8ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .deployHint{text-align:center;color:var(--paper-dim);font-size:12px;line-height:1.8}
 .stageBadge{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:8px;font-size:9px;letter-spacing:1px;border:1px solid currentColor;vertical-align:1px}
 .stage1{color:#e8c655}.stage2{color:#70e1df;text-shadow:0 0 8px rgba(112,225,223,.55)}.stage3{color:#ff79c9;text-shadow:0 0 9px rgba(255,80,185,.6)}
@@ -4202,10 +4210,13 @@ function log(html,cls=''){
 function banner(text){
   const b=document.getElementById('banner');
   b.querySelector('.txt').textContent=text;
+  const dur=Math.max(180,Math.round(900/spd()));
+  b.style.setProperty('--banner-dur',dur+'ms');
   b.style.display='flex';
   b.classList.remove('show');void b.offsetWidth;
   b.classList.add('show');
-  setTimeout(()=>{b.style.display='none';},1200);
+  clearTimeout(b._hideTimer);
+  b._hideTimer=setTimeout(()=>{b.style.display='none';},Math.max(240,Math.round(1200/spd())));
 }
 function updateHud(){
   const w=CHAPTERS[chap]&&CHAPTERS[chap].win;
@@ -4358,7 +4369,9 @@ function showMenu(u){
   }
   const hasItem=Object.keys(bag).some(k=>bag[k]>0&&ITEMS[k].use);
   html+=`<button data-act="item" ${hasItem?'':'disabled'}>道 具</button>`;
-  html+=`<button data-act="commandbreak" ${(commandPts>=COMMAND_BREAK_COST&&canAtk&&!u.commandBreak)?'':'disabled'} class="ultBtn">军势·破阵 <span class="mp">${COMMAND_BREAK_COST}点</span><i class="udesc">本次物理攻击穿透 45% 守备；取消移动可退还</i></button>`;
+  if(commandPts>=COMMAND_BREAK_COST&&canAtk&&!u.commandBreak){
+    html+=`<button data-act="commandbreak" class="ultBtn">军势·破阵 <span class="mp">${COMMAND_BREAK_COST}点</span><i class="udesc">本次物理攻击穿透 45% 守备；取消移动可退还</i></button>`;
+  }
   html+=`<button data-act="guard">戒 备<i class="udesc">敌军进入射程时自动反击一次（八成伤害）</i></button>`;
   // 单挑：近战猛将类相邻敌方主将/猛将时可叫阵
   html+=`<button data-act="wait">待 机</button><button data-act="cancel">取 消</button>`;
@@ -5172,17 +5185,16 @@ const BATTLE_THEMES={
 };
 let battleTheme=BATTLE_THEMES.verdant;
 function sceneThemeFor(ch,i=chap){
+  if(ch&&ch.theme&&BATTLE_THEMES[ch.theme])return BATTLE_THEMES[ch.theme];
   if(ch&&ch.godArc)return BATTLE_THEMES.rift;
   if(ch&&ch.weather==='snow')return BATTLE_THEMES.frost;
   if(ch&&ch.weather==='fog')return BATTLE_THEMES.night;
-  if(ch&&((ch.barrels&&ch.barrels.length>=2)||/火|赤壁|宛城/.test(ch.title||'')))return BATTLE_THEMES.ember;
-  const map=(ch&&ch.map)||[];
-  const fortN=map.reduce((n,row)=>n+(row.match(/[ch]/g)||[]).length,0);
-  if(fortN>=8)return BATTLE_THEMES.siege;
-  return i%3===1?BATTLE_THEMES.autumn:BATTLE_THEMES.verdant;
+  if(ch&&ch.barrels&&ch.barrels.length>=2)return BATTLE_THEMES.ember;
+  return BATTLE_THEMES.verdant;
 }
 function drawBattleAtmosphere(time){
   const th=battleTheme||BATTLE_THEMES.verdant;
+  if(th===BATTLE_THEMES.verdant)return; // 普通章节严格保留原版明亮战场，不叠滤镜与边框
   ctx.save();ctx.globalCompositeOperation='screen';
   const n=fastMode==='blitz'?8:th.fx==='rift'?28:18;
   for(let i=0;i<n;i++){
@@ -5615,8 +5627,10 @@ function renderBase(){
   vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(10,8,4,.32)');
   bx.fillStyle=vg;bx.fillRect(0,0,W,H);
   const th=battleTheme||BATTLE_THEMES.verdant;
-  bx.fillStyle=th.wash;bx.fillRect(0,0,W,H);
-  bx.strokeStyle=th.accent+'55';bx.lineWidth=4;bx.strokeRect(2,2,W-4,H-4);
+  if(th!==BATTLE_THEMES.verdant){
+    bx.fillStyle=th.wash;bx.fillRect(0,0,W,H);
+    bx.strokeStyle=th.accent+'55';bx.lineWidth=4;bx.strokeRect(2,2,W-4,H-4);
+  }
 }
 function drawWater(time){
   ctx.lineWidth=1.2;
@@ -6551,7 +6565,7 @@ function loop(t){
   ctx.drawImage(baseCv,0,0,W,H);
   drawWater(t);
   drawBattleAtmosphere(t);
-  if(dangerOn&&dangerTiles&&!ended){fillTiles(dangerTiles,'rgba(190,70,40,.18)');drawThreatMarks(dangerMeta);}
+  if(dangerOn&&dangerTiles&&!ended)fillTiles(dangerTiles,'rgba(190,70,40,.12)','rgba(190,85,55,.24)');
   if(threat){fillTiles(threat.tiles,'rgba(190,70,40,.30)');drawThreatMarks(threat.meta);}
   if(selected&&landSet&&(state==='idle'||state==='busy')){
     if(atkSet)fillTiles(atkSet,'rgba(200,60,40,.30)');
@@ -6857,11 +6871,19 @@ function autoDeployment(mode){
 function renderDeployment(){
   const host=document.getElementById('deployBoard');if(!host)return;
   const ch=CHAPTERS[prepChap], party=deploymentParty(prepChap), order=deploymentOrders[deploymentKey()]||[];
-  const slots=ch.spawns.slice(0,party.length);
-  host.innerHTML=`<div class="deployArena" style="--cols:${ch.map[0].length};--rows:${ch.map.length}">`+slots.map(([x,y],i)=>{
+  const slots=ch.spawns.slice(0,party.length),cols=ch.map[0].length,rows=ch.map.length;
+  const terrain=ch.map.flatMap((row,y)=>[...row].map((c,x)=>`<span class="deployTerrain dt-${c}" title="${TERR[c]?.name||''}" style="left:${x/cols*100}%;top:${y/rows*100}%;width:${100/cols}%;height:${100/rows}%"></span>`)).join('');
+  let scouts=[];
+  try{scouts=(ch.enemies?ch.enemies():[]).filter(e=>e.x>=0&&e.y>=0&&e.x<cols&&e.y<rows);}catch(e){}
+  const enemy=scouts.map(e=>`<span class="deployEnemy ${e.boss?'boss':''}" title="${e.name}" style="left:${(e.x+.5)/cols*100}%;top:${(e.y+.5)/rows*100}%">${e.boss?`<b>${e.name}</b>`:''}</span>`).join('');
+  host.innerHTML=`<div class="deployArena" style="--cols:${cols};--rows:${rows};--ratio:${cols/rows}">${terrain}${enemy}`+slots.map(([x,y],i)=>{
     const u=roster.find(r=>r.name===order[i])||party[i];
-    return `<button class="deploySlot ${deploymentPick===i?'pick':''}" data-dslot="${i}" title="${u.name}｜${u.awakened||u.promoted||u.cls}｜${stageLabel(u)}" style="left:${(x+.5)/ch.map[0].length*100}%;top:${(y+.5)/ch.map.length*100}%"><b>${i+1}·${u.g||u.name[0]}</b><i>${u.name}</i></button>`;
+    return `<button class="deploySlot ${deploymentPick===i?'pick':''}" data-dslot="${i}" title="${u.name}｜${u.awakened||u.promoted||u.cls}｜${stageLabel(u)}" style="left:${(x+.5)/cols*100}%;top:${(y+.5)/rows*100}%"><b>${i+1}</b><canvas width="58" height="74" data-deploy-unit="${u.name}"></canvas><i>${u.name}</i></button>`;
   }).join('')+`</div><div class="deployHint">当前主题预览：<b style="color:${sceneThemeFor(ch,prepChap).accent}">${sceneThemeFor(ch,prepChap).name}</b>　·　${deploymentPick<0?'点击任意两人交换真实出生格':'已选第 '+(deploymentPick+1)+' 位，请点另一人完成换位'}</div>`;
+  host.querySelectorAll('canvas[data-deploy-unit]').forEach((c,i)=>{
+    const u=roster.find(r=>r.name===c.dataset.deployUnit)||party[i];
+    if(u)drawPortrait(c,u,i*173);
+  });
 }
 let shenXin=3; // 心神：赌坊作弊资源，每次进入备战重置为 3，不累积
 function ensureRoster(){if(roster.length===0)roster=PLAYER_BASE.filter(o=>!(o.joinCh>0)).map(o=>U({...o}));}
@@ -8833,7 +8855,7 @@ document.getElementById('sysBtn').onclick=()=>{
 };
 function renderFastBtn(){
   const b=document.getElementById('fastBtn');
-  b.textContent=fastMode==='blitz'?'极速 ×6':fastMode==='all'?'全速 ×2.4':fastMode==='enemy'?'敌速 ×2.8':'常 速';
+  b.textContent=fastMode==='blitz'?'极 速':fastMode==='all'?'全 速':fastMode==='enemy'?'敌 速':'常 速';
   b.classList.toggle('on',fastMode!=='off');
 }
 document.getElementById('fastBtn').onclick=()=>{

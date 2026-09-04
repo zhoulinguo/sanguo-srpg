@@ -42,6 +42,8 @@ with sync_playwright() as p:
       ok(sceneThemeFor({godArc:true,map:['...']}).name==='时裂神域', 'god arc theme routing failed');
       ok(sceneThemeFor({weather:'snow',map:['...']}).name==='霜天冻土', 'snow theme routing failed');
       ok(sceneThemeFor({barrels:[[1,1],[2,2]],map:['...'],title:'战场'}).name==='赤焰焦土', 'ember theme routing failed');
+      ok(sceneThemeFor({map:['ccc'],title:'普通营寨'}).name==='苍岚原野', 'ordinary chapters must preserve the original bright battlefield');
+      ok(sceneThemeFor({theme:'siege',map:['...']}).name==='百垒攻城', 'explicit chapter theme routing failed');
       const model=U({name:'模型测试',side:'P',kind:'cav',x:0,y:0,hp:100});
       const basePalette=pal(model).armor;
       model.promoted='龙骧骑';const promotedPalette=pal(model).armor;
@@ -53,7 +55,22 @@ with sync_playwright() as p:
       ok(visualStage(model)===3&&stageLabel(model).includes('转生'), 'rebirth visual stage failed');
       const oldSpeed=fastMode;fastMode='blitz';
       ok(spd()===6&&fxCount(22)<10, 'blitz speed or FX density failed');
+      renderFastBtn();
+      ok(document.getElementById('fastBtn').textContent==='极 速', 'speed label must not claim an unverified numeric multiplier');
+      banner('极速测试');
+      await new Promise(r=>setTimeout(r,300));
+      ok(document.getElementById('banner').style.display==='none', 'banner lifecycle did not follow blitz speed');
       fastMode=oldSpeed;
+      renderFastBtn();
+
+      const savedUnits=units,savedCommand=commandPts,savedSelected=selected,savedState=state;
+      const menuHero=U({name:'菜单测试',side:'P',x:0,y:0,hp:100,atk:30,def:10});
+      const menuEnemy=U({name:'菜单靶',side:'E',x:1,y:0,hp:100,atk:20,def:10});
+      units=[menuHero,menuEnemy];selected=menuHero;commandPts=0;showMenu(menuHero);
+      ok(!document.querySelector('#menu [data-act="commandbreak"]'), 'unavailable command break must not clutter every action menu');
+      commandPts=3;showMenu(menuHero);
+      ok(!!document.querySelector('#menu [data-act="commandbreak"]'), 'available command break entry was hidden');
+      hideMenu();units=savedUnits;commandPts=savedCommand;selected=savedSelected;state=savedState;
 
       const statusUnit = U({name:'状态测试',x:0,y:0,hp:100});
       statusUnit.status=[{k:'burn',t:2},{k:'poison',t:2},{k:'slow',t:2},{k:'rally',t:2},{k:'stun',t:1}];
@@ -86,6 +103,9 @@ with sync_playwright() as p:
       openPrep(0);
       const slots=[...document.querySelectorAll('#deployBoard [data-dslot]')];
       if(slots.length<2)throw new Error('deployment board did not render real spawn slots');
+      if(document.querySelectorAll('#deployBoard .deployTerrain').length!==CHAPTERS[0].map.length*CHAPTERS[0].map[0].length)throw new Error('deployment board did not render the real chapter map');
+      if(document.querySelectorAll('#deployBoard canvas[data-deploy-unit]').length!==slots.length)throw new Error('deployment board did not preserve detailed officer models');
+      if(!document.querySelector('#deployBoard .deployEnemy'))throw new Error('deployment board omitted enemy direction preview');
       const before=syncDeploymentOrder(0).slice();
       slots[0].click();document.querySelectorAll('#deployBoard [data-dslot]')[1].click();
       const swapped=syncDeploymentOrder(0).slice();
