@@ -39,6 +39,20 @@ with sync_playwright() as p:
       ok(battle && battle.goodTrend.silk === 1.5, 'battle trend fallback failed');
       ok(battle.commandPts === 2, 'older battle command default failed');
 
+      ok(sceneThemeFor({godArc:true,map:['...']}).name==='时裂神域', 'god arc theme routing failed');
+      ok(sceneThemeFor({weather:'snow',map:['...']}).name==='霜天冻土', 'snow theme routing failed');
+      ok(sceneThemeFor({barrels:[[1,1],[2,2]],map:['...'],title:'战场'}).name==='赤焰焦土', 'ember theme routing failed');
+      const model=U({name:'模型测试',side:'P',kind:'cav',x:0,y:0,hp:100});
+      const basePalette=pal(model).armor;
+      model.promoted='龙骧骑';const promotedPalette=pal(model).armor;
+      model.awakened='武神';const awakenedPalette=pal(model).armor;
+      model.rb=1;const rebornPalette=pal(model).armor;
+      ok(new Set([basePalette,promotedPalette,awakenedPalette,rebornPalette]).size===4, 'career stages must have distinct model palettes');
+      ok(visualStage(model)===3&&stageLabel(model).includes('转生'), 'rebirth visual stage failed');
+      const oldSpeed=fastMode;fastMode='blitz';
+      ok(spd()===6&&fxCount(22)<10, 'blitz speed or FX density failed');
+      fastMode=oldSpeed;
+
       const statusUnit = U({name:'状态测试',x:0,y:0,hp:100});
       statusUnit.status=[{k:'burn',t:2},{k:'poison',t:2},{k:'slow',t:2},{k:'rally',t:2},{k:'stun',t:1}];
       cleanseCurable(statusUnit);
@@ -67,6 +81,16 @@ with sync_playwright() as p:
     page.evaluate("""() => {
       selectCampaign(CAMP_ZHAOYUN);
       roster=[];bag={...activeCamp.bag};gold=500;ensureRoster();
+      openPrep(0);
+      const slots=[...document.querySelectorAll('#deployBoard [data-dslot]')];
+      if(slots.length<2)throw new Error('deployment board did not render real spawn slots');
+      const before=syncDeploymentOrder(0).slice();
+      slots[0].click();document.querySelectorAll('#deployBoard [data-dslot]')[1].click();
+      const swapped=syncDeploymentOrder(0).slice();
+      if(swapped[0]!==before[1]||swapped[1]!==before[0])throw new Error('click-to-swap deployment failed');
+      const snapshot=snapshotRoster();
+      if(!snapshot.deployments||!snapshot.deployments[deploymentKey(0)])throw new Error('deployment was not persisted in roster snapshot');
+      window.__expectedDeployment=swapped;
       document.getElementById('overlay').classList.add('hidden');
       document.getElementById('prep').classList.add('hidden');
       startChapter(0);
@@ -74,6 +98,11 @@ with sync_playwright() as p:
     page.wait_for_function("document.getElementById('commandTxt').textContent === '2/5'")
     chapter = page.evaluate("""async () => {
       const ok=(v,m)=>{if(!v)throw new Error(m);};
+      ok(window.__expectedDeployment.every((name,i)=>{
+        const u=units.find(x=>x.name===name), sp=CHAPTERS[0].spawns[i];
+        return u&&u.x===sp[0]&&u.y===sp[1];
+      }), 'battle did not honor deployment order');
+      ok(battleTheme&&battleTheme===sceneThemeFor(CHAPTERS[0],0), 'chapter theme was not activated');
       const attacker=alive('P')[0], target=alive('E').find(e=>!e.boss);
       const base=dmgRange(attacker,target);
       attacker.commandBreak=true;
@@ -110,6 +139,8 @@ with sync_playwright() as p:
         baseDamage: base,
         breakDamage: broken,
         strategyDamage: preview.dmg,
+        deployment: window.__expectedDeployment,
+        theme: battleTheme.name,
         endText: document.getElementById('endTurn').textContent
       };
     }""")
