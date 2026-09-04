@@ -47,7 +47,9 @@ with sync_playwright() as p:
       model.promoted='龙骧骑';const promotedPalette=pal(model).armor;
       model.awakened='武神';const awakenedPalette=pal(model).armor;
       model.rb=1;const rebornPalette=pal(model).armor;
-      ok(new Set([basePalette,promotedPalette,awakenedPalette,rebornPalette]).size===4, 'career stages must have distinct model palettes');
+      ok(new Set([basePalette,promotedPalette,awakenedPalette,rebornPalette]).size===1, 'career stages must preserve the original detailed model palette');
+      const drawSource=drawUnitSprite.toString();
+      ok(drawSource.includes('SPRITES[u.kind]')&&drawSource.includes('drawEvolutionFx'), 'career FX must wrap, not replace, the detailed class model');
       ok(visualStage(model)===3&&stageLabel(model).includes('转生'), 'rebirth visual stage failed');
       const oldSpeed=fastMode;fastMode='blitz';
       ok(spd()===6&&fxCount(22)<10, 'blitz speed or FX density failed');

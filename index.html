@@ -5642,10 +5642,7 @@ function visualStage(u){return (u.rb||0)>0?3:u.awakened?2:u.promoted?1:0;}
 function stageLabel(u){const s=visualStage(u);return s===3?`转生·${u.rb}转`:s===2?'觉醒':s===1?'转职':'初阵';}
 function pal(u){
   if(u.side==='P'){
-    const s=visualStage(u);
-    if(s===3)return {armor:'#713f93',armor2:'#362657',cloth:'#253c68',skin:'#f3cda3',helmet:'#9b5bc0',accent:'#ff79c9',legs:'#211b35',metal:'#f6e2ff'};
-    if(s===2)return {armor:'#287b86',armor2:'#20536b',cloth:'#243e62',skin:'#f2cda2',helmet:'#35a5ad',accent:'#70e1df',legs:'#1e2b3e',metal:'#e2ffff'};
-    if(s===1)return {armor:'#556eb1',armor2:'#354c82',cloth:'#33486c',skin:'#f0cda0',helmet:'#7088c9',accent:'#e8c655',legs:'#283148',metal:'#e6edf4'};
+    // 转职阶段不再覆盖原模型调色：所有细节、材质层次与兵种识别保持初版精细模型。
     return {armor:'#41648f',armor2:'#2e4a6b',cloth:'#33415c',skin:'#f0cda0',helmet:'#54759e',accent:'#d9b54a',legs:'#26303f',metal:'#cdd6de'};
   }
   if(u.fac==='dong')return { // 董卓军：暗红铁灰
@@ -6255,15 +6252,16 @@ const SPRITES={
 };
 function drawEvolutionFx(u,time,front=false){
   const s=visualStage(u);if(!s||u.side!=='P'||u.npc)return;
-  const pulse=.62+Math.sin(time/260+(u._i||0))*.18;
+  const pulse=.48+Math.sin(time/260+(u._i||0))*.12;
   if(!front){
-    if(s>=1){ctx.fillStyle=s===1?'rgba(64,78,148,.62)':s===2?'rgba(30,150,157,.55)':'rgba(112,45,148,.58)';O(.8);ctx.beginPath();ctx.moveTo(-9,-3);ctx.quadraticCurveTo(-15,7,-10,15);ctx.lineTo(0,10);ctx.lineTo(10,15);ctx.quadraticCurveTo(15,7,9,-3);ctx.closePath();ctx.fill();ctx.stroke();}
-    if(s>=2){ctx.strokeStyle=`rgba(112,225,223,${pulse})`;ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(0,4,20,7,0,0,7);ctx.stroke();}
-    if(s>=3){ctx.strokeStyle=`rgba(255,121,201,${pulse})`;ctx.setLineDash([4,3]);ctx.beginPath();ctx.arc(0,-3,22,0,7);ctx.stroke();ctx.setLineDash([]);}
+    // 阶段信息置于模型轮廓之外，避免披风色块覆盖原角色。
+    if(s>=1){ctx.strokeStyle=`rgba(232,198,85,${pulse})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(0,13,15,3.8,0,0,7);ctx.stroke();}
+    if(s>=2){ctx.strokeStyle=`rgba(112,225,223,${pulse})`;ctx.lineWidth=1.25;ctx.beginPath();ctx.ellipse(0,4,19,6.5,0,0,7);ctx.stroke();}
+    if(s>=3){ctx.strokeStyle=`rgba(255,121,201,${pulse})`;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(0,-3,22,0,7);ctx.stroke();ctx.setLineDash([]);}
   }else{
-    if(s>=1){ctx.fillStyle=pal(u).metal;O(.8);for(const x of [-9,9]){ctx.beginPath();ctx.moveTo(x,-4);ctx.lineTo(x+(x<0?-5:5),0);ctx.lineTo(x,4);ctx.closePath();ctx.fill();ctx.stroke();}}
-    if(s>=2){ctx.fillStyle='#9ff6f1';ctx.shadowColor='#70e1df';ctx.shadowBlur=7;ctx.beginPath();ctx.moveTo(0,-34);ctx.lineTo(3,-28);ctx.lineTo(0,-25);ctx.lineTo(-3,-28);ctx.closePath();ctx.fill();ctx.shadowBlur=0;}
-    if(s>=3){ctx.fillStyle='#ff79c9';for(let i=0;i<Math.min(5,2+(u.rb||1));i++){const a=time/650+i*1.7;ctx.beginPath();ctx.arc(Math.cos(a)*19,-7+Math.sin(a)*9,1.4,0,7);ctx.fill();}}
+    if(s>=1){ctx.save();ctx.fillStyle='#d9b54a';ctx.strokeStyle='rgba(44,31,12,.9)';ctx.lineWidth=.75;for(const x of [-9,9]){ctx.beginPath();ctx.moveTo(x,-3);ctx.lineTo(x+(x<0?-3.5:3.5),-.2);ctx.lineTo(x,2.5);ctx.closePath();ctx.fill();ctx.stroke();}ctx.restore();}
+    if(s>=2){ctx.fillStyle='#9ff6f1';ctx.shadowColor='#70e1df';ctx.shadowBlur=4;ctx.beginPath();ctx.moveTo(0,-34);ctx.lineTo(2.4,-29);ctx.lineTo(0,-26);ctx.lineTo(-2.4,-29);ctx.closePath();ctx.fill();ctx.shadowBlur=0;}
+    if(s>=3){ctx.fillStyle='#ff79c9';for(let i=0;i<Math.min(4,1+(u.rb||1));i++){const a=time/700+i*1.9;ctx.beginPath();ctx.arc(Math.cos(a)*20,-7+Math.sin(a)*9,1.15,0,7);ctx.fill();}}
   }
 }
 function drawUnitSprite(u,time){
